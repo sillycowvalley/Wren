@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{6F71C655-1E61-48FF-B5C0-21E2940EC237}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wren.Asm", "src\Wren.Asm\Wren.Asm.csproj", "{19846BB8-1A81-43F7-8F35-5068D771096C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wren.Emu", "src\Wren.Emu\Wren.Emu.csproj", "{D3225A8B-3322-45EB-AC62-25455A427AC9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{06ECFE71-2615-4862-81D8-6573B9504B75}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wren.Asm.Tests", "tests\Wren.Asm.Tests\Wren.Asm.Tests.csproj", "{E34684E4-A7EF-4721-81FB-F4701BC6FE5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wren.Emu.Tests", "tests\Wren.Emu.Tests\Wren.Emu.Tests.csproj", "{671AF650-A151-46DC-8256-71542A199822}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{19846BB8-1A81-43F7-8F35-5068D771096C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19846BB8-1A81-43F7-8F35-5068D771096C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19846BB8-1A81-43F7-8F35-5068D771096C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19846BB8-1A81-43F7-8F35-5068D771096C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D3225A8B-3322-45EB-AC62-25455A427AC9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3225A8B-3322-45EB-AC62-25455A427AC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3225A8B-3322-45EB-AC62-25455A427AC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3225A8B-3322-45EB-AC62-25455A427AC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E34684E4-A7EF-4721-81FB-F4701BC6FE5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E34684E4-A7EF-4721-81FB-F4701BC6FE5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E34684E4-A7EF-4721-81FB-F4701BC6FE5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E34684E4-A7EF-4721-81FB-F4701BC6FE5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{671AF650-A151-46DC-8256-71542A199822}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{671AF650-A151-46DC-8256-71542A199822}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{671AF650-A151-46DC-8256-71542A199822}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{671AF650-A151-46DC-8256-71542A199822}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{19846BB8-1A81-43F7-8F35-5068D771096C} = {6F71C655-1E61-48FF-B5C0-21E2940EC237}
+		{D3225A8B-3322-45EB-AC62-25455A427AC9} = {6F71C655-1E61-48FF-B5C0-21E2940EC237}
+		{E34684E4-A7EF-4721-81FB-F4701BC6FE5E} = {06ECFE71-2615-4862-81D8-6573B9504B75}
+		{671AF650-A151-46DC-8256-71542A199822} = {06ECFE71-2615-4862-81D8-6573B9504B75}
+	EndGlobalSection
+EndGlobal
