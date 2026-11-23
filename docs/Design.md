@@ -240,7 +240,7 @@ END SUB
   block, so the FAT can be tested for thousands of uploads in the emulator.
 - **Tests** compile BASIC programs, run them on the emulated Thing with the kernel, and
   compare the OLED's pixels; FAT tests upload thousands of programs and check the
-  wear spread and power-failure recovery.
+  wear spread, and that a failed upload is caught by the read-back.
 
 ## Open questions
 
