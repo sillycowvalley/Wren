@@ -12,7 +12,7 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - He reviews and merges everything into main. Never push to main.
 - Decisions of substance are his: ask with AskUserQuestion, recommendation first.
 - Documents state current truth and open issues, never a change log.
-- He is on Sydney time. "rt" means "Roger that".
+- He is in Nelson, New Zealand (NZ time). "rt" means "Roger that".
 - Keep answers simple and direct.
 
 ## Public-repo rules

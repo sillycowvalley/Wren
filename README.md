@@ -57,4 +57,4 @@ Directives: `ORG`, `DC.B`/`DB`, `DC.W`/`DW`, `DS.B`/`DS`, `DS.W`, `EQU` or `=`,
 
 ## Licence
 
-MIT.
+MIT. See [LICENSE](LICENSE).
