@@ -4,6 +4,7 @@
         x:Class="Wren.MainWindow"
         x:DataType="local:MainWindow"
         Title="Wren"
+        Icon="/Assets/wren.ico"
         Width="1240" Height="760" MinWidth="980" MinHeight="600">
 
   <Window.Styles>

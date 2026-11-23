@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Wren, the bird. Original artwork for the Wren project (MIT licence). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+ <g transform="translate(-6 -16)">
+  <defs>
+    <!-- The bird's outline, used once with a dark stroke and once filled. -->
+    <g id="silhouette">
+      <rect x="-17" y="-66" width="34" height="96" rx="16" transform="translate(76 124) rotate(-28)" />
+      <ellipse cx="120" cy="150" rx="76" ry="60" />
+      <circle cx="170" cy="110" r="46" />
+    </g>
+    <clipPath id="bodyClip">
+      <ellipse cx="120" cy="150" rx="76" ry="60" />
+      <circle cx="170" cy="110" r="46" />
+    </clipPath>
+    <clipPath id="tailClip">
+      <rect x="-17" y="-66" width="34" height="96" rx="16" transform="translate(76 124) rotate(-28)" />
+    </clipPath>
+  </defs>
+
+  <!-- Legs -->
+  <g stroke="#7A4E2C" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M110 200 L104 236 M92 238 L104 236 L114 240" />
+    <path d="M138 202 L140 236 M128 239 L140 236 L152 239" />
+  </g>
+
+  <!-- Beak, tucked under the head -->
+  <path d="M196 100 Q228 102 250 116 Q228 122 196 120 Z" fill="#3A2414" stroke="#3A2414" stroke-width="2" stroke-linejoin="round" />
+
+  <!-- Outline, then fill -->
+  <use href="#silhouette" fill="#4A2C14" stroke="#4A2C14" stroke-width="10" stroke-linejoin="round" />
+  <use href="#silhouette" fill="#A0663A" />
+
+  <!-- Tail barring -->
+  <g clip-path="url(#tailClip)" stroke="#5A3618" stroke-width="5" stroke-linecap="round">
+    <g transform="translate(76 124) rotate(-28)">
+      <line x1="-20" y1="-50" x2="20" y2="-50" />
+      <line x1="-20" y1="-34" x2="20" y2="-34" />
+      <line x1="-20" y1="-18" x2="20" y2="-18" />
+    </g>
+  </g>
+
+  <g clip-path="url(#bodyClip)">
+    <!-- Buff belly and throat -->
+    <ellipse cx="150" cy="176" rx="58" ry="38" fill="#EBC99B" />
+    <ellipse cx="186" cy="138" rx="30" ry="22" fill="#EBC99B" />
+    <!-- Belly barring -->
+    <g stroke="#C79A68" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M128 196 q8 4 16 0" />
+      <path d="M152 200 q8 4 16 0" />
+      <path d="M140 184 q8 4 16 0" />
+    </g>
+    <!-- Wing with fine barring -->
+    <ellipse cx="104" cy="146" rx="50" ry="30" transform="rotate(-14 104 146)" fill="#83502A" />
+    <g stroke="#4A2C14" stroke-width="4" stroke-linecap="round">
+      <line x1="72" y1="132" x2="80" y2="152" />
+      <line x1="86" y1="128" x2="94" y2="150" />
+      <line x1="100" y1="124" x2="108" y2="147" />
+      <line x1="114" y1="121" x2="122" y2="144" />
+      <line x1="128" y1="119" x2="136" y2="140" />
+    </g>
+    <!-- Crown speckles -->
+    <g fill="#6E431F">
+      <circle cx="150" cy="82" r="3" />
+      <circle cx="164" cy="74" r="3" />
+      <circle cx="140" cy="96" r="3" />
+    </g>
+  </g>
+
+  <!-- Pale eyebrow stripe, a wren's mark -->
+  <path d="M146 96 Q172 80 204 92" stroke="#F4E3C3" stroke-width="7" stroke-linecap="round" fill="none" />
+  <!-- Cheek -->
+  <circle cx="176" cy="126" r="9" fill="#E8907A" opacity="0.45" />
+  <!-- Eye -->
+  <circle cx="186" cy="106" r="9" fill="#1E120A" />
+  <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
+ </g>
+</svg>
