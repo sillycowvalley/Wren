@@ -35,10 +35,10 @@ Proposed layout (the split is settled once the kernel's real size is known):
 | Blocks | Address | Size | Use |
 |---|---|---|---|
 | 0-1 | $8000-$807F | 128 B | Interrupt vectors (locked) |
-| 2-79 | $8080-$93FF | 4.9 KB | Kernel, locked by the UBC option byte; it fills this to within about 20 bytes |
-| 80-127 | $9400-$9FFF | 3 KB | Program store: 48 blocks |
-| EEPROM | $4000-$4067 | 104 B | The FAT: header, block chain and write counts |
-| EEPROM | $4068-$407F | 24 B | Program settings (`EEREAD`/`EEWRITE`) |
+| 2-80 | $8080-$943F | 5 KB | Kernel, locked by the UBC option byte; about 84 bytes are free |
+| 81-127 | $9440-$9FFF | 2.9 KB | Program store: 47 blocks (3,008 bytes) |
+| EEPROM | $4000-$4065 | 102 B | The FAT: header, block chain and write counts |
+| EEPROM | $4066-$407F | 26 B | Program settings (`EEREAD`/`EEWRITE`) |
 
 ## Wear levelling: the FAT in EEPROM
 
@@ -47,19 +47,19 @@ A program may sit in any blocks of the store, in any order. The EEPROM describes
 | EEPROM | Bytes | Contents |
 |---|---|---|
 | $4000 | 1 | Format version |
-| $4001 | 1 | First block of the program (0-47), or $FF for no program |
+| $4001 | 1 | First block of the program (0-46), or $FF for no program |
 | $4002 | 2 | Length of the bytecode in bytes |
 | $4004 | 2 | CRC-16 of the bytecode |
 | $4006 | 2 | Upload count |
-| $4008 | 48 | Chain: for each block, the next block of the program (0-47), $FE for the last one, $FF for free |
-| $4038 | 48 | Write counts: how many times each block has been written |
-| $4068 | 24 | Free for program settings |
+| $4008 | 47 | Chain: for each block, the next block of the program (0-46), $FE for the last one, $FF for free |
+| $4037 | 47 | Write counts: how many times each block has been written |
+| $4066 | 26 | Free for program settings |
 
 Writing a program (Wren does this over SWIM and reads everything back):
 
-1. Read the FAT. The blocks the new program needs are taken from all 48, least-written
+1. Read the FAT. The blocks the new program needs are taken from all 47, least-written
    first. The old program is replaced, so all its blocks are free for the new one: a
-   program can use the whole store (3 KB).
+   program can use the whole store (3,008 bytes).
 2. Write the program's blocks; each is one block write, one wear cycle.
 3. Write the new FAT: chain, header and the raised write counts.
 4. Read back the blocks and the FAT and compare. If anything differs, do it again.
@@ -67,15 +67,15 @@ Writing a program (Wren does this over SWIM and reads everything back):
 At start-up the kernel checks the CRC, follows the chain once and builds a RAM table
 from program address to physical block, so the VM finds any byte with one lookup.
 
-How far this stretches the ~100 writes (48-block store). Choosing the least-written
-blocks keeps all 48 within one write of each other:
+How far this stretches the ~100 writes (47-block store). Choosing the least-written
+blocks keeps all 47 within one write of each other:
 
 | Program size | Blocks | Uploads before any block reaches 100 writes |
 |---|---|---|
-| 128 B | 2 | about 2,400 |
-| 256 B | 4 | about 1,200 |
-| 1 KB | 16 | about 300 |
-| 3 KB (largest) | 48 | 100 |
+| 128 B | 2 | about 2,350 |
+| 256 B | 4 | about 1,175 |
+| 1 KB | 16 | about 290 |
+| 3,008 B (largest) | 47 | 100 |
 
 Wren shows the write counts after every upload. The EEPROM itself is rated ~100k
 writes, so the FAT outlasts the flash many times over.
@@ -120,7 +120,7 @@ costs few bytes:
 - `IF` and loops use short relative jumps (2 bytes) wherever they reach.
 
 For example, `HEX 21, 2, shown, 2, LARGE` is 7 bytes. The whole "usual views" program
-below comes to about 100 bytes: 2 blocks, so about 2,400 uploads before a block
+below comes to about 100 bytes: 2 blocks, so about 2,350 uploads before a block
 reaches its rating.
 
 RAM budget (1 KB):
@@ -128,7 +128,7 @@ RAM budget (1 KB):
 | Bytes | Use |
 |---|---|
 | 256 | Frame buffer (64x32, 1 bit per pixel) |
-| 256 | Program variables and arrays, sharing with the block map: the map takes one byte per block the program uses (1-48) and the variables get the rest (255-208) |
+| 256 | Program variables and arrays, sharing with the block map: the map takes one byte per block the program uses (1-47) and the variables get the rest (255-209) |
 | 128 | VM value stack |
 | 64 | VM call stack |
 | 16 | Event queue (8 slots of event and value; 7 can wait) |
@@ -182,7 +182,7 @@ Built-in services:
 | Fonts | `SMALL` (3x5: 16 columns x 5 rows; capitals only: lowercase is drawn as capitals), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 15x28 in an 18x32 cell, 3 characters on one line) |
 | Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023; this turns the pin's pull-up off, so that pin is then an analog input, not a button) |
 | Time | `MILLIS` (wraps every 65.5 s), `WAIT ms` |
-| Storage | `EEREAD(n)`, `EEWRITE n, v` for the 24 setting bytes, n = 0-23 (only writes when the value changes) |
+| Storage | `EEREAD(n)`, `EEWRITE n, v` for the 26 setting bytes, n = 0-25 (only writes when the value changes) |
 | Other | `RND(n)`, `ABS(v)`, `MIN(a,b)`, `MAX(a,b)`, `LOST` |
 
 `LARGE` and `BIG` are drawn by scaling the 5x7 font at run time, which saves the 1 KB a
@@ -265,7 +265,7 @@ BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold. It is
 ## How it is built and tested
 
 - **Kernel** in STM8 assembly under `firmware/kernel/`, assembled by Wren.Asm when Wren
-  starts. It is about 4.5 KB and must end below the store at $9400 (a test checks).
+  starts. It is about 4.6 KB and must end below the store at $9440 (a test checks).
   Kept small by: the VM calling each instruction's routine (which ends in a 1-byte
   `RET`), one dispatch table for opcodes $30-$74, the assembler's `RELAX` directive
   (`JP`/`CALL` become 2-byte `JRA`/`CALLR` where the target is near), and the vector
@@ -285,9 +285,9 @@ BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold. It is
 
 ## Open questions
 
-- **Kernel space.** With the loader and `ANALOG` in, the kernel is about 20 bytes short
-  of the store. A further kernel feature needs either more trimming or the store moved
-  up by a block or two (each block is 64 bytes of program space, out of 3 KB).
+- **Kernel space.** About 84 bytes are free below the store at $9440. A larger kernel
+  feature needs more trimming or the store moved up another block (64 bytes of program
+  space each).
 
 1. **Host upload protocol.** Built as described above; the Reggie side still has to be
    written and tried against it.

@@ -169,7 +169,7 @@ msg_wren:   dc.b 20,4,2, 4,"Wren"
 msg_noprog: dc.b 2,22,1, 10,"No program"
 
 ; ---- Option bytes ----
-; UBC (OPT1) write-protects the kernel's 80 blocks, $8000-$93FF, against firmware
+; UBC (OPT1) write-protects the kernel's 81 blocks, $8000-$943F, against firmware
 ; writes, so a program upload can never damage it. NOPT1 is its complement.
         org $4801
         dc.b (STORE-$8000)/64, ~((STORE-$8000)/64) & $FF

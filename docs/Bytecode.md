@@ -26,19 +26,19 @@ Event numbers: 0 START, 1 CHANGE, 2 PINS, 3-7 LATCH, 8-12 PRESS, 13-17 RELEASE
 
 ## The FAT (EEPROM)
 
-The program store is the last 48 blocks of flash, $9400-$9FFF. Block n is at
-$9400 + 64 n.
+The program store is the last 47 blocks of flash, $9440-$9FFF. Block n is at
+$9440 + 64 n.
 
 | Address | Bytes | Contents |
 |---|---|---|
 | $4000 | 1 | FAT version: 1 |
-| $4001 | 1 | First block of the program (0-47), $FF for none |
+| $4001 | 1 | First block of the program (0-46), $FF for none |
 | $4002 | 2 | Program length in bytes |
 | $4004 | 2 | CRC-16/CCITT (start $FFFF, polynomial $1021) of the program |
 | $4006 | 2 | Upload count |
-| $4008 | 48 | Next block for each block (0-47), $FE last, $FF free |
-| $4038 | 48 | Times each block has been written |
-| $4068 | 24 | Program settings (`EEREAD`, `EEWRITE`, n = 0-23) |
+| $4008 | 47 | Next block for each block (0-46), $FE last, $FF free |
+| $4037 | 47 | Times each block has been written |
+| $4066 | 26 | Program settings (`EEREAD`, `EEWRITE`, n = 0-25) |
 
 ## Uploading from a host
 
@@ -56,7 +56,7 @@ SWIM. `HostUpload` in Wren.Script builds the frame; `firmware/kernel/Loader.inc`
 | Bytes | Contents |
 |---|---|
 | 4 | "WREN" (anything before it is ignored) |
-| 2 | Program length, high byte first: 1 to 3072 |
+| 2 | Program length, high byte first: 1 to 3008 |
 | n | The program image |
 | 2 | CRC-16/CCITT of the program, high byte first |
 
@@ -66,8 +66,8 @@ failed upload leaves it in place. Only when the CRC checks out is the FAT writte
 new program starts at once. A bad length or CRC shows "Failed" until the Thing is reset,
 and the previous program runs again after that reset.
 
-The kernel image also sets the UBC option byte to 80 blocks, so firmware can never
-write the kernel ($8000-$93FF); only a SWIM programmer can.
+The kernel image also sets the UBC option byte to 81 blocks, so firmware can never
+write the kernel ($8000-$943F); only a SWIM programmer can.
 
 ## Opcodes
 

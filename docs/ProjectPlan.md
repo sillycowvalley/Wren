@@ -58,7 +58,7 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    stm8flash and OpenOCD as protocol references. Michael tests it on Windows against an
    S103 board first, then a Thing.
 3. **The firmware (done in emulation).** The kernel (VM, graphics, events, FAT loader)
-   fits in 8 KB flash and 1 KB RAM beside a 3 KB program store. Next: run it on the
+   fits in 8 KB flash and 1 KB RAM beside a 3,008-byte program store. Next: run it on the
    development board with a real OLED, then flash it once to each Thing. After that,
    programs reach a Thing over SWIM (Wren.Link) or from a host over its own pins
    (the kernel's loader).

@@ -163,7 +163,7 @@
   <div class="chips">
     <span class="chip"><b>16-bit</b> signed integers</span>
     <span class="chip"><b>64 x 32</b> OLED, 4 fonts</span>
-    <span class="chip"><b>3 KB</b> program store</span>
+    <span class="chip"><b>3,008 B</b> program store</span>
     <span class="chip">keywords in any case</span>
   </div>
 </header>
@@ -321,7 +321,7 @@
         <tr><td class="k"><code>ANALOG(p)</code></td><td><code>ANALOG(PD2)</code> or <code>ANALOG(PD3)</code>: 0-1023. Turns that pin's pull-up off: it is then an analog input, not a button</td></tr>
         <tr><td class="k"><code>MILLIS</code></td><td>Milliseconds since reset; wraps every 65.5 s</td></tr>
         <tr><td class="k"><code>WAIT ms</code></td><td>Pause; events wait meanwhile</td></tr>
-        <tr><td class="k"><code>EEREAD(n)</code></td><td>Setting byte n, 0-23</td></tr>
+        <tr><td class="k"><code>EEREAD(n)</code></td><td>Setting byte n, 0-25</td></tr>
         <tr><td class="k"><code>EEWRITE n, v</code></td><td>Store setting byte n; writes only when it changes</td></tr>
         <tr><td class="k"><code>RND(n)</code></td><td>Random number, 0 to n-1</td></tr>
         <tr><td class="k"><code>ABS(v)</code>, <code>MIN(a, b)</code>, <code>MAX(a, b)</code></td><td>The usual</td></tr>
@@ -366,9 +366,9 @@
     <div class="panel">
       <h2>Limits</h2>
       <table>
-        <tr><td class="k">Program</td><td>48 blocks of 64 B = 3 KB (the store in flash)</td></tr>
+        <tr><td class="k">Program</td><td>47 blocks of 64 B = 3,008 B (the store in flash)</td></tr>
         <tr><td class="k">Variables</td><td>256 B, shared with the block map (1 B per program block)</td></tr>
-        <tr><td class="k">Settings</td><td>24 EEPROM bytes, <code>EEREAD</code> / <code>EEWRITE</code> 0-23</td></tr>
+        <tr><td class="k">Settings</td><td>26 EEPROM bytes, <code>EEREAD</code> / <code>EEWRITE</code> 0-25</td></tr>
         <tr><td class="k">Timers</td><td>At most 4 <code>ON EVERY</code> handlers</td></tr>
       </table>
     </div>
