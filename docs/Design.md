@@ -121,6 +121,7 @@ nothing.
 | `ON START` | Once, after reset |
 | `ON LATCH pin` | A falling edge on PA1-PA3 or PD2-PD3. The interrupt copies b0-b7 at once; the handler gets it as `VALUE` |
 | `ON PRESS pin` / `ON RELEASE pin` | A button on PA1-PA3, PD2 or PD3, debounced (20 ms) |
+| `ON PINS` | Any of PA1-PA3, PD2 or PD3 changes, debounced (20 ms), and once after `ON START` |
 | `ON CHANGE` | b0-b7 differ from their last value (checked every millisecond), and once after `ON START`; `VALUE` holds the byte |
 | `ON EVERY n` | Every n milliseconds (up to 4 timers) |
 
@@ -158,16 +159,35 @@ separate 16x32 table would take.
 
 ### Examples
 
-The Thing's usual job, laid out like its own firmware with HEX and BAR on:
+The Thing's usual views. As in its own firmware, pulling HEX (PA1) or BAR (PA2) low
+turns that part off, and INV (PA3) low inverts the display:
 
 ```
-' Two hex digits for b0-b7, with the bits underneath
+' Hex digits and bit cells for b0-b7, chosen by the mode pins
+DIM shown
+
 ON CHANGE
-  CLS
-  HEX 21, 2, VALUE, 2, LARGE
-  BITS 4, 21, 56, 9, VALUE
-  SHOW
+  shown = VALUE
+  Draw
 END ON
+
+ON PINS
+  Draw
+END ON
+
+SUB Draw
+  CLS
+  IF PIN(PA1) AND PIN(PA2) THEN       ' both shown
+    HEX 21, 2, shown, 2, LARGE
+    BITS 4, 21, 56, 9, shown
+  ELSEIF PIN(PA1) THEN                ' BAR pulled low: big digits only
+    HEX 16, 2, shown, 2, BIG
+  ELSEIF PIN(PA2) THEN                ' HEX pulled low: bit cells only
+    BITS 0, 8, 64, 16, shown
+  END IF
+  INVERSE NOT PIN(PA3)
+  SHOW
+END SUB
 ```
 
 Michael's two latched rows:
