@@ -1,6 +1,6 @@
 # Wren firmware design: kernel, language and program storage
 
-**Status: draft for Michael's approval. No firmware code until it is approved.**
+**Status: approved and built: the kernel, the compiler and the debugger run on the emulated Thing.**
 
 Decided so far: programs are **bytecode** run by a virtual machine (VM); the language is
 **BASIC-flavoured**; programs react to the outside world through **event handlers**; a
@@ -112,8 +112,8 @@ costs few bytes:
 - Constants 0-15, `VALUE`, the pin names and the font names are 1-byte opcodes; other
   constants up to 255 take 2 bytes. The first 16 variables are loaded and stored with
   1-byte opcodes.
-- Optional arguments are filled in by the compiler only when given; the kernel supplies
-  the defaults (`PIXEL x,y` means colour 1).
+- Optional arguments that are left out are filled in by the compiler with a 1-byte
+  constant (`PIXEL x,y` means colour 1).
 - `IF` and loops use short relative jumps (2 bytes) wherever they reach.
 
 For example, `HEX 21, 2, shown, 2, LARGE` is 7 bytes. The whole "usual views" program
@@ -156,12 +156,17 @@ Structured BASIC: no line numbers, one statement per line, keywords in any case,
 `'` starts a comment.
 
 - **Values:** 16-bit signed integers. `DIM name` for a variable, `DIM name(n)` for an
-  array of 16-bit values, `DIM name(n) AS BYTE` for bytes. `CONST name = value`.
-  Strings appear only as literals in `TEXT`.
-- **Statements:** `name = expr`, `IF ... THEN ... ELSEIF ... ELSE ... END IF`,
+  array of n 16-bit values, `name(0)` to `name(n-1)`, `DIM name(n) AS BYTE` for bytes.
+  Arrays are global; `DIM` inside a SUB or handler makes locals. `CONST name = value`.
+  Strings appear only as literals in `TEXT`. Numbers: `123`, `&H1F` or `$1F`, `&B101`.
+- **Truth:** comparisons give -1 (TRUE) or 0 (FALSE). `NOT` is logical (0 becomes -1,
+  anything else 0); `AND`, `OR`, `XOR` work on bits. `ON`/`OFF` are 1/0.
+- **Statements:** `name = expr`, `IF ... THEN ... ELSEIF ... ELSE ... END IF` (or on one
+  line: `IF c THEN statement [ELSE statement]`),
   `WHILE ... WEND`, `FOR i = a TO b [STEP s] ... NEXT`, `SUB name(params) ... END SUB`,
   `FUNCTION name(params) ... END FUNCTION`, `CALL name(args)` (or just `name args`),
-  `RETURN [expr]`, `EXIT FOR/WHILE/SUB`.
+  `RETURN [expr]`, `EXIT FOR/WHILE/SUB/FUNCTION/ON`. `:` separates statements on a line;
+  `'` or `REM` starts a comment. `FOR ... STEP` needs a constant step.
 - **Operators:** `+ - * / MOD`, `AND OR XOR NOT`, `SHL SHR`, `= <> < <= > >=`.
 
 Built-in services:
@@ -173,6 +178,7 @@ Built-in services:
 | Fonts | `SMALL` (3x5: 16 columns x 5 rows), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 4 characters on one line) |
 | Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023) |
 | Time | `MILLIS` (wraps every 65.5 s), `WAIT ms` |
+| Pins | `ANALOG` returns 0 for now: the emulator has no ADC yet |
 | Storage | `EEREAD(n)`, `EEWRITE n, v` for the 24 setting bytes, n = 0-23 (only writes when the value changes) |
 | Other | `RND(n)`, `ABS(v)`, `MIN(a,b)`, `MAX(a,b)`, `LOST` |
 
@@ -247,17 +253,30 @@ SUB Draw
 END SUB
 ```
 
+## The Thing's own behaviour
+
+`programs/OledThing.bas` recreates the OLED Thing's firmware in Wren BASIC: the HEX,
+BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold. It is about
+310 bytes (5 blocks). Its tests check every mode's pixels on the emulated Thing.
+
 ## How it is built and tested
 
-- **Kernel** in STM8 assembly under `firmware/kernel/`, assembled by Wren.Asm.
-- **Wren.Script** (C#): the BASIC compiler and a bytecode disassembler, with its own
-  tests.
-- **Wren.Emu** gains block programming, the UBC lock and wear counted per 64-byte
-  block, so the FAT can be tested for thousands of uploads in the emulator.
+- **Kernel** in STM8 assembly under `firmware/kernel/`, assembled by Wren.Asm when Wren
+  starts. It is about 5.1 KB and must end below the store at $9400 (a test checks).
+- **Wren.Script** (C#): the BASIC compiler, the FAT planner (`ProgramStore`), a bytecode
+  disassembler, and `ThingSession`, which runs a program on the emulated Thing for the
+  debugger: stepping by statement, line breakpoints, globals and locals.
+- **Wren** shows the program with the current line, breakpoints, variables, the running
+  handler and its `VALUE`, and the store's write counts. The assembly level stays hidden.
+- **Still to do in Wren.Emu:** block programming and the UBC lock, for the host upload
+  path.
 - **Tests** compile BASIC programs, run them on the emulated Thing with the kernel, and
   compare the OLED's pixels; FAT tests upload thousands of programs and check the
   wear spread, and that a failed upload is caught by the read-back.
 
 ## Open questions
+
+- **Kernel size.** The kernel fills its space to within a few bytes. Shrinking it (or
+  moving the store boundary) comes before adding the host upload loader and `ANALOG`.
 
 1. **Host upload protocol** over b0-b7 and PD3: settle when the Reggie side is built.

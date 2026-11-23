@@ -104,6 +104,9 @@ public sealed class Stm8Device : IBus
     /// <summary>Addresses where Run stops before executing the instruction.</summary>
     public HashSet<int> Breakpoints { get; } = new();
 
+    /// <summary>When set, a breakpoint only stops Run if this returns true for its address.</summary>
+    public Func<int, bool>? BreakpointFilter { get; set; }
+
     /// <summary>The SWIM pin (PD1) is a GPIO when CFG_GCR.SWD is set.</summary>
     public bool SwimDisabled => (cfgGcr & 1) != 0;
 
@@ -186,7 +189,8 @@ public sealed class Stm8Device : IBus
         bool first = true;
         while (HsiTicks < end)
         {
-            if (!first && Cpu.State == CpuState.Running && Breakpoints.Contains(Cpu.PC)) return StopReason.Breakpoint;
+            if (!first && Cpu.State == CpuState.Running && Breakpoints.Contains(Cpu.PC)
+                && (BreakpointFilter?.Invoke(Cpu.PC) ?? true)) return StopReason.Breakpoint;
             first = false;
             Step();
             if (Cpu.Fault != null) return StopReason.Fault;

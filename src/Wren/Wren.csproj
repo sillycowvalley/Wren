@@ -18,6 +18,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\firmware\**" LinkBase="firmware" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\programs\**" LinkBase="programs" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Wren.Asm\Wren.Asm.csproj" />
     <ProjectReference Include="..\Wren.Emu\Wren.Emu.csproj" />
     <ProjectReference Include="..\Wren.Script\Wren.Script.csproj" />

@@ -21,9 +21,14 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   describe compatibility is fine.
 
 ## Layout
-- `src/Wren` (Avalonia app), `src/Wren.Asm`, `src/Wren.Emu`; tests in `tests/`.
-- `firmware/include/stm8s003.inc` (register addresses), `firmware/demo/HexDemo.asm`.
-- `docs/ProjectPlan.md` (plan, state, open questions), `docs/OledThing.md` (pins).
+- `src/Wren` (Avalonia app), `src/Wren.Asm`, `src/Wren.Emu`, `src/Wren.Script` (BASIC
+  compiler, FAT, debugging session); tests in `tests/`.
+- `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
+  `firmware/demo/HexDemo.asm` (an early test program).
+- `programs/` holds Wren BASIC programs; `OledThing.bas` is the Thing's own behaviour.
+- `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
+  `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` (pins).
+- Michael works in Wren BASIC; the app never shows assembly or CPU registers.
 
 ## Reference data in the tests
 - `tests/Wren.Asm.Tests/Data/Encodings.txt`: bytes from sdasstm8 (SDCC 4.2.0) for every

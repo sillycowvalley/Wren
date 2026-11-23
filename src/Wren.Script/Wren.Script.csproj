@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Wren.Asm\Wren.Asm.csproj" />
+    <ProjectReference Include="..\Wren.Emu\Wren.Emu.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

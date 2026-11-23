@@ -2,8 +2,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:Wren"
         x:Class="Wren.MainWindow"
+        x:DataType="local:MainWindow"
         Title="Wren"
-        Width="1000" Height="640" MinWidth="760" MinHeight="520">
+        Width="1240" Height="760" MinWidth="980" MinHeight="600">
 
   <Window.Styles>
     <Style Selector="TextBlock.heading">
@@ -13,7 +14,10 @@
     <Style Selector="ToggleButton.bit">
       <Setter Property="Width" Value="44" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="FontFamily" Value="Consolas, Menlo, monospace" />
+    </Style>
+    <Style Selector="TextBlock.code">
+      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Menlo, monospace" />
+      <Setter Property="FontSize" Value="13" />
     </Style>
   </Window.Styles>
 
@@ -21,13 +25,13 @@
     <!-- Toolbar -->
     <Border DockPanel.Dock="Top" Padding="8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
       <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="OpenButton" Content="Open…" Click="OnOpen" ToolTip.Tip="Open an assembly source (.asm) or an image (.s19, .hex)" />
-        <Button Name="ReloadButton" Content="Reload" Click="OnReload" ToolTip.Tip="Assemble and load again (also happens when the file is saved)" />
+        <Button Content="Open…" Click="OnOpen" ToolTip.Tip="Open a Wren BASIC program (.bas)" />
+        <Button Content="Reload" Click="OnReload" ToolTip.Tip="Compile and upload again (also happens when the file is saved)" />
         <Border Width="12" />
         <Button Name="RunButton" Content="Run" Click="OnRun" MinWidth="64" />
-        <Button Name="StepButton" Content="Step" Click="OnStep" ToolTip.Tip="Run one instruction" />
-        <Button Name="ResetButton" Content="Reset" Click="OnReset" ToolTip.Tip="Pull NRST low: the chip restarts, RAM and the OLED keep their contents" />
-        <Button Name="PowerButton" Content="Power cycle" Click="OnPowerCycle" ToolTip.Tip="Power off and on: RAM and the OLED are cleared" />
+        <Button Name="StepButton" Content="Step" Click="OnStep" ToolTip.Tip="Run one BASIC statement" />
+        <Button Content="Reset" Click="OnReset" ToolTip.Tip="Pull NRST low: the program starts again; RAM and the OLED keep their contents" />
+        <Button Content="Power cycle" Click="OnPowerCycle" ToolTip.Tip="Power off and on: RAM and the OLED are cleared" />
         <Border Width="12" />
         <ComboBox Name="BoardBox" SelectionChanged="OnBoardChanged" MinWidth="250">
           <ComboBoxItem>OLED Thing (STM8S003F3)</ComboBoxItem>
@@ -42,60 +46,88 @@
       <TextBlock Name="StatusText" Opacity="0.8" />
     </Border>
 
-    <!-- Right: CPU and messages -->
-    <Border DockPanel.Dock="Right" Width="300" Padding="12" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-      <DockPanel>
-        <StackPanel DockPanel.Dock="Top">
-          <TextBlock Classes="heading" Text="CPU" Margin="0,0,0,6" />
-          <TextBlock Name="RegistersText" FontFamily="Consolas, Menlo, monospace" />
-          <TextBlock Classes="heading" Text="Flash and EEPROM wear" />
-          <TextBlock Name="WearText" FontFamily="Consolas, Menlo, monospace" FontSize="11" TextWrapping="Wrap" />
-          <TextBlock Classes="heading" Text="Messages" />
+    <!-- Left: the board -->
+    <Border DockPanel.Dock="Left" Padding="16" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+      <ScrollViewer>
+        <StackPanel Spacing="4">
+          <Border CornerRadius="6" Padding="10" Background="#1B2A4A" HorizontalAlignment="Left">
+            <local:OledView Name="Oled" Width="448" Height="224" />
+          </Border>
+
+          <TextBlock Classes="heading" Text="Inputs b7 – b0" />
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <ToggleButton Classes="bit" Name="B7" Content="b7" Click="OnBitClicked" />
+            <ToggleButton Classes="bit" Name="B6" Content="b6" Click="OnBitClicked" />
+            <ToggleButton Classes="bit" Name="B5" Content="b5" Click="OnBitClicked" />
+            <ToggleButton Classes="bit" Name="B4" Content="b4" Click="OnBitClicked" />
+            <ToggleButton Classes="bit" Name="B3" Content="b3" Click="OnBitClicked" />
+            <ToggleButton Classes="bit" Name="B2" Content="b2" Click="OnBitClicked" />
+            <ToggleButton Classes="bit" Name="B1" Content="b1" Click="OnBitClicked" />
+            <ToggleButton Classes="bit" Name="B0" Content="b0" Click="OnBitClicked" />
+            <TextBox Name="HexBox" Width="56" Margin="8,0,0,0" Watermark="hex" KeyUp="OnHexKeyUp"
+                     ToolTip.Tip="Type a value in hex and press Enter" />
+          </StackPanel>
+
+          <TextBlock Classes="heading" Text="Mode pins (checked = pulled to GND)" />
+          <StackPanel Orientation="Horizontal" Spacing="16">
+            <CheckBox Name="HexPin" Content="HEX (PA1)" Click="OnPinClicked" />
+            <CheckBox Name="BarPin" Content="BAR (PA2)" Click="OnPinClicked" />
+            <CheckBox Name="InvPin" Content="INV (PA3)" Click="OnPinClicked" />
+          </StackPanel>
+
+          <TextBlock Classes="heading" Text="Spare pins (checked = held low; the button pulses low)" />
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <CheckBox Name="Pd2Pin" Content="PD2" Click="OnPinClicked" />
+            <Button Name="Pd2Button" Content="Pulse" />
+            <Border Width="16" />
+            <CheckBox Name="Pd3Pin" Content="PD3" Click="OnPinClicked" />
+            <Button Name="Pd3Button" Content="Pulse" />
+          </StackPanel>
         </StackPanel>
-        <ListBox Name="MessagesList" FontSize="12">
-          <ListBox.ItemTemplate>
-            <DataTemplate x:DataType="x:String">
-              <TextBlock Text="{Binding}" TextWrapping="Wrap" />
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
-      </DockPanel>
+      </ScrollViewer>
     </Border>
 
-    <!-- Centre: the board -->
-    <ScrollViewer>
-      <StackPanel Margin="16" Spacing="4">
-        <Border CornerRadius="6" Padding="10" Background="#1B2A4A" HorizontalAlignment="Left">
-          <local:OledView Name="Oled" Width="512" Height="256" />
-        </Border>
+    <!-- Right: program, variables, messages -->
+    <Grid ColumnDefinitions="*,320" Margin="0">
+      <DockPanel Grid.Column="0">
+        <TextBlock DockPanel.Dock="Top" Classes="heading" Margin="12,8,0,4" Text="Program (click a line for a breakpoint)" />
+        <ScrollViewer Name="SourceScroll" HorizontalScrollBarVisibility="Auto">
+          <ItemsControl Name="SourceList">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:SourceLine">
+                <Border Background="{Binding Background}" Padding="4,0" Tapped="OnLineTapped" Cursor="Hand">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Classes="code" Width="18" Foreground="#D03030" Text="{Binding Marker}" />
+                    <TextBlock Classes="code" Width="36" Opacity="0.5" Text="{Binding Number}" />
+                    <TextBlock Classes="code" Text="{Binding Text}" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </DockPanel>
 
-        <TextBlock Classes="heading" Text="Inputs b7 – b0" />
-        <StackPanel Orientation="Horizontal" Spacing="4">
-          <ToggleButton Classes="bit" Name="B7" Content="b7" Click="OnBitClicked" />
-          <ToggleButton Classes="bit" Name="B6" Content="b6" Click="OnBitClicked" />
-          <ToggleButton Classes="bit" Name="B5" Content="b5" Click="OnBitClicked" />
-          <ToggleButton Classes="bit" Name="B4" Content="b4" Click="OnBitClicked" />
-          <ToggleButton Classes="bit" Name="B3" Content="b3" Click="OnBitClicked" />
-          <ToggleButton Classes="bit" Name="B2" Content="b2" Click="OnBitClicked" />
-          <ToggleButton Classes="bit" Name="B1" Content="b1" Click="OnBitClicked" />
-          <ToggleButton Classes="bit" Name="B0" Content="b0" Click="OnBitClicked" />
-          <TextBox Name="HexBox" Width="64" Margin="12,0,0,0" FontFamily="Consolas, Menlo, monospace"
-                   Watermark="hex" KeyUp="OnHexKeyUp" ToolTip.Tip="Type a value in hex and press Enter" />
-        </StackPanel>
-
-        <TextBlock Classes="heading" Text="Mode pins (checked = pulled to GND)" />
-        <StackPanel Orientation="Horizontal" Spacing="16">
-          <CheckBox Name="HexPin" Content="HEX (PA1)" Click="OnModePinClicked" />
-          <CheckBox Name="BarPin" Content="BAR (PA2)" Click="OnModePinClicked" />
-          <CheckBox Name="InvPin" Content="INV (PA3)" Click="OnModePinClicked" />
-        </StackPanel>
-
-        <TextBlock Classes="heading" Text="Spare pins (held low while pressed)" />
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <Button Name="Pd2Button" Content="PD2" Width="64" HorizontalContentAlignment="Center" />
-          <Button Name="Pd3Button" Content="PD3" Width="64" HorizontalContentAlignment="Center" />
-        </StackPanel>
-      </StackPanel>
-    </ScrollViewer>
+      <Border Grid.Column="1" Padding="12" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top">
+            <TextBlock Classes="heading" Text="Now" Margin="0,0,0,6" />
+            <TextBlock Name="NowText" TextWrapping="Wrap" />
+            <TextBlock Classes="heading" Text="Variables" />
+            <TextBlock Name="VariablesText" Classes="code" TextWrapping="Wrap" />
+            <TextBlock Classes="heading" Text="Program and flash" />
+            <TextBlock Name="StoreText" TextWrapping="Wrap" FontSize="12" />
+            <TextBlock Classes="heading" Text="Messages" />
+          </StackPanel>
+          <ListBox Name="MessagesList" FontSize="12">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="x:String">
+                <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Grid>
   </DockPanel>
 </Window>

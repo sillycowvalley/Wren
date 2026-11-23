@@ -8,22 +8,55 @@ SWIM are ST's names, used here to describe compatibility.
 
 ## What is in it
 
-- **Wren**: the app. It assembles a program, runs it on an emulated OLED Thing, and
-  shows the OLED, the inputs, the CPU and how many times the firmware wrote to flash
-  and EEPROM. It reloads when the source file is saved.
+- **Wren**: the app. It compiles a Wren BASIC program, uploads it to an emulated OLED
+  Thing and runs it: the OLED, the inputs and pins, the program with the current line,
+  stepping by statement, breakpoints, variables, and the flash write counts. It
+  reloads when the program file is saved.
+- **Wren BASIC**: the Thing's language. Programs react to events (`ON CHANGE`,
+  `ON LATCH PD3 RISING WHILE PD2 LOW`, `ON EVERY 100` ...) and draw with statements
+  such as `HEX`, `BITS`, `TEXT` and `BOX`. See [docs/Design.md](docs/Design.md).
+- **The kernel**: the Thing's firmware in STM8 assembly: the bytecode VM, graphics,
+  fonts, events and the program loader. Programs live in a wear-levelled store
+  described by a table in EEPROM.
+- **Wren.Script**: the BASIC compiler and the debugger's engine.
 - **Wren.Asm**: an STM8 assembler using ST's instruction syntax. It writes Intel HEX
   and S-records, which ST Visual Programmer can load.
 - **Wren.Emu**: an STM8 emulator with the SSD1315 OLED and the OLED Thing board.
-- **firmware/**: test programs in STM8 assembly. `demo/HexDemo.asm` shows the inputs
-  as two large hex digits.
+- **programs/**: Wren BASIC programs. `OledThing.bas` is the Thing's own behaviour.
 
-Planned: **Wren.Link** (programming over an ST-LINK V2) and **Wren.Script** (a token
-language for the 128-byte EEPROM). See [docs/ProjectPlan.md](docs/ProjectPlan.md).
+Planned: **Wren.Link** (programming over an ST-LINK V2). See
+[docs/ProjectPlan.md](docs/ProjectPlan.md).
 
 ## Building
 
 Open `Wren.sln` in Visual Studio 2022 (with the .NET 8 SDK), set **Wren** as the startup
 project and run it. The tests are in Test Explorer.
+
+## A taste of Wren BASIC
+
+```
+' Two rows: PD3 latches the top one, PD2 the bottom one
+DIM top, bottom
+
+ON LATCH PD3
+  top = VALUE
+  Draw
+END ON
+
+ON LATCH PD2
+  bottom = VALUE
+  Draw
+END ON
+
+SUB Draw
+  CLS
+  HEX 0, 0, top, 2, LARGE
+  HEX 0, 16, bottom, 2, LARGE
+  BITS 30, 2, 32, 12, top
+  BITS 30, 18, 32, 12, bottom
+  SHOW
+END SUB
+```
 
 ## Assembler syntax
 

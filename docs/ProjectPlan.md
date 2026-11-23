@@ -1,6 +1,6 @@
 # Wren project plan
 
-**Status: approved. Step 1 (assembler, emulator and app) is built and tested; the hardware is on its way.**
+**Status: approved. Step 1 (assembler, emulator, app) and the firmware in emulation (kernel, Wren BASIC, debugger) are built and tested; the hardware is on its way.**
 
 Wren is a C# / .NET 8 development environment for STM8S003F3-class microcontrollers.
 It is driven through an ST-LINK V2 over SWIM. The first target is the Digicool
@@ -34,15 +34,17 @@ A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 
 | Project | What it is | State |
 |---|---|---|
-| **Wren** | The Avalonia app (Windows, Mac, Linux). | Runs firmware on the emulated Thing. |
+| **Wren** | The Avalonia app (Windows, Mac, Linux). | Runs and debugs Wren BASIC on the emulated Thing. |
 | **Wren.Asm** | An STM8 assembler, ST's syntax (PM0044). | Done. Every instruction form checked against sdasstm8. |
 | **Wren.Emu** | An STM8 emulator, the SSD1315 model and the OLED Thing board. | Done for the Thing's needs. CPU checked against ucsim. |
 | **Wren.Link** | USB and SWIM to the ST-LINK V2, replacing STVP. | Next, when the hardware arrives. |
-| **Wren.Script** | The token language and its compiler to a 128-byte EEPROM image. | Later. |
+| **Wren.Script** | The Wren BASIC compiler, the FAT planner and the debugging session. | Done. Tested against the kernel on the emulator. |
 
 Each library has its own test project (`Wren.Asm.Tests` and so on) and stays UI-free.
-Test firmware lives in `firmware/`; `firmware/demo/HexDemo.asm` shows b0-b7 as two
-large hex digits and is what Wren opens on first run.
+The kernel lives in `firmware/kernel/`; BASIC programs in `programs/`.
+`programs/OledThing.bas` recreates the Thing's own behaviour and is what Wren opens on
+first run. The firmware design is in [Design.md](Design.md) and the bytecode in
+[Bytecode.md](Bytecode.md).
 
 ## Build order and what each step proves
 
@@ -55,11 +57,10 @@ large hex digits and is what Wren opens on first run.
    ~100k writes) without touching the flash (rated ~100). Own code, with the open-source
    stm8flash and OpenOCD as protocol references. Michael tests it on Windows against an
    S103 board first, then a Thing.
-3. **The firmware: the graphics library and the interpreter.** It proves the design fits
-   in 8 KB flash and 1 KB RAM. Developed in the emulator, then run on the development
-   board with a real OLED, then flashed once to each Thing.
-4. **Wren.Script.** A useful program fits in 128 bytes of EEPROM and can be changed
-   without reflashing.
+3. **The firmware (done in emulation).** The kernel (VM, graphics, events, FAT loader)
+   fits in 8 KB flash and 1 KB RAM beside a 3 KB program store. Next: run it on the
+   development board with a real OLED, then flash it once to each Thing.
+4. **Wren BASIC (done).** The Thing's own behaviour is about 310 bytes of BASIC.
 5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug
    module, as OpenOCD's STM8 support does), and a home-made SWIM programmer on a Teensy
    4.1 or an RP2040 (whose PIO suits SWIM's timing; run the Thing at 3.3 V with it).
