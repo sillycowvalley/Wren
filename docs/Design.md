@@ -35,10 +35,10 @@ Proposed layout (the split is settled once the kernel's real size is known):
 | Blocks | Address | Size | Use |
 |---|---|---|---|
 | 0-1 | $8000-$807F | 128 B | Interrupt vectors (locked) |
-| 2-71 | $8080-$91FF | 4.4 KB | Kernel (locked) |
-| 72-127 | $9200-$9FFF | 3.5 KB | Program store: 56 blocks |
-| EEPROM | $4000-$4077 | 120 B | The FAT: header, block chain and write counts |
-| EEPROM | $4078-$407F | 8 B | Program settings (`EEREAD`/`EEWRITE`) |
+| 2-79 | $8080-$93FF | 4.9 KB | Kernel (locked); it is about 5.1 KB with the vectors |
+| 80-127 | $9400-$9FFF | 3 KB | Program store: 48 blocks |
+| EEPROM | $4000-$4067 | 104 B | The FAT: header, block chain and write counts |
+| EEPROM | $4068-$407F | 24 B | Program settings (`EEREAD`/`EEWRITE`) |
 
 ## Wear levelling: the FAT in EEPROM
 
@@ -47,19 +47,19 @@ A program may sit in any blocks of the store, in any order. The EEPROM describes
 | EEPROM | Bytes | Contents |
 |---|---|---|
 | $4000 | 1 | Format version |
-| $4001 | 1 | First block of the program (0-55), or $FF for no program |
+| $4001 | 1 | First block of the program (0-47), or $FF for no program |
 | $4002 | 2 | Length of the bytecode in bytes |
 | $4004 | 2 | CRC-16 of the bytecode |
 | $4006 | 2 | Upload count |
-| $4008 | 56 | Chain: for each block, the next block of the program (0-55), $FE for the last one, $FF for free |
-| $4040 | 56 | Write counts: how many times each block has been written |
-| $4078 | 8 | Free for program settings |
+| $4008 | 48 | Chain: for each block, the next block of the program (0-47), $FE for the last one, $FF for free |
+| $4038 | 48 | Write counts: how many times each block has been written |
+| $4068 | 24 | Free for program settings |
 
 Writing a program (Wren does this over SWIM and reads everything back):
 
-1. Read the FAT. The blocks the new program needs are taken from all 56, least-written
+1. Read the FAT. The blocks the new program needs are taken from all 48, least-written
    first. The old program is replaced, so all its blocks are free for the new one: a
-   program can use the whole store (3.5 KB).
+   program can use the whole store (3 KB).
 2. Write the program's blocks; each is one block write, one wear cycle.
 3. Write the new FAT: chain, header and the raised write counts.
 4. Read back the blocks and the FAT and compare. If anything differs, do it again.
@@ -67,15 +67,15 @@ Writing a program (Wren does this over SWIM and reads everything back):
 At start-up the kernel checks the CRC, follows the chain once and builds a RAM table
 from program address to physical block, so the VM finds any byte with one lookup.
 
-How far this stretches the ~100 writes (56-block store). Choosing the least-written
-blocks keeps all 56 within one write of each other:
+How far this stretches the ~100 writes (48-block store). Choosing the least-written
+blocks keeps all 48 within one write of each other:
 
 | Program size | Blocks | Uploads before any block reaches 100 writes |
 |---|---|---|
-| 256 B | 4 | about 1,400 |
-| 512 B | 8 | about 700 |
-| 1 KB | 16 | about 350 |
-| 3.5 KB (largest) | 56 | 100 |
+| 128 B | 2 | about 2,400 |
+| 256 B | 4 | about 1,200 |
+| 1 KB | 16 | about 300 |
+| 3 KB (largest) | 48 | 100 |
 
 Wren shows the write counts after every upload. The EEPROM itself is rated ~100k
 writes, so the FAT outlasts the flash many times over.
@@ -117,7 +117,7 @@ costs few bytes:
 - `IF` and loops use short relative jumps (2 bytes) wherever they reach.
 
 For example, `HEX 21, 2, shown, 2, LARGE` is 7 bytes. The whole "usual views" program
-below comes to about 100 bytes: 2 blocks, so about 2,800 uploads before a block
+below comes to about 100 bytes: 2 blocks, so about 2,400 uploads before a block
 reaches its rating.
 
 RAM budget (1 KB):
@@ -125,8 +125,7 @@ RAM budget (1 KB):
 | Bytes | Use |
 |---|---|
 | 256 | Frame buffer (64x32, 1 bit per pixel) |
-| 200 | Program variables and arrays |
-| 56 | Program address to block table |
+| 256 | Program variables and arrays, sharing with the block map: the map takes one byte per block the program uses (1-48) and the variables get the rest (255-208) |
 | 128 | VM value stack |
 | 64 | VM call stack |
 | 32 | Event queue |
@@ -142,7 +141,7 @@ nothing.
 | Handler | When it runs |
 |---|---|
 | `ON START` | Once, after reset |
-| `ON LATCH pin` | A falling edge on PA1-PA3 or PD2-PD3. The interrupt copies b0-b7 at once; the handler gets it as `VALUE` |
+| `ON LATCH pin [FALLING\|RISING\|BOTH] [WHILE pin LOW\|HIGH]` | An edge on PA1-PA3, PD2 or PD3 (falling unless stated), optionally only while another of those pins is at a level, e.g. `ON LATCH PD3 RISING WHILE PD2 LOW` for a clock and /WE. The interrupt reads b0-b7 and the pins at once; the handler gets b0-b7 as `VALUE`. The host must hold them steady for the 1-2 µs this takes |
 | `ON PRESS pin` / `ON RELEASE pin` | A button on PA1-PA3, PD2 or PD3, debounced (20 ms) |
 | `ON PINS` | Any of PA1-PA3, PD2 or PD3 changes, debounced (20 ms), and once after `ON START` |
 | `ON CHANGE` | b0-b7 differ from their last value (checked every millisecond), and once after `ON START`; `VALUE` holds the byte |
@@ -169,12 +168,12 @@ Built-in services:
 
 | Area | Statements and functions |
 |---|---|
-| Display | `CLS`, `SHOW` (send the frame buffer to the OLED), `PIXEL x,y[,c]`, `LINE x1,y1,x2,y2[,c]`, `BOX x,y,w,h[,c]`, `FILL x,y,w,h[,c]`, `INVERT x,y,w,h`, `CONTRAST n`, `INVERSE on` |
+| Display | `CLS`, `SHOW` (send the frame buffer to the OLED), `PIXEL x,y[,c]`, `LINE x1,y1,x2,y2[,c]`, `BOX x,y,w,h[,c]`, `FILL x,y,w,h[,c]`, `INVERT x,y,w,h`, `CONTRAST n`, `INVERSE on`, `FLIP on` (upside down, for a Thing mounted the other way up) |
 | Text and numbers | `TEXT x,y,"text"[,font]`, `HEX x,y,v,digits[,font]`, `DEC x,y,v[,font]`, `BIN x,y,v,bits[,font]`, `BITS x,y,w,h,v` (eight cells, b7 on the left: filled for a 1 bit, outlined for a 0, as the Thing's own BAR view), `BAR x,y,w,h,v,max` |
 | Fonts | `SMALL` (3x5: 16 columns x 5 rows), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 4 characters on one line) |
 | Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023) |
 | Time | `MILLIS` (wraps every 65.5 s), `WAIT ms` |
-| Storage | `EEREAD(n)`, `EEWRITE n, v` for the 8 setting bytes, n = 0-7 (only writes when the value changes) |
+| Storage | `EEREAD(n)`, `EEWRITE n, v` for the 24 setting bytes, n = 0-23 (only writes when the value changes) |
 | Other | `RND(n)`, `ABS(v)`, `MIN(a,b)`, `MAX(a,b)`, `LOST` |
 
 `LARGE` and `BIG` are drawn by scaling the 5x7 font at run time, which saves the 1 KB a
