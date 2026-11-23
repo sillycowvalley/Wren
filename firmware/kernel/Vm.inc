@@ -857,9 +857,39 @@ pin_zero:
         clrw x
         jp vpush
 
-; ANALOG is not done yet: the emulator has no ADC. It returns 0.
+; ANALOG p: 0-1023 from PD2 (AIN3) or PD3 (AIN4); other pins give 0. The pin's pull-up
+; is turned off, since it would pull the voltage up: the pin is then an analog input.
 sv_analog:
         call vpop
+        ld a,xl
+        cp a,#3                     ; PD2 is pin 3 and AIN3, PD3 is pin 4 and AIN4
+        jrult analog_zero
+        cp a,#5
+        jruge analog_zero
+        ld ADC_CSR,a                ; channel; clears EOC
+        dec a                       ; PD2 -> bit 2, PD3 -> bit 3
+        clrw x
+        ld xl,a
+        ld a,(bit_masks,x)
+        cpl a
+        and a,PD_CR1
+        ld PD_CR1,a                 ; pull-up off
+        mov ADC_CR2,#$08            ; right-aligned
+        bset ADC_CR1,#0             ; wake up (or start, if already awake)
+        ld a,#40
+analog_settle:
+        dec a                       ; let it settle: one conversion time, ~2 us
+        jrne analog_settle
+        bset ADC_CR1,#0             ; start
+analog_wait:
+        btjf ADC_CSR,#7,analog_wait
+        ld a,ADC_DRL                ; low byte first when right-aligned
+        ld xl,a
+        ld a,ADC_DRH
+        ld xh,a
+        bres ADC_CR1,#0             ; power down
+        jp vpush
+analog_zero:
         clrw x
         jp vpush
 

@@ -61,8 +61,9 @@ public sealed class Stm8Device : IBus
         Tim4 = new Tim4(Itc);
         I2c = new I2cPeripheral(Itc);
         FlashControl = new FlashController(Itc);
+        Adc = new Adc(Itc, ChannelLevel);
 
-        foreach (var p in new Peripheral[] { PortA, PortB, PortC, PortD, PortE, PortF, Exti, Clock, Tim4, I2c, FlashControl })
+        foreach (var p in new Peripheral[] { PortA, PortB, PortC, PortD, PortE, PortF, Exti, Clock, Tim4, I2c, FlashControl, Adc })
         {
             peripherals.Add(p);
             for (int i = 0; i < p.Size; i++) registerMap[p.BaseAddress - RegisterStart + i] = p;
@@ -86,6 +87,30 @@ public sealed class Stm8Device : IBus
     public Tim4 Tim4 { get; }
     public I2cPeripheral I2c { get; }
     public FlashController FlashControl { get; }
+    public Adc Adc { get; }
+
+    /// <summary>
+    /// Analog levels (0-1023) on the ADC channels, by channel number. A channel with no
+    /// level set reads its pin's digital level: 1023 high, 0 low.
+    /// </summary>
+    public int?[] AnalogLevels { get; } = new int?[16];
+
+    /// <summary>The pin of each ADC channel on the 20-pin parts: AIN2 PC4, AIN3 PD2, AIN4 PD3, AIN5 PD5, AIN6 PD6.</summary>
+    private (GpioPort Port, int Pin)? ChannelPin(int channel) => channel switch
+    {
+        2 => (PortC, 4),
+        3 => (PortD, 2),
+        4 => (PortD, 3),
+        5 => (PortD, 5),
+        6 => (PortD, 6),
+        _ => null,
+    };
+
+    private int ChannelLevel(int channel)
+    {
+        if (AnalogLevels[channel] is int level) return level;
+        return ChannelPin(channel) is { } p && p.Port.Level(p.Pin) ? 1023 : 0;
+    }
 
     /// <summary>How many times firmware has written each EEPROM byte since loading.</summary>
     public int[] EepromWrites { get; }
@@ -287,7 +312,7 @@ public sealed class Stm8Device : IBus
             >= 0x5230 and <= 0x523A => "UART1",
             >= 0x5250 and <= 0x527F => "TIM1",
             >= 0x5300 and <= 0x532F => "TIM2",
-            >= 0x53E0 and <= 0x540F => "ADC1",
+            >= 0x53E0 and <= 0x540F => "ADC1 (buffered or watchdog modes)",
             _ => $"register ${address:X4}",
         };
         UnmodelledPeripherals.Add(name);

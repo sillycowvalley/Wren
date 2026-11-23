@@ -72,6 +72,12 @@ public sealed class OledThing
     /// <summary>PD3 on J5: true pulls it to GND.</summary>
     public bool Pd3Low { get => Low('D', 3); set => SetLow('D', 3, value); }
 
+    /// <summary>An analog level (0-1023) on PD2 (AIN3), or null for its digital level.</summary>
+    public int? AnalogPd2 { get => Mcu.AnalogLevels[3]; set => Mcu.AnalogLevels[3] = value; }
+
+    /// <summary>An analog level (0-1023) on PD3 (AIN4), or null for its digital level.</summary>
+    public int? AnalogPd3 { get => Mcu.AnalogLevels[4]; set => Mcu.AnalogLevels[4] = value; }
+
     private bool Low(char port, int pin) => Port(port).GetExternal(pin) == PinDrive.Low;
 
     private void SetLow(char port, int pin, bool low) =>

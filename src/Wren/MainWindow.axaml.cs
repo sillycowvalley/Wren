@@ -279,6 +279,8 @@ public partial class MainWindow : Window
 
     private void OnPinClicked(object? sender, RoutedEventArgs e) => ApplyPins();
 
+    private void OnAnalogLevelChanged(object? sender, RangeBaseValueChangedEventArgs e) => ApplyPins();
+
     private void ApplyPins()
     {
         if (session == null) return;
@@ -288,6 +290,10 @@ public partial class MainWindow : Window
         board.InvLow = InvPin.IsChecked == true;
         board.Pd2Low = Pd2Pin.IsChecked == true || Pd2Button.IsPressed;
         board.Pd3Low = Pd3Pin.IsChecked == true || Pd3Button.IsPressed;
+        board.AnalogPd2 = Pd2Analog.IsChecked == true ? (int)Pd2Level.Value : null;
+        board.AnalogPd3 = Pd3Analog.IsChecked == true ? (int)Pd3Level.Value : null;
+        Pd2Text.Text = board.AnalogPd2?.ToString() ?? "";
+        Pd3Text.Text = board.AnalogPd3?.ToString() ?? "";
     }
 
     // ---- Breakpoints ----

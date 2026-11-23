@@ -35,7 +35,7 @@ Proposed layout (the split is settled once the kernel's real size is known):
 | Blocks | Address | Size | Use |
 |---|---|---|---|
 | 0-1 | $8000-$807F | 128 B | Interrupt vectors (locked) |
-| 2-79 | $8080-$93FF | 4.9 KB | Kernel (locked); it is about 4.5 KB with the vectors, so about 530 bytes are free for what it still needs |
+| 2-79 | $8080-$93FF | 4.9 KB | Kernel (locked); it is about 4.5 KB with the vectors, so about 460 bytes are free for what it still needs |
 | 80-127 | $9400-$9FFF | 3 KB | Program store: 48 blocks |
 | EEPROM | $4000-$4067 | 104 B | The FAT: header, block chain and write counts |
 | EEPROM | $4068-$407F | 24 B | Program settings (`EEREAD`/`EEWRITE`) |
@@ -176,9 +176,8 @@ Built-in services:
 | Display | `CLS`, `SHOW` (send the frame buffer to the OLED), `PIXEL x,y[,c]`, `LINE x1,y1,x2,y2[,c]`, `BOX x,y,w,h[,c]`, `FILL x,y,w,h[,c]`, `INVERT x,y,w,h`, `CONTRAST n`, `INVERSE on`, `FLIP on` (upside down, for a Thing mounted the other way up) |
 | Text and numbers | `TEXT x,y,"text"[,font]`, `HEX x,y,v,digits[,font]`, `DEC x,y,v[,font]`, `BIN x,y,v,bits[,font]`, `BITS x,y,w,h,v` (eight cells, b7 on the left: filled for a 1 bit, outlined for a 0, as the Thing's own BAR view), `BAR x,y,w,h,v,max` |
 | Fonts | `SMALL` (3x5: 16 columns x 5 rows), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 4 characters on one line) |
-| Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023) |
+| Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023; this turns the pin's pull-up off, so that pin is then an analog input, not a button) |
 | Time | `MILLIS` (wraps every 65.5 s), `WAIT ms` |
-| Pins | `ANALOG` returns 0 for now: the emulator has no ADC yet |
 | Storage | `EEREAD(n)`, `EEWRITE n, v` for the 24 setting bytes, n = 0-23 (only writes when the value changes) |
 | Other | `RND(n)`, `ABS(v)`, `MIN(a,b)`, `MAX(a,b)`, `LOST` |
 
@@ -280,8 +279,8 @@ BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold. It is
 
 ## Open questions
 
-- **The store boundary.** About 530 bytes are free below the store. The host upload
-  loader (about 250 bytes) and `ANALOG` (about 40) come next; once they are in, the
-  store could grow by the blocks still free.
+- **The store boundary.** About 460 bytes are free below the store. The host upload
+  loader (about 250 bytes) comes next; once it is in, the store could grow by the
+  blocks still free.
 
 1. **Host upload protocol** over b0-b7 and PD3: settle when the Reggie side is built.
