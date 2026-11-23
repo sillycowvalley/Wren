@@ -20,6 +20,20 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - Keep ST's names (STM8, ST-LINK, SWIM) out of the project's own names. Using them to
   describe compatibility is fine.
 
+## Layout
+- `src/Wren` (Avalonia app), `src/Wren.Asm`, `src/Wren.Emu`; tests in `tests/`.
+- `firmware/include/stm8s003.inc` (register addresses), `firmware/demo/HexDemo.asm`.
+- `docs/ProjectPlan.md` (plan, state, open questions), `docs/OledThing.md` (pins).
+
+## Reference data in the tests
+- `tests/Wren.Asm.Tests/Data/Encodings.txt`: bytes from sdasstm8 (SDCC 4.2.0) for every
+  instruction form. sdasstm8 gets forward branches to plain numbers wrong, so branch
+  offsets there are computed (target - next address).
+- `tests/Wren.Emu.Tests/Data/Flags.txt` and `Programs/CpuMix.expected`: results from
+  ucsim 0.6.4 (`sstm8 -t STM8S103`). ucsim's Z flag after DIV/DIVW is inverted against
+  PM0044; the tests skip that bit and Wren follows PM0044.
+- Regenerating needs `sdcc` and `sdcc-ucsim` in a Linux container; Michael never needs them.
+
 ## Code rules
 - Avalonia UI for the app. Each library is UI-free and has its own test project, so it
   can be tested headless.
