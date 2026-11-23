@@ -59,7 +59,9 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    S103 board first, then a Thing.
 3. **The firmware (done in emulation).** The kernel (VM, graphics, events, FAT loader)
    fits in 8 KB flash and 1 KB RAM beside a 3 KB program store. Next: run it on the
-   development board with a real OLED, then flash it once to each Thing.
+   development board with a real OLED, then flash it once to each Thing. After that,
+   programs reach a Thing over SWIM (Wren.Link) or from a host over its own pins
+   (the kernel's loader).
 4. **Wren BASIC (done).** The Thing's own behaviour is about 310 bytes of BASIC.
 5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug
    module, as OpenOCD's STM8 support does), and a home-made SWIM programmer on a Teensy
