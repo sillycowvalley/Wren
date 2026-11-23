@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Wren.Asm\Wren.Asm.csproj" />
     <ProjectReference Include="..\Wren.Emu\Wren.Emu.csproj" />
+    <ProjectReference Include="..\Wren.Script\Wren.Script.csproj" />
   </ItemGroup>
 
 </Project>
