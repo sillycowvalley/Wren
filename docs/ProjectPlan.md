@@ -16,6 +16,17 @@ A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 3. **The OLED Thing.** Each Thing is flashed once with the finished firmware. After that,
    changes go to its EEPROM only.
 
+## Hardware (ordered)
+
+- **Development board:** STM8S103F3P6 "minimum system" boards. They have the same core,
+  peripherals and pins as the S003, including I2C on PB4/PB5, so the same binary runs on
+  both. 10 KB flash rated ~10k writes. The board's test LED is usually on PB5 (SDA);
+  remove it if I2C misbehaves. On arrival, confirm each chip is a real S103: in STVP with
+  the device set to STM8S103F3, write flash above 8 KB and read it back.
+- **OLED:** 0.49" 64x32 I2C modules, the same as the Thing's.
+- **Programmer:** ST-LINK V2 clones. They supply 3.3 V or 5 V to the target. Check the
+  case's pin labels against the real wiring before first use.
+
 ## Parts
 
 | Project | What it is |
@@ -60,12 +71,6 @@ Each library has its own test project (`Wren.Link.Tests` and so on) and stays UI
 
 ## Open questions
 
-0. **Which development board.** The recommendation is the STM8S103F3P6 "minimum system"
-   board. It has the same core, peripherals and pins as the S003, including I2C on
-   PB4/PB5, so the same binary runs on both. It has 10 KB flash rated ~10k writes, and it
-   costs a few dollars. Its test LED is usually on PB5 (SDA); remove it. The alternative
-   is the NUCLEO-8S207K8. It has a built-in ST-LINK and much more room, but its I2C is on
-   different pins (PE1/PE2), so its binary would differ from the Thing's.
 1. **The USB driver (first).** Can Wren open the ST-LINK through ST's installed Windows
    driver, via WinUSB P/Invoke or LibUsbDotNet? Or does it need a WinUSB driver
    installed with Zadig, which would then stop STVP working? Mac and Linux would use
