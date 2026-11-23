@@ -3,7 +3,8 @@
 **Status: draft for Michael's approval. No firmware code until it is approved.**
 
 Decided so far: programs are **bytecode** run by a virtual machine (VM); the language is
-**BASIC-flavoured**; programs react to the outside world through **event handlers**.
+**BASIC-flavoured**; programs react to the outside world through **event handlers**; a
+Thing holds **one program**; the EEPROM is used as below (the S103's extra EEPROM is not).
 
 ## The idea in one paragraph
 
@@ -102,6 +103,22 @@ the development board and installed on a Thing only a handful of times.
 - Safety: stack depth, array indexes and jump targets are checked. A fault stops the
   program and shows `ERR code @ address` on the OLED. The kernel itself keeps running,
   so a new program can always be uploaded.
+
+Code density. BASIC lets one statement do a lot, and the bytecode is shaped so that it
+costs few bytes:
+
+- Every built-in statement (`HEX`, `BITS`, `TEXT`, `BOX` ...) is one kernel service:
+  its arguments, then a 1-byte opcode. The work is in the kernel, written once.
+- Constants 0-15, `VALUE`, the pin names and the font names are 1-byte opcodes; other
+  constants up to 255 take 2 bytes. The first 16 variables are loaded and stored with
+  1-byte opcodes.
+- Optional arguments are filled in by the compiler only when given; the kernel supplies
+  the defaults (`PIXEL x,y` means colour 1).
+- `IF` and loops use short relative jumps (2 bytes) wherever they reach.
+
+For example, `HEX 21, 2, shown, 2, LARGE` is 7 bytes. The whole "usual views" program
+below comes to about 100 bytes: 2 blocks, so about 2,800 uploads before a block
+reaches its rating.
 
 RAM budget (1 KB):
 
@@ -244,11 +261,4 @@ END SUB
 
 ## Open questions
 
-1. **Keyword names and spelling** of the services above: any to rename before the
-   compiler is written?
-2. **Several programs at once:** keep one program, or let the FAT hold a few named
-   programs chosen from a menu on the mode buttons? The chain already allows it; the
-   header would need a small directory, taking from the 8 setting bytes.
-3. **Host upload protocol** over b0-b7 and PD3: settle when the Reggie side is built.
-4. **The S103's extra EEPROM** (and possibly the S003's): if the test shows 640 bytes,
-   use the extra for program settings?
+1. **Host upload protocol** over b0-b7 and PD3: settle when the Reggie side is built.
