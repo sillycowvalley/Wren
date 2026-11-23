@@ -38,6 +38,8 @@ public sealed class AssemblyResult
 ///             DC.W / DW / WORD  list         16-bit words, high byte first
 ///             DS.B / DS  count, DS.W count   reserve space without writing it
 ///             INCLUDE "file"                 insert another source file
+///             RELAX [ON|OFF]                 from here on, JP and CALL to an address become
+///                                            JRA and CALLR (2 bytes) where it is in reach
 ///             END                            stop reading
 /// Addresses 0-$FF use the short form where one exists, unless a forward reference is involved.
 /// </summary>
@@ -120,6 +122,7 @@ public sealed class Assembler
         bool final = result != null;
         var symbols = new Dictionary<string, long>();
         long address = 0;
+        bool relax = false;
 
         long? Lookup(string name)
         {
@@ -168,6 +171,9 @@ public sealed class Assembler
                         result?.Listing.Add(new ListingLine(line.File, line.Line, (int)lineAddress, produced, line.Text));
                         index = lines.Count;
                         continue;
+                    case "RELAX":
+                        relax = !parsed.Operands.Trim().Equals("OFF", StringComparison.OrdinalIgnoreCase);
+                        break;
                     case "ORG":
                         address = Expression.Evaluate(parsed.Operands, Lookup)
                             ?? throw new AsmException("ORG needs a value known at this point");
@@ -206,6 +212,8 @@ public sealed class Assembler
                             }
                             ops.Add(o);
                         }
+                        if (relax && op is "JP" or "CALL" && ops.Count == 1 && ops[0].Kind == OperandKind.Direct)
+                            op = Relax(op, ops[0], address, index);
                         produced = Encoder.Encode(op, ops, address, final);
                         break;
                 }
@@ -230,6 +238,19 @@ public sealed class Assembler
             foreach (var kv in symbols) result.Symbols[kv.Key] = kv.Value;
         }
         return symbols;
+    }
+
+    /// <summary>
+    /// JP or CALL to a target within reach of a 2-byte relative jump becomes JRA or CALLR.
+    /// Once a jump is found out of reach it stays long, so the passes settle.
+    /// </summary>
+    private string Relax(string op, Operand target, long address, int line)
+    {
+        if (forcedLong.ContainsKey((line, -1)) || target.Value is not long value) return op;
+        long offset = value - (address + 2);
+        if (offset is >= -128 and <= 127) return op == "JP" ? "JRA" : "CALLR";
+        forcedLong[(line, -1)] = true;
+        return op;
     }
 
     private static byte[] DataBytes(string text, Func<string, long?> lookup, bool final)

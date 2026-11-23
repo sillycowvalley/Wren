@@ -47,57 +47,60 @@ Stack effects are written before -- after; the top of the stack is on the right.
 | Code | Name | Operands | Effect |
 |---|---|---|---|
 | $00-$0F | PUSHS n | | -- n |
-| $10 | PUSHB | b | -- b (0-255) |
-| $11 | PUSHN | b | -- b-256 (-256 to -1) |
-| $12 | PUSHW | w | -- w |
-| $13 | VALUE | | -- the event's value |
-| $20-$2F | LOADG n | | -- global n (n < 16) |
-| $30-$3F | STOREG n | | v -- |
-| $40 | LOADGB | i | -- global i |
-| $41 | STOREGB | i | v -- |
-| $42 | LOADL | i | -- parameter or local i |
-| $43 | STOREL | i | v -- |
-| $44 | LOADAW | base, n | i -- word array element (i < n) |
-| $45 | STOREAW | base, n | i v -- |
-| $46 | LOADAB | base, n | i -- byte array element |
-| $47 | STOREAB | base, n | i v -- |
-| $50-$5B | ADD SUB MUL DIV MOD AND OR XOR NOT NEG SHL SHR | | a b -- r (NOT, NEG: a -- r). DIV and MOD truncate toward 0; SHR is logical |
-| $5C-$61 | EQ NE LT LE GT GE | | a b -- -1 or 0 (signed) |
-| $62 | DROP | | v -- |
-| $70-$72 | JMP JZ JNZ | rel8 | jump relative to the next instruction; JZ/JNZ pop |
-| $73-$75 | JMPW JZW JNZW | addr16 | jump to a program address |
-| $76 | CALL | addr16 | call a SUB or FUNCTION |
-| $77 | ENTER | params, locals | start of a SUB or FUNCTION |
-| $78 | RET | | end of a SUB or handler |
-| $79 | RETV | | v -- : return from a FUNCTION with v |
-| $80 | CLS | | -- |
-| $81 | SHOW | | -- |
-| $82 | PIXEL | | x y c -- |
-| $83 | LINE | | x1 y1 x2 y2 c -- |
-| $84 | BOX | | x y w h c -- |
-| $85 | FILL | | x y w h c -- |
-| $86 | INVERT | | x y w h -- |
-| $87 | CONTRAST | | n -- |
-| $88 | INVERSE | | f -- |
-| $89 | TEXT | length, bytes | x y font -- |
-| $8A | HEX | | x y v digits font -- |
-| $8B | DEC | | x y v font -- |
-| $8C | BIN | | x y v bits font -- |
-| $8D | BITS | | x y w h v -- |
-| $8E | BAR | | x y w h v max -- |
-| $8F | WAIT | | ms -- |
-| $90 | EEWRITE | | n v -- |
-| $91 | INPUTS | | -- b0-b7 |
-| $92 | PIN | | p -- 1 or 0 |
-| $93 | ANALOG | | p -- 0-1023 |
-| $94 | MILLIS | | -- ms |
-| $95 | EEREAD | | n -- v |
-| $96 | RND | | n -- 0 to n-1 |
-| $97 | ABS | | v -- r |
-| $98 | MIN | | a b -- r |
-| $99 | MAX | | a b -- r |
-| $9A | LOST | | -- events lost |
-| $9B | FLIP | | f -- (non-zero: the picture upside down) |
+| $10-$1F | LOADG n | | -- global n (n < 16) |
+| $20-$2F | STOREG n | | v -- |
+| $30 | PUSHB | b | -- b (0-255) |
+| $31 | PUSHN | b | -- b-256 (-256 to -1) |
+| $32 | PUSHW | w | -- w |
+| $33 | VALUE | | -- the event's value |
+| $34 | LOADGB | i | -- global i |
+| $35 | STOREGB | i | v -- |
+| $36 | LOADL | i | -- parameter or local i |
+| $37 | STOREL | i | v -- |
+| $38 | LOADAW | base, n | i -- word array element (i < n) |
+| $39 | STOREAW | base, n | i v -- |
+| $3A | LOADAB | base, n | i -- byte array element |
+| $3B | STOREAB | base, n | i v -- |
+| $3C-$47 | ADD SUB MUL DIV MOD AND OR XOR NOT NEG SHL SHR | | a b -- r (NOT, NEG: a -- r). DIV and MOD truncate toward 0; SHR is logical |
+| $48-$4D | EQ NE LT LE GT GE | | a b -- -1 or 0 (signed) |
+| $4E | DROP | | v -- |
+| $4F-$51 | JMP JZ JNZ | rel8 | jump relative to the next instruction; JZ/JNZ pop |
+| $52-$54 | JMPW JZW JNZW | addr16 | jump to a program address |
+| $55 | CALL | addr16 | call a SUB or FUNCTION |
+| $56 | ENTER | params, locals | start of a SUB or FUNCTION |
+| $57 | RET | | end of a SUB or handler |
+| $58 | RETV | | v -- : return from a FUNCTION with v |
+| $59 | CLS | | -- |
+| $5A | SHOW | | -- |
+| $5B | PIXEL | | x y c -- |
+| $5C | LINE | | x1 y1 x2 y2 c -- |
+| $5D | BOX | | x y w h c -- |
+| $5E | FILL | | x y w h c -- |
+| $5F | INVERT | | x y w h -- |
+| $60 | CONTRAST | | n -- |
+| $61 | INVERSE | | f -- |
+| $62 | TEXT | length, bytes | x y font -- |
+| $63 | HEX | | x y v digits font -- |
+| $64 | DEC | | x y v font -- |
+| $65 | BIN | | x y v bits font -- |
+| $66 | BITS | | x y w h v -- |
+| $67 | BAR | | x y w h v max -- |
+| $68 | WAIT | | ms -- |
+| $69 | EEWRITE | | n v -- |
+| $6A | INPUTS | | -- b0-b7 |
+| $6B | PIN | | p -- 1 or 0 |
+| $6C | ANALOG | | p -- 0-1023 |
+| $6D | MILLIS | | -- ms |
+| $6E | EEREAD | | n -- v |
+| $6F | RND | | n -- 0 to n-1 |
+| $70 | ABS | | v -- r |
+| $71 | MIN | | a b -- r |
+| $72 | MAX | | a b -- r |
+| $73 | LOST | | -- events lost |
+| $74 | FLIP | | f -- (non-zero: the picture upside down) |
+
+Opcodes from $30 are dispatched through one table in the kernel, so they stay
+contiguous: a new opcode goes on the end.
 
 Colours: 0 clear, 1 set, 2 invert. Pins: PA1 0, PA2 1, PA3 2, PD2 3, PD3 4.
 Fonts: SMALL 0, NORMAL 1, LARGE 2, BIG 3.

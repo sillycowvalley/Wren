@@ -9,6 +9,8 @@
 
         include "stm8s003.inc"
 
+        relax                       ; JP and CALL become JRA and CALLR where the target is near
+
 KERNEL_VERSION  equ 1
 
 ; ---- Memory ----

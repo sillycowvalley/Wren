@@ -4,30 +4,30 @@ namespace Wren.Script;
 public static class Op
 {
     public const byte PushSmall = 0x00;     // + n (0-15)
-    public const byte PushByte = 0x10;
-    public const byte PushNegative = 0x11;
-    public const byte PushWord = 0x12;
-    public const byte Value = 0x13;
-    public const byte LoadGlobal = 0x20;    // + n (0-15)
-    public const byte StoreGlobal = 0x30;   // + n (0-15)
-    public const byte LoadGlobalByte = 0x40;
-    public const byte StoreGlobalByte = 0x41;
-    public const byte LoadLocal = 0x42;
-    public const byte StoreLocal = 0x43;
-    public const byte LoadArrayWord = 0x44;
-    public const byte StoreArrayWord = 0x45;
-    public const byte LoadArrayByte = 0x46;
-    public const byte StoreArrayByte = 0x47;
-    public const byte Add = 0x50, Sub = 0x51, Mul = 0x52, Div = 0x53, Mod = 0x54, And = 0x55, Or = 0x56,
-        Xor = 0x57, Not = 0x58, Neg = 0x59, Shl = 0x5A, Shr = 0x5B, Eq = 0x5C, Ne = 0x5D, Lt = 0x5E,
-        Le = 0x5F, Gt = 0x60, Ge = 0x61, Drop = 0x62;
-    public const byte Jump = 0x70, JumpZero = 0x71, JumpNotZero = 0x72;
-    public const byte JumpLong = 0x73, JumpZeroLong = 0x74, JumpNotZeroLong = 0x75;
-    public const byte Call = 0x76, Enter = 0x77, Return = 0x78, ReturnValue = 0x79;
-    public const byte Cls = 0x80, Show = 0x81, Pixel = 0x82, Line = 0x83, Box = 0x84, Fill = 0x85,
-        Invert = 0x86, Contrast = 0x87, Inverse = 0x88, Text = 0x89, Hex = 0x8A, Dec = 0x8B, Bin = 0x8C,
-        Bits = 0x8D, Bar = 0x8E, Wait = 0x8F, EeWrite = 0x90, Inputs = 0x91, Pin = 0x92, Analog = 0x93,
-        Millis = 0x94, EeRead = 0x95, Rnd = 0x96, Abs = 0x97, Min = 0x98, Max = 0x99, Lost = 0x9A, Flip = 0x9B;
+    public const byte LoadGlobal = 0x10;    // + n (0-15)
+    public const byte StoreGlobal = 0x20;   // + n (0-15)
+    public const byte PushByte = 0x30;
+    public const byte PushNegative = 0x31;
+    public const byte PushWord = 0x32;
+    public const byte Value = 0x33;
+    public const byte LoadGlobalByte = 0x34;
+    public const byte StoreGlobalByte = 0x35;
+    public const byte LoadLocal = 0x36;
+    public const byte StoreLocal = 0x37;
+    public const byte LoadArrayWord = 0x38;
+    public const byte StoreArrayWord = 0x39;
+    public const byte LoadArrayByte = 0x3A;
+    public const byte StoreArrayByte = 0x3B;
+    public const byte Add = 0x3C, Sub = 0x3D, Mul = 0x3E, Div = 0x3F, Mod = 0x40, And = 0x41, Or = 0x42,
+        Xor = 0x43, Not = 0x44, Neg = 0x45, Shl = 0x46, Shr = 0x47, Eq = 0x48, Ne = 0x49, Lt = 0x4A,
+        Le = 0x4B, Gt = 0x4C, Ge = 0x4D, Drop = 0x4E;
+    public const byte Jump = 0x4F, JumpZero = 0x50, JumpNotZero = 0x51;
+    public const byte JumpLong = 0x52, JumpZeroLong = 0x53, JumpNotZeroLong = 0x54;
+    public const byte Call = 0x55, Enter = 0x56, Return = 0x57, ReturnValue = 0x58;
+    public const byte Cls = 0x59, Show = 0x5A, Pixel = 0x5B, Line = 0x5C, Box = 0x5D, Fill = 0x5E,
+        Invert = 0x5F, Contrast = 0x60, Inverse = 0x61, Text = 0x62, Hex = 0x63, Dec = 0x64, Bin = 0x65,
+        Bits = 0x66, Bar = 0x67, Wait = 0x68, EeWrite = 0x69, Inputs = 0x6A, Pin = 0x6B, Analog = 0x6C,
+        Millis = 0x6D, EeRead = 0x6E, Rnd = 0x6F, Abs = 0x70, Min = 0x71, Max = 0x72, Lost = 0x73, Flip = 0x74;
 
     /// <summary>Event numbers in the handler table.</summary>
     public const int EventStart = 0, EventChange = 1, EventPins = 2, EventLatch = 3, EventPress = 8,

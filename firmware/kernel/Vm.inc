@@ -2,6 +2,7 @@
 ;
 ; The value stack grows down from VSTACK_TOP; vsp points at the top value.
 ; The call stack grows down from CSTACK_TOP, 4 bytes a frame: return address, frame pointer.
+; The loop at vm_next calls each instruction's routine, which returns when it is done.
 
 FAULT_FULL      equ 1
 FAULT_EMPTY     equ 2
@@ -10,6 +11,9 @@ FAULT_INDEX     equ 4
 FAULT_DIVIDE    equ 5
 FAULT_OPCODE    equ 6
 FAULT_JUMP      equ 7
+
+OP_FIRST        equ $30         ; opcodes from here on are in op_table
+OP_COUNT        equ $45         ; $30-$74
 
 ; Runs the handler at program address X until it returns.
 vm_run:
@@ -24,78 +28,37 @@ vm_run:
 ; Each instruction starts here. Wren's debugger stops on this address.
 vm_next:
         call vm_fetch
-        cp a,#$10
-        jrult vm_go_pushs
-        cp a,#$14
-        jrult vm_group_push
-        cp a,#$20
-        jrult vm_bad_opcode
-        cp a,#$30
-        jrult vm_go_loadg
-        cp a,#$40
-        jrult vm_go_storeg
-        cp a,#$48
-        jrult vm_group_vars
-        cp a,#$50
-        jrult vm_bad_opcode
-        cp a,#$63
-        jrult vm_group_math
-        cp a,#$70
-        jrult vm_bad_opcode
-        cp a,#$7A
-        jrult vm_group_flow
-        cp a,#$80
-        jrult vm_bad_opcode
-        cp a,#$9C
-        jrult vm_group_sys
-vm_bad_opcode:
-        ld a,#FAULT_OPCODE
-        jp vm_error
-vm_go_pushs:
-        jp op_pushs
-vm_go_loadg:
-        jp op_loadg
-vm_go_storeg:
-        jp op_storeg
-
-vm_group_push:
-        sub a,#$10
-        ldw y,#table_push
-        jra vm_dispatch
-vm_group_vars:
-        sub a,#$40
-        ldw y,#table_vars
-        jra vm_dispatch
-vm_group_math:
-        sub a,#$50
-        ldw y,#table_math
-        jra vm_dispatch
-vm_group_flow:
-        sub a,#$70
-        ldw y,#table_flow
-        jra vm_dispatch
-vm_group_sys:
-        sub a,#$80
-        ldw y,#table_sys
-; Jumps to entry A of the table at Y.
-vm_dispatch:
+        cp a,#OP_FIRST
+        jrult vm_small
+        sub a,#OP_FIRST
+        cp a,#OP_COUNT
+        jruge vm_bad_opcode
         sll a
         clrw x
         ld xl,a
-        ldw tmp,y
-        addw x,tmp
-        ldw x,(x)
-        jp (x)
+        ldw x,(op_table,x)
+        call (x)
+        jra vm_next
+vm_small:
+        call op_small
+        jra vm_next
+vm_bad_opcode:
+        ld a,#FAULT_OPCODE
+        jp vm_error
 
-table_push: dc.w op_pushb,op_pushn,op_pushw,op_value
-table_vars: dc.w op_loadgb,op_storegb,op_loadl,op_storel,op_loadaw,op_storeaw,op_loadab,op_storeab
-table_math: dc.w op_add,op_sub,op_mul,op_div,op_mod,op_and,op_or,op_xor,op_not,op_neg,op_shl,op_shr
-            dc.w op_eq,op_ne,op_lt,op_le,op_gt,op_ge,op_drop
-table_flow: dc.w op_jmp,op_jz,op_jnz,op_jmpw,op_jzw,op_jnzw,op_call,op_enter,op_ret,op_retv
-table_sys:  dc.w sv_cls,sv_show,sv_pixel,sv_line,sv_box,sv_fill,sv_invert,sv_contrast
-            dc.w sv_inverse,sv_text,sv_hex,sv_dec,sv_bin,sv_bits,sv_bar,sv_wait
-            dc.w sv_eewrite,sv_inputs,sv_pin,sv_analog,sv_millis,sv_eeread,sv_rnd,sv_abs
-            dc.w sv_min,sv_max,sv_lost,sv_flip
+op_table:
+        dc.w op_pushb,op_pushn,op_pushw,op_value                                    ; $30
+        dc.w op_loadgb,op_storegb,op_loadl,op_storel                                ; $34
+        dc.w op_loadaw,op_storeaw,op_loadab,op_storeab                              ; $38
+        dc.w op_add,op_sub,op_mul,op_div,op_mod,op_and,op_or,op_xor                 ; $3C
+        dc.w op_not,op_neg,op_shl,op_shr,op_eq,op_ne,op_lt,op_le                    ; $44
+        dc.w op_gt,op_ge,op_drop                                                    ; $4C
+        dc.w op_jmp,op_jz,op_jnz,op_jmpw,op_jzw,op_jnzw,op_call,op_enter            ; $4F
+        dc.w op_ret,op_retv                                                         ; $57
+        dc.w sv_cls,sv_show,sv_pixel,sv_line,sv_box,sv_fill,sv_invert,sv_contrast   ; $59
+        dc.w sv_inverse,sv_text,sv_hex,sv_dec,sv_bin,sv_bits,sv_bar,sv_wait         ; $61
+        dc.w sv_eewrite,sv_inputs,sv_pin,sv_analog,sv_millis,sv_eeread,sv_rnd,sv_abs ; $69
+        dc.w sv_min,sv_max,sv_lost,sv_flip                                          ; $71
 
 ; ---- Fetching and the value stack ----
 
@@ -157,61 +120,52 @@ vpop2:
         ldw tmp2,x
         jra vpop
 
-; Pushes X and goes on to the next instruction.
-vm_push_next:
-        call vpush
-        jp vm_next
-
-; Pushes -1 if the zero flag is clear... (see the compare ops) or 0.
-vm_true:
-        ldw x,#$FFFF
-        jra vm_push_next
-vm_false:
-        clrw x
-        jra vm_push_next
-
 ; ---- Constants and variables ----
 
-op_pushs:
-        clrw x
+; $00-$2F: PUSHS n, LOADG n, STOREG n (n in the low 4 bits).
+op_small:
+        cp a,#$10
+        jruge small_var
+        clrw x                      ; PUSHS
         ld xl,a
-        jra vm_push_next
+        jp vpush
+small_var:
+        ld tmp,a
+        and a,#$0F
+        sll a
+        clrw x
+        ld xl,a                     ; offset of global n
+        ld a,tmp
+        cp a,#$20
+        jruge small_store
+        ldw x,(VARS,x)              ; LOADG
+        jp vpush
+small_store:
+        ld a,xl                     ; STOREG
+        jra vm_store_var
 
 op_pushb:
         call vm_fetch
         clrw x
         ld xl,a
-        jra vm_push_next
+        jp vpush
 
 op_pushn:
         call vm_fetch
         ld xl,a
         ld a,#$FF
         ld xh,a
-        jra vm_push_next
+        jp vpush
 
 op_pushw:
         call vm_fetch16
-        jra vm_push_next
+        jp vpush
 
 op_value:
         clrw x
         ld a,evt_value
         ld xl,a
-        jra vm_push_next
-
-op_loadg:
-        and a,#$0F
-        sll a
-        clrw x
-        ld xl,a
-        ldw x,(VARS,x)
-        jra vm_push_next
-
-op_storeg:
-        and a,#$0F
-        sll a
-        jra vm_store_var
+        jp vpush
 
 op_loadgb:
         call vm_fetch
@@ -219,7 +173,7 @@ op_loadgb:
         clrw x
         ld xl,a
         ldw x,(VARS,x)
-        jra vm_push_next
+        jp vpush
 
 op_storegb:
         call vm_fetch
@@ -232,10 +186,11 @@ vm_store_var:
         clrw y
         ld yl,a
         ldw (VARS,y),x
-        jp vm_next
+        ret
 
-; Address of parameter or local A in X: fp - 2*A.
+; X = address of parameter or local (operand byte): fp - 2*n.
 vm_local_address:
+        call vm_fetch
         sll a
         ld tmp+1,a
         clr tmp
@@ -244,108 +199,102 @@ vm_local_address:
         ret
 
 op_loadl:
-        call vm_fetch
         call vm_local_address
         ldw x,(x)
-        jra vm_push_next
+        jp vpush
 
 op_storel:
-        call vm_fetch
         call vm_local_address
         pushw x
         call vpop
         popw y
         ldw (y),x
-        jp vm_next
+        ret
 
-; Reads the array operands (base, length) and pops the index: X = element number,
-; checked against the length; tmp = base.
-vm_array_index:
+; X = address of an array element. A = 1 for word arrays, 0 for bytes. Reads the
+; operands (base, length), pops the index and checks it against the length.
+vm_element:
+        push a
         call vm_fetch
         ld tmp+1,a
-        clr tmp
+        clr tmp                     ; base
         call vm_fetch
         ld tmp2+1,a
-        clr tmp2
-        pushw x
-        ldw x,tmp
-        ldw buf,x                   ; keep the base
-        popw x
+        clr tmp2                    ; length
         call vpop
         cpw x,tmp2
         jruge vm_bad_index          ; also catches negative indexes
-        ldw y,buf
-        ldw tmp,y
+        pop a
+        tnz a
+        jreq element_byte
+        sllw x
+element_byte:
+        addw x,tmp
+        addw x,#VARS
         ret
 vm_bad_index:
         ld a,#FAULT_INDEX
         jp vm_error
 
 op_loadaw:
-        call vm_array_index
-        sllw x
-        addw x,tmp
-        addw x,#VARS
+        ld a,#1
+        call vm_element
         ldw x,(x)
-        jp vm_push_next
+        jp vpush
+
+op_loadab:
+        clr a
+        call vm_element
+        ld a,(x)
+        clrw x
+        ld xl,a
+        jp vpush
 
 op_storeaw:
         call vpop                   ; the value
         ldw buf+2,x
-        call vm_array_index
-        sllw x
-        addw x,tmp
-        addw x,#VARS
+        ld a,#1
+        call vm_element
         ldw y,buf+2
         ldw (x),y
-        jp vm_next
-
-op_loadab:
-        call vm_array_index
-        addw x,tmp
-        addw x,#VARS
-        ld a,(x)
-        clrw x
-        ld xl,a
-        jp vm_push_next
+        ret
 
 op_storeab:
         call vpop
         ldw buf+2,x
-        call vm_array_index
-        addw x,tmp
-        addw x,#VARS
+        clr a
+        call vm_element
         ld a,buf+3
         ld (x),a
-        jp vm_next
+        ret
 
 ; ---- Arithmetic and logic ----
 
 op_add:
         call vpop2
         addw x,tmp2
-        jp vm_push_next
+        jp vpush
 
 op_sub:
         call vpop2
         subw x,tmp2
-        jp vm_push_next
+        jp vpush
 
 op_mul:
         call vpop2
         call mul16
-        jp vm_push_next
+        jp vpush
 
 op_div:
         call vpop2
         call sdivmod
-        jp vm_push_next
+        jp vpush
 
 op_mod:
         call vpop2
         call sdivmod
         ldw x,y
-        jp vm_push_next
+        jp vpush
 
 op_and:
         call vpop2
@@ -355,7 +304,7 @@ op_and:
         ld a,xl
         and a,tmp2+1
         ld xl,a
-        jp vm_push_next
+        jp vpush
 
 op_or:
         call vpop2
@@ -365,7 +314,7 @@ op_or:
         ld a,xl
         or a,tmp2+1
         ld xl,a
-        jp vm_push_next
+        jp vpush
 
 op_xor:
         call vpop2
@@ -375,79 +324,82 @@ op_xor:
         ld a,xl
         xor a,tmp2+1
         ld xl,a
-        jp vm_push_next
-
-op_not:
-        call vpop
-        tnzw x
-        jreq vm_true_j
-        jp vm_false
-vm_true_j:
-        jp vm_true
+        jp vpush
 
 op_neg:
         call vpop
         negw x
-        jp vm_push_next
+        jp vpush
 
+; SHL and SHR: the count is taken modulo 16.
 op_shl:
-        call vpop2
-        ld a,tmp2+1
-        and a,#$0F
+        call vm_shift_count
 shl_loop:
-        jreq shl_done
+        jreq shift_done
         sllw x
         dec a
         jra shl_loop
-shl_done:
-        jp vm_push_next
 
 op_shr:
-        call vpop2
-        ld a,tmp2+1
-        and a,#$0F
+        call vm_shift_count
 shr_loop:
-        jreq shr_done
+        jreq shift_done
         srlw x
         dec a
         jra shr_loop
-shr_done:
-        jp vm_push_next
+shift_done:
+        jp vpush
 
-op_eq:
+vm_shift_count:
         call vpop2
-        cpw x,tmp2
-        jreq vm_true_j
-        jp vm_false
-op_ne:
-        call vpop2
-        cpw x,tmp2
-        jrne vm_true_j
-        jp vm_false
-op_lt:
-        call vpop2
-        cpw x,tmp2
-        jrslt vm_true_j
-        jp vm_false
-op_le:
-        call vpop2
-        cpw x,tmp2
-        jrsle vm_true_j
-        jp vm_false
-op_gt:
-        call vpop2
-        cpw x,tmp2
-        jrsgt vm_true_j
-        jp vm_false
-op_ge:
-        call vpop2
-        cpw x,tmp2
-        jrsge vm_true_j
-        jp vm_false
+        ld a,tmp2+1
+        and a,#$0F
+        ret
 
 op_drop:
         call vpop
-        jp vm_next
+        ret
+
+; Comparisons leave -1 (true) or 0 (false). vm_compare sets the flags; RET keeps them.
+vm_compare:
+        call vpop2
+        cpw x,tmp2
+        ret
+
+op_not:
+        call vpop
+        tnzw x
+        jreq vm_true
+        jra vm_false
+op_eq:
+        call vm_compare
+        jreq vm_true
+        jra vm_false
+op_ne:
+        call vm_compare
+        jrne vm_true
+        jra vm_false
+op_lt:
+        call vm_compare
+        jrslt vm_true
+        jra vm_false
+op_le:
+        call vm_compare
+        jrsle vm_true
+        jra vm_false
+op_gt:
+        call vm_compare
+        jrsgt vm_true
+        jra vm_false
+op_ge:
+        call vm_compare
+        jrsge vm_true
+vm_false:
+        clrw x
+        jp vpush
+vm_true:
+        ldw x,#$FFFF
+        jp vpush
 
 ; X = X * tmp2, the low 16 bits. Uses Y, tmp, buf.
 mul16:
@@ -463,22 +415,22 @@ mul16:
         ld xl,a
         ld a,tmp2+1
         mul x,a                     ; high * low
-        ld a,xl
-        ld buf,a
-        ld a,yh
-        add a,buf
-        ld yh,a
+        call mul_add_high
         clrw x
         ld a,tmp+1
         ld xl,a
         ld a,tmp2
         mul x,a                     ; low * high
+        call mul_add_high
+        ldw x,y
+        ret
+; Adds XL to YH.
+mul_add_high:
         ld a,xl
         ld buf,a
         ld a,yh
         add a,buf
         ld yh,a
-        ldw x,y
         ret
 
 ; Signed X / tmp2: X = quotient, Y = remainder, both truncated toward zero.
@@ -515,6 +467,56 @@ div_r_done:
 
 ; ---- Jumps and calls ----
 
+op_jmp:
+        call vm_fetch
+        call vm_relative
+        ldw vpc,x
+        ret
+
+op_jmpw:
+        call vm_fetch16
+        ldw vpc,x
+        ret
+
+; Conditional jumps. A: bit 0 = jump when the value is not zero, bit 1 = 16-bit address.
+op_jz:
+        clr a
+        jra vm_cond
+op_jnz:
+        ld a,#1
+        jra vm_cond
+op_jzw:
+        ld a,#2
+        jra vm_cond
+op_jnzw:
+        ld a,#3
+vm_cond:
+        push a
+        bcp a,#2
+        jrne cond_long
+        call vm_fetch
+        call vm_relative
+        jra cond_target
+cond_long:
+        call vm_fetch16
+cond_target:
+        ldw buf+4,x                 ; where to go
+        call vpop
+        pop a
+        tnzw x
+        jreq cond_zero
+        bcp a,#1
+        jreq cond_stay              ; not zero, but JZ
+        jra cond_take
+cond_zero:
+        bcp a,#1
+        jrne cond_stay              ; zero, but JNZ
+cond_take:
+        ldw x,buf+4
+        ldw vpc,x
+cond_stay:
+        ret
+
 ; X = vpc + the signed byte A.
 vm_relative:
         clrw x
@@ -526,63 +528,6 @@ vm_relative:
 rel_pos:
         addw x,vpc
         ret
-
-op_jmp:
-        call vm_fetch
-        call vm_relative
-        ldw vpc,x
-        jp vm_next
-
-op_jz:
-        call vm_fetch
-        push a
-        call vpop
-        pop a
-        tnzw x
-        jrne jz_skip
-        call vm_relative
-        ldw vpc,x
-jz_skip:
-        jp vm_next
-
-op_jnz:
-        call vm_fetch
-        push a
-        call vpop
-        pop a
-        tnzw x
-        jreq jnz_skip
-        call vm_relative
-        ldw vpc,x
-jnz_skip:
-        jp vm_next
-
-op_jmpw:
-        call vm_fetch16
-        ldw vpc,x
-        jp vm_next
-
-op_jzw:
-        call vm_fetch16
-        pushw x
-        call vpop
-        popw y
-        tnzw x
-        jrne jzw_skip
-        ldw vpc,y
-jzw_skip:
-        jp vm_next
-
-op_jnzw:
-        call vm_fetch16
-        pushw x
-        call vpop
-        popw y
-        tnzw x
-        jreq jnzw_skip
-        ldw vpc,y
-jnzw_skip:
-        jp vm_next
 
 op_call:
         call vm_fetch16
@@ -598,7 +543,7 @@ op_call:
         ldw (2,y),x                 ; caller's frame
         ldw x,tmp2
         ldw vpc,x
-        jp vm_next
+        ret
 vm_calls_full:
         ld a,#FAULT_CALLS
         jp vm_error
@@ -625,14 +570,28 @@ enter_locals:
         dec tmp2+1
         jra enter_locals
 enter_done:
-        jp vm_next
+        ret
+
+op_retv:
+        call vpop
+        ldw buf+4,x
+        call vm_leave
+        ldw x,buf+4
+        jp vpush
 
 op_ret:
+        call vm_leave
+        ret
+
+; Removes the current frame and returns to the caller's code. With no caller the
+; handler is finished: the stack is unwound to return from vm_run.
+vm_leave:
         ldw x,csp
         cpw x,#CSTACK_TOP
-        jrne ret_frame
-        ret                         ; end of the handler: back to the dispatcher
-ret_frame:
+        jrne leave_frame
+        addw sp,#4                  ; vm_leave's and the instruction's return addresses
+        ret
+leave_frame:
         ldw x,fp
         addw x,#2
         ldw vsp,x                   ; drop parameters and locals
@@ -646,31 +605,7 @@ ret_frame:
         ldw x,csp
         addw x,#4
         ldw csp,x
-        jp vm_next
-
-op_retv:
-        call vpop
-        ldw buf+4,x
-        ldw x,csp
-        cpw x,#CSTACK_TOP
-        jrne retv_frame
         ret
-retv_frame:
-        ldw x,fp
-        addw x,#2
-        ldw vsp,x
-        ldw x,csp
-        pushw x
-        ldw x,(x)
-        ldw vpc,x                   ; return address
-        popw x
-        ldw x,(2,x)
-        ldw fp,x                    ; caller's frame
-        ldw x,csp
-        addw x,#4
-        ldw csp,x
-        ldw x,buf+4
-        jp vm_push_next
 
 ; ---- Services ----
 
@@ -705,11 +640,11 @@ args_to_rect:
 
 sv_cls:
         call gfx_cls
-        jp vm_next
+        ret
 
 sv_show:
         call oled_show
-        jp vm_next
+        ret
 
 sv_pixel:
         ld a,#3
@@ -719,7 +654,7 @@ sv_pixel:
         ldw x,args
         ldw y,args+2
         call plot16
-        jp vm_next
+        ret
 
 sv_line:
         ld a,#5
@@ -727,7 +662,7 @@ sv_line:
         ld a,args+9
         ld gcol,a
         call line16
-        jp vm_next
+        ret
 
 sv_box:
         ld a,#5
@@ -736,7 +671,7 @@ sv_box:
         ld gcol,a
         call args_to_rect
         call box16
-        jp vm_next
+        ret
 
 sv_fill:
         ld a,#5
@@ -745,7 +680,7 @@ sv_fill:
         ld gcol,a
         call args_to_rect
         call fill16
-        jp vm_next
+        ret
 
 sv_invert:
         ld a,#4
@@ -753,7 +688,7 @@ sv_invert:
         mov gcol,#2
         call args_to_rect
         call fill16
-        jp vm_next
+        ret
 
 sv_contrast:
         call vpop
@@ -764,7 +699,7 @@ sv_contrast:
         pop a
         call i2c_send
         call i2c_stop
-        jp vm_next
+        ret
 
 sv_inverse:
         call vpop
@@ -774,7 +709,7 @@ sv_inverse:
         ld a,#$A7
 inverse_send:
         call oled_cmd
-        jp vm_next
+        ret
 
 sv_flip:
         call vpop
@@ -784,13 +719,13 @@ sv_flip:
         call oled_cmd
         ld a,#$C8                   ; rows scanned the other way
         call oled_cmd
-        jp vm_next
+        ret
 flip_off:
         ld a,#$A0
         call oled_cmd
         ld a,#$C0
         call oled_cmd
-        jp vm_next
+        ret
 
 ; TEXT x, y, font with the string inline: length, then the characters.
 sv_text:
@@ -812,7 +747,7 @@ text_loop:
         dec buf+6
         jra text_loop
 text_done:
-        jp vm_next
+        ret
 
 ; Sets the text position from a0, a1 and the font from argument A (its offset in args).
 text_start:
@@ -833,7 +768,7 @@ sv_hex:
         call text_start
         ld a,args+7                 ; digits
         call text_hex
-        jp vm_next
+        ret
 
 sv_dec:
         ld a,#4
@@ -841,7 +776,7 @@ sv_dec:
         ld a,#6
         call text_start
         call text_dec
-        jp vm_next
+        ret
 
 sv_bin:
         ld a,#5
@@ -850,19 +785,19 @@ sv_bin:
         call text_start
         ld a,args+7                 ; bits
         call text_bin
-        jp vm_next
+        ret
 
 sv_bits:
         ld a,#5
         call pop_args
         call bits_view
-        jp vm_next
+        ret
 
 sv_bar:
         ld a,#6
         call pop_args
         call bar_view
-        jp vm_next
+        ret
 
 sv_wait:
         call vpop
@@ -877,7 +812,7 @@ wait_loop:
         wfi
         jra wait_loop
 wait_done:
-        jp vm_next
+        ret
 
 sv_eewrite:
         ld a,#2
@@ -898,13 +833,13 @@ eewrite_wait:
         btjf FLASH_IAPSR,#2,eewrite_wait
         bres FLASH_IAPSR,#3         ; lock again
 eewrite_done:
-        jp vm_next
+        ret
 
 sv_inputs:
         call read_inputs
         clrw x
         ld xl,a
-        jp vm_push_next
+        jp vpush
 
 sv_pin:
         call vpop
@@ -917,20 +852,20 @@ sv_pin:
         and a,(bit_masks,y)
         jreq pin_zero
         ldw x,#1
-        jp vm_push_next
+        jp vpush
 pin_zero:
         clrw x
-        jp vm_push_next
+        jp vpush
 
 ; ANALOG is not done yet: the emulator has no ADC. It returns 0.
 sv_analog:
         call vpop
         clrw x
-        jp vm_push_next
+        jp vpush
 
 sv_millis:
         ldw x,millis
-        jp vm_push_next
+        jp vpush
 
 sv_eeread:
         call vpop
@@ -939,12 +874,12 @@ sv_eeread:
         ld a,(SETTINGS,x)
         clrw x
         ld xl,a
-        jp vm_push_next
+        jp vpush
 eeread_zero:
         clrw x
-        jp vm_push_next
+        jp vpush
 
-; RND n: 0 to n-1 from a 16-bit xorshift, stirred with the clock.
+; RND n: 0 to n-1 from a 16-bit Galois LFSR, stirred with the clock.
 sv_rnd:
         call vpop
         ldw tmp2,x                  ; n
@@ -952,52 +887,26 @@ sv_rnd:
         ld a,xl
         xor a,millis+1
         ld xl,a
-        ; x ^= x << 7
-        ldw y,x
-        ld a,#7
-rnd_shl7:
-        sllw y
-        dec a
-        jrne rnd_shl7
-        ldw buf,y
+        srlw x
+        jrnc rnd_keep
         ld a,xh
-        xor a,buf
+        xor a,#$B4
         ld xh,a
-        ld a,xl
-        xor a,buf+1
-        ld xl,a
-        ; x ^= x >> 9
-        ldw y,x
-        ld a,#9
-rnd_shr9:
-        srlw y
-        dec a
-        jrne rnd_shr9
-        ldw buf,y
-        ld a,xh
-        xor a,buf
-        ld xh,a
-        ld a,xl
-        xor a,buf+1
-        ld xl,a
-        ; x ^= x << 8
-        ld a,xl
-        push a
-        ld a,xh
-        xor a,(1,sp)
-        ld xh,a
-        pop a
+rnd_keep:
+        tnzw x
+        jrne rnd_store
+        incw x                      ; never let the state stick at 0
+rnd_store:
         ldw rnd,x
-        ; result: x mod n (n <= 0 gives 0)
         ldw y,tmp2
-        tnzw y
-        jrsle rnd_zero
+        cpw y,#1
+        jrslt rnd_zero
         divw x,y
         ldw x,y
-        jp vm_push_next
+        jp vpush
 rnd_zero:
         clrw x
-        jp vm_push_next
+        jp vpush
 
 sv_abs:
         call vpop
@@ -1005,7 +914,7 @@ sv_abs:
         jrpl abs_done
         negw x
 abs_done:
-        jp vm_push_next
+        jp vpush
 
 sv_min:
         call vpop2
@@ -1013,7 +922,7 @@ sv_min:
         jrsle min_done
         ldw x,tmp2
 min_done:
-        jp vm_push_next
+        jp vpush
 
 sv_max:
         call vpop2
@@ -1021,8 +930,8 @@ sv_max:
         jrsge max_done
         ldw x,tmp2
 max_done:
-        jp vm_push_next
+        jp vpush
 
 sv_lost:
         ldw x,lost
-        jp vm_push_next
+        jp vpush

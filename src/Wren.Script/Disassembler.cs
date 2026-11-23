@@ -28,9 +28,9 @@ public static class Disassembler
         byte Arg(int i) => address + i < code.Length ? code[address + i] : (byte)0;
         int Word(int i) => (Arg(i) << 8) | Arg(i + 1);
 
-        if (op < 0x10) return ($"PUSH {op}", 1);
-        if (op is >= 0x20 and < 0x30) return ($"LOADG {op - 0x20}", 1);
-        if (op is >= 0x30 and < 0x40) return ($"STOREG {op - 0x30}", 1);
+        if (op < Op.LoadGlobal) return ($"PUSH {op}", 1);
+        if (op < Op.StoreGlobal) return ($"LOADG {op - Op.LoadGlobal}", 1);
+        if (op < Op.PushByte) return ($"STOREG {op - Op.StoreGlobal}", 1);
         if (Simple.TryGetValue(op, out string? name)) return (name, 1);
         return op switch
         {

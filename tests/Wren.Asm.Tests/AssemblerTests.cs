@@ -77,6 +77,21 @@ public class AssemblerTests
     }
 
     [Fact]
+    public void RelaxShortensNearJumpsAndCalls()
+    {
+        var r = Assemble("    org $8000\n    relax\nstart: nop\n    jp start\n    call far\n    call start\n    org $9000\nfar: ret\n");
+        // jp start -> JRA (20 FD); call far stays long (CD 90 00); call start -> CALLR (AD F8)
+        Assert.Equal("9D 20 FD CD 90 00 AD F8 81", Hex(r));
+    }
+
+    [Fact]
+    public void RelaxOffKeepsLongForms()
+    {
+        var r = Assemble("    org $8000\nstart: nop\n    jp start\n");
+        Assert.Equal("9D CC 80 00", Hex(r));
+    }
+
+    [Fact]
     public void Include()
     {
         var asm = new Assembler { IncludeResolver = name => name == "regs.inc" ? "PB_ODR equ $5005\n" : null };
