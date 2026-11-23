@@ -48,6 +48,7 @@ public sealed class Stm8Device : IBus
         flash = new byte[info.FlashSize];
         EepromWrites = new int[info.EepromSize];
         FlashWrites = new int[info.FlashSize];
+        FlashBlockCycles = new int[info.FlashSize / 64];
 
         Itc = new InterruptController();
         PortA = new GpioPort('A', 0x5000);
@@ -61,8 +62,9 @@ public sealed class Stm8Device : IBus
         Tim4 = new Tim4(Itc);
         I2c = new I2cPeripheral(Itc);
         FlashControl = new FlashController(Itc);
+        Adc = new Adc(Itc, ChannelLevel);
 
-        foreach (var p in new Peripheral[] { PortA, PortB, PortC, PortD, PortE, PortF, Exti, Clock, Tim4, I2c, FlashControl })
+        foreach (var p in new Peripheral[] { PortA, PortB, PortC, PortD, PortE, PortF, Exti, Clock, Tim4, I2c, FlashControl, Adc })
         {
             peripherals.Add(p);
             for (int i = 0; i < p.Size; i++) registerMap[p.BaseAddress - RegisterStart + i] = p;
@@ -86,12 +88,45 @@ public sealed class Stm8Device : IBus
     public Tim4 Tim4 { get; }
     public I2cPeripheral I2c { get; }
     public FlashController FlashControl { get; }
+    public Adc Adc { get; }
+
+    /// <summary>
+    /// Analog levels (0-1023) on the ADC channels, by channel number. A channel with no
+    /// level set reads its pin's digital level: 1023 high, 0 low.
+    /// </summary>
+    public int?[] AnalogLevels { get; } = new int?[16];
+
+    /// <summary>The pin of each ADC channel on the 20-pin parts: AIN2 PC4, AIN3 PD2, AIN4 PD3, AIN5 PD5, AIN6 PD6.</summary>
+    private (GpioPort Port, int Pin)? ChannelPin(int channel) => channel switch
+    {
+        2 => (PortC, 4),
+        3 => (PortD, 2),
+        4 => (PortD, 3),
+        5 => (PortD, 5),
+        6 => (PortD, 6),
+        _ => null,
+    };
+
+    private int ChannelLevel(int channel)
+    {
+        if (AnalogLevels[channel] is int level) return level;
+        return ChannelPin(channel) is { } p && p.Port.Level(p.Pin) ? 1023 : 0;
+    }
 
     /// <summary>How many times firmware has written each EEPROM byte since loading.</summary>
     public int[] EepromWrites { get; }
 
     /// <summary>How many times firmware has written each flash byte since loading.</summary>
     public int[] FlashWrites { get; }
+
+    /// <summary>Program/erase cycles per 64-byte flash block caused by firmware since loading.</summary>
+    public int[] FlashBlockCycles { get; }
+
+    /// <summary>Flash blocks protected by the UBC option byte (OPT1 at $4801), from $8000.</summary>
+    public int ProtectedBlocks => options[1];
+
+    private int blockStart = -1;
+    private int blockBytes;
 
     /// <summary>Names of peripherals the firmware used that Wren does not model.</summary>
     public HashSet<string> UnmodelledPeripherals { get; } = new();
@@ -125,6 +160,7 @@ public sealed class Stm8Device : IBus
         }
         Array.Clear(EepromWrites);
         Array.Clear(FlashWrites);
+        Array.Clear(FlashBlockCycles);
     }
 
     /// <summary>Clears flash, EEPROM and RAM, as a programmer's erase would.</summary>
@@ -233,11 +269,7 @@ public sealed class Stm8Device : IBus
         }
         if (address >= FlashStart && address < FlashStart + flash.Length)
         {
-            if (FlashControl.TryWrite(program: true))
-            {
-                flash[address - FlashStart] = value;
-                FlashWrites[address - FlashStart]++;
-            }
+            WriteFlash(address - FlashStart, value);
             return;
         }
         if (address >= EepromStart && address < EepromStart + eeprom.Length)
@@ -274,6 +306,54 @@ public sealed class Stm8Device : IBus
         if (address == CfgGcr) cfgGcr = (byte)(value & 3);
     }
 
+    /// <summary>
+    /// A write into program flash: refused while locked or inside the UBC; in block mode
+    /// the 64 bytes of a block are collected and count as one cycle, and the code doing
+    /// it must run from RAM, as RM0016 requires.
+    /// </summary>
+    private void WriteFlash(int offset, byte value)
+    {
+        if (offset < ProtectedBlocks * 64)
+        {
+            FlashControl.Refuse();
+            return;
+        }
+        if (FlashControl.BlockMode)
+        {
+            if (!FlashControl.ProgramUnlocked)
+            {
+                FlashControl.Refuse();
+                return;
+            }
+            if (Cpu.PC >= FlashStart)
+            {
+                Cpu.Fault = "Block programming of flash must run from RAM";
+                return;
+            }
+            int start = offset & ~63;
+            if (start != blockStart)
+            {
+                blockStart = start;
+                blockBytes = 0;
+            }
+            flash[offset] = value;
+            FlashWrites[offset]++;
+            if (++blockBytes == 64)
+            {
+                FlashBlockCycles[start / 64]++;
+                blockStart = -1;
+                FlashControl.BlockDone();
+            }
+            return;
+        }
+        if (FlashControl.TryWrite(program: true))
+        {
+            flash[offset] = value;
+            FlashWrites[offset]++;
+            FlashBlockCycles[offset / 64]++;
+        }
+    }
+
     private void NoteUnmodelled(int address)
     {
         string name = address switch
@@ -287,7 +367,7 @@ public sealed class Stm8Device : IBus
             >= 0x5230 and <= 0x523A => "UART1",
             >= 0x5250 and <= 0x527F => "TIM1",
             >= 0x5300 and <= 0x532F => "TIM2",
-            >= 0x53E0 and <= 0x540F => "ADC1",
+            >= 0x53E0 and <= 0x540F => "ADC1 (buffered or watchdog modes)",
             _ => $"register ${address:X4}",
         };
         UnmodelledPeripherals.Add(name);

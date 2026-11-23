@@ -64,6 +64,16 @@ TIM4_CNTR   equ $5346
 TIM4_PSCR   equ $5347
 TIM4_ARR    equ $5348
 
+; ---- ADC1 ----
+ADC_CSR     equ $5400
+ADC_CR1     equ $5401
+ADC_CR2     equ $5402
+ADC_CR3     equ $5403
+ADC_DRH     equ $5404
+ADC_DRL     equ $5405
+ADC_TDRH    equ $5406
+ADC_TDRL    equ $5407
+
 ; ---- CPU and interrupt priorities ----
 CFG_GCR     equ $7F60
 ITC_SPR1    equ $7F70

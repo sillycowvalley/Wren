@@ -168,6 +168,12 @@ msg_wren:   dc.b 20,4,2, 4,"Wren"
 ; IRQs 24 to 29 are never enabled either: 24 more bytes.
 msg_noprog: dc.b 2,22,1, 10,"No program"
 
+; ---- Option bytes ----
+; UBC (OPT1) write-protects the kernel's 80 blocks, $8000-$93FF, against firmware
+; writes, so a program upload can never damage it. NOPT1 is its complement.
+        org $4801
+        dc.b (STORE-$8000)/64, ~((STORE-$8000)/64) & $FF
+
         org $8080
 unused_irq:
         iret
@@ -206,6 +212,9 @@ clear_ram:
         call oled_init
         call gfx_cls
 
+        btjt PD_IDR,#2,start_program
+        jp loader                   ; PD2 held low at start-up: upload a program
+start_program:
         call load_program
         jrc no_program
 
@@ -353,27 +362,8 @@ check_crc:
         ldw crc,x
         clrw x
 crc_byte:
-        pushw x
         call read_program
-        xor a,crc
-        ld crc,a
-        ld a,#8
-        ld tmp,a
-crc_bit:
-        ldw x,crc
-        sllw x
-        jrnc crc_nox
-        ld a,xh
-        xor a,#$10
-        ld xh,a
-        ld a,xl
-        xor a,#$21
-        ld xl,a
-crc_nox:
-        ldw crc,x
-        dec tmp
-        jrne crc_bit
-        popw x
+        call crc_update
         incw x
         cpw x,prog_len
         jrult crc_byte
@@ -384,6 +374,33 @@ crc_nox:
         ret
 crc_bad:
         scf
+        ret
+
+; Adds byte A to crc (CRC-16/CCITT, polynomial $1021). Keeps A and X.
+crc_update:
+        pushw x
+        push a
+        xor a,crc
+        ld crc,a
+        ld a,#8
+crc_bit:
+        ldw x,crc
+        sllw x
+        jrnc crc_nox
+        push a
+        ld a,xh
+        xor a,#$10
+        ld xh,a
+        ld a,xl
+        xor a,#$21
+        ld xl,a
+        pop a
+crc_nox:
+        ldw crc,x
+        dec a
+        jrne crc_bit
+        pop a
+        popw x
         ret
 
 ; A = program byte at program address X. Keeps X and Y.
@@ -867,6 +884,7 @@ vm_error:
         include "Vm.inc"
         include "Graphics.inc"
         include "Oled.inc"
+        include "Loader.inc"
         include "Fonts.inc"
 
 kernel_end:

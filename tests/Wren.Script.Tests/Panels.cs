@@ -65,7 +65,9 @@ public sealed class Panel
         int sx = font switch { 2 => 2, 3 => 3, _ => 1 }, sy = font switch { 2 => 2, 3 => 4, _ => 1 };
         foreach (char ch in text)
         {
-            int index = (ch is >= ' ' and <= '~' ? ch : '?') - 32;
+            char shown = ch is >= ' ' and <= '~' ? ch : '?';
+            if (font == 0 && shown >= 96) shown = (char)(shown - 32);   // SMALL has no lowercase
+            int index = shown - 32;
             for (int c = 0; c < pitch; c++)
             {
                 int bits = c < cols ? table[index * cols + c] : 0;

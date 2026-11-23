@@ -35,7 +35,7 @@ Proposed layout (the split is settled once the kernel's real size is known):
 | Blocks | Address | Size | Use |
 |---|---|---|---|
 | 0-1 | $8000-$807F | 128 B | Interrupt vectors (locked) |
-| 2-79 | $8080-$93FF | 4.9 KB | Kernel (locked); it is about 4.5 KB with the vectors, so about 530 bytes are free for what it still needs |
+| 2-79 | $8080-$93FF | 4.9 KB | Kernel, locked by the UBC option byte; it fills this to within about 20 bytes |
 | 80-127 | $9400-$9FFF | 3 KB | Program store: 48 blocks |
 | EEPROM | $4000-$4067 | 104 B | The FAT: header, block chain and write counts |
 | EEPROM | $4068-$407F | 24 B | Program settings (`EEREAD`/`EEWRITE`) |
@@ -84,9 +84,12 @@ Uploads arrive two ways, with the same FAT:
 
 - **SWIM (first):** Wren.Link reads the FAT through the ST-LINK, writes the blocks,
   then the FAT, and verifies.
-- **From a host (later):** the Reggie or a Teensy sends the program on b0-b7 with PD3
-  as the strobe; the kernel's loader writes it (from a routine copied to RAM) and
-  reports the CRC so the host can check it and resend.
+- **From a host:** hold PD2 low while the Thing starts; it shows "Upload". The Reggie
+  or a Teensy then sends "WREN", the length, the program and its CRC on b0-b7, strobed
+  by PD3 (see "Uploading from a host" in Bytecode.md). The kernel writes each block
+  from a routine copied to RAM, to blocks the current program does not use, writes the
+  FAT once the CRC checks out and starts the new program. There is no wire back to the
+  host: a bad upload shows "Failed" on the OLED and the old program stays.
 
 Kernel updates go over SWIM only and need the UBC lock cleared and set again. Each one
 costs a wear cycle on the kernel blocks, so the kernel is developed on the emulator and
@@ -176,10 +179,9 @@ Built-in services:
 |---|---|
 | Display | `CLS`, `SHOW` (send the frame buffer to the OLED), `PIXEL x,y[,c]`, `LINE x1,y1,x2,y2[,c]`, `BOX x,y,w,h[,c]`, `FILL x,y,w,h[,c]`, `INVERT x,y,w,h`, `CONTRAST n`, `INVERSE on`, `FLIP on` (upside down, for a Thing mounted the other way up) |
 | Text and numbers | `TEXT x,y,"text"[,font]`, `HEX x,y,v,digits[,font]`, `DEC x,y,v[,font]`, `BIN x,y,v,bits[,font]`, `BITS x,y,w,h,v` (eight cells, b7 on the left: filled for a 1 bit, outlined for a 0, as the Thing's own BAR view), `BAR x,y,w,h,v,max` |
-| Fonts | `SMALL` (3x5: 16 columns x 5 rows), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 15x28 in an 18x32 cell, 3 characters on one line) |
-| Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023) |
+| Fonts | `SMALL` (3x5: 16 columns x 5 rows; capitals only: lowercase is drawn as capitals), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 15x28 in an 18x32 cell, 3 characters on one line) |
+| Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023; this turns the pin's pull-up off, so that pin is then an analog input, not a button) |
 | Time | `MILLIS` (wraps every 65.5 s), `WAIT ms` |
-| Pins | `ANALOG` returns 0 for now: the emulator has no ADC yet |
 | Storage | `EEREAD(n)`, `EEWRITE n, v` for the 24 setting bytes, n = 0-23 (only writes when the value changes) |
 | Other | `RND(n)`, `ABS(v)`, `MIN(a,b)`, `MAX(a,b)`, `LOST` |
 
@@ -273,16 +275,19 @@ BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold. It is
   debugger: stepping by statement, line breakpoints, globals and locals.
 - **Wren** shows the program with the current line, breakpoints, variables, the running
   handler and its `VALUE`, and the store's write counts. The assembly level stays hidden.
-- **Still to do in Wren.Emu:** block programming and the UBC lock, for the host upload
-  path.
+- **Wren.Emu** models block programming (which must run from RAM) and the UBC lock, so
+  the host upload is tested end to end: tests send programs over the pins, check the
+  FAT, the wear spread over many uploads, a bad CRC, and that the kernel is never
+  written.
 - **Tests** compile BASIC programs, run them on the emulated Thing with the kernel, and
   compare the OLED's pixels; FAT tests upload thousands of programs and check the
   wear spread, and that a failed upload is caught by the read-back.
 
 ## Open questions
 
-- **The store boundary.** About 530 bytes are free below the store. The host upload
-  loader (about 250 bytes) and `ANALOG` (about 40) come next; once they are in, the
-  store could grow by the blocks still free.
+- **Kernel space.** With the loader and `ANALOG` in, the kernel is about 20 bytes short
+  of the store. A further kernel feature needs either more trimming or the store moved
+  up by a block or two (each block is 64 bytes of program space, out of 3 KB).
 
-1. **Host upload protocol** over b0-b7 and PD3: settle when the Reggie side is built.
+1. **Host upload protocol.** Built as described above; the Reggie side still has to be
+   written and tried against it.

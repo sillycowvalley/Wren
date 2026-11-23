@@ -4,6 +4,8 @@ namespace Wren.Emu;
 /// The flash and EEPROM programming controller. Writes to program flash need the PUKR keys
 /// ($56 then $AE); writes to data EEPROM and option bytes need the DUKR keys ($AE then $56).
 /// Each write completes at once and sets EOP. Writes while locked are ignored and set WR_PG_DIS.
+/// Block programming (FLASH_CR2 PRG or FPRG, with FLASH_NCR2 the complement) collects 64
+/// bytes and programs them as one block; the device checks that it runs from RAM.
 /// </summary>
 public sealed class FlashController : Peripheral
 {
@@ -24,6 +26,20 @@ public sealed class FlashController : Peripheral
     }
 
     public bool ProgramUnlocked => (iapsr & Pul) != 0;
+
+    /// <summary>Standard or fast block programming is selected.</summary>
+    public bool BlockMode => (cr2 & 0x11) != 0 && (ncr2 & 0x11) == (~cr2 & 0x11);
+
+    /// <summary>Called when a block has been programmed: the mode bits clear, EOP is set.</summary>
+    public void BlockDone()
+    {
+        cr2 &= unchecked((byte)~0x11);
+        ncr2 |= 0x11;
+        iapsr |= Eop | Hvoff;
+    }
+
+    /// <summary>A write to a protected area (the UBC): ignored, WR_PG_DIS set.</summary>
+    public void Refuse() => iapsr |= WrPgDis;
     public bool DataUnlocked => (iapsr & Dul) != 0;
 
     /// <summary>Called by the device after a write into flash or EEPROM; returns whether it is allowed.</summary>

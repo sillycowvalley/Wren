@@ -249,7 +249,7 @@
         <tr><td class="k"><code>CONST N = 10</code></td><td>Named constant, folded at compile time</td></tr>
       </table>
       <p style="margin-top:4px">Top-level <code>DIM</code>s are <b>globals</b>; a <code>DIM</code> inside a SUB, FUNCTION or handler makes <b>locals</b> (0 on entry). Arrays are global only. Parameters are passed by value.</p>
-      <p>Numbers: <code>123</code>, <code>&amp;H1F</code> or <code>$1F</code> (hex), <code>&amp;B101</code> (binary), up to 65535. Strings exist only as literals in <code>TEXT</code>.</p>
+      <p>Numbers: <code>123</code>, <code>&amp;H1F</code> or <code>$1F</code>, <code>&amp;B101</code>, up to 65535. Strings only as <code>TEXT</code> literals.</p>
     </div>
 
     <div class="panel">
@@ -265,7 +265,7 @@
         <tr><td>7</td><td class="k"><code>AND</code></td><td>Bitwise</td></tr>
         <tr><td>8</td><td class="k"><code>OR  XOR</code></td><td>Bitwise</td></tr>
       </table>
-      <p class="note" style="margin-top:4px"><code>IF</code> and <code>WHILE</code> treat any non-zero value as true. Because AND is bitwise, test bits with <code>(v AND 4) &lt;&gt; 0</code>; <code>PIN(PA1) AND PIN(PA2)</code> works because PIN gives 1 or 0.</p>
+      <p class="note" style="margin-top:4px">Any non-zero value is true in <code>IF</code> and <code>WHILE</code>. AND is bitwise: test a bit with <code>(v AND 4) &lt;&gt; 0</code>.</p>
     </div>
 
     <div class="panel">
@@ -286,7 +286,7 @@
       <p class="note" style="margin-top:4px">Colour <code>c</code>: 0 clear, 1 set (the default), 2 invert. <code>INVERSE</code>, <code>FLIP</code> and <code>CONTRAST</code> act on the OLED at once.</p>
     </div>
 
-    <div class="panel" style="flex:1">
+    <div class="panel">
       <h2>Text and numbers</h2>
       <table>
         <tr><th>Statement</th><th>Draws</th></tr>
@@ -297,9 +297,16 @@
         <tr><td class="k"><code>BITS x, y, w, h, v</code></td><td>Eight cells for v's low byte, b7 on the left: filled for 1, outlined for 0</td></tr>
         <tr><td class="k"><code>BAR x, y, w, h, v, max</code></td><td>A bar filled in proportion to v / max</td></tr>
       </table>
-      <p class="note" style="margin-top:4px">The font defaults to <code>NORMAL</code>. (x, y) is the top-left corner of the first character; each character clears its own cell.</p>
+      <p class="note" style="margin-top:4px">The font defaults to <code>NORMAL</code>; (x, y) is the top-left corner of the text.</p>
     </div>
-  </div>
+
+    <div class="panel" style="flex:1">
+      <h2>Uploading from a host</h2>
+      <p>Hold <code>PD2</code> low at start-up (it shows "Upload"), then send a byte on b0-b7 per <code>PD3</code> falling edge:</p>
+<pre>"WREN"  length (2, high first)  program  CRC-16 (2, high first)</pre>
+      <p>Wait 25 ms after every 64 program bytes and after the last. Good CRC: the new program starts. Bad: "Failed", and the old program stays.</p>
+    </div>
+    </div>
 
   <!-- ======================= Column 3 ======================= -->
   <div class="col">
@@ -311,7 +318,7 @@
         <tr><td class="k"><code>VALUE</code></td><td>The running event's value (see Events)</td></tr>
         <tr><td class="k"><code>INPUTS</code></td><td>b0-b7 now, as a byte</td></tr>
         <tr><td class="k"><code>PIN(p)</code></td><td>Pin p's level: 1 high, 0 low</td></tr>
-        <tr><td class="k"><code>ANALOG(p)</code></td><td><code>ANALOG(PD2)</code> or <code>ANALOG(PD3)</code>: 0-1023</td></tr>
+        <tr><td class="k"><code>ANALOG(p)</code></td><td><code>ANALOG(PD2)</code> or <code>ANALOG(PD3)</code>: 0-1023. Turns that pin's pull-up off: it is then an analog input, not a button</td></tr>
         <tr><td class="k"><code>MILLIS</code></td><td>Milliseconds since reset; wraps every 65.5 s</td></tr>
         <tr><td class="k"><code>WAIT ms</code></td><td>Pause; events wait meanwhile</td></tr>
         <tr><td class="k"><code>EEREAD(n)</code></td><td>Setting byte n, 0-23</td></tr>
@@ -335,7 +342,7 @@
       </div>
       <table style="margin-top:5px">
         <tr><th>Font</th><th>Glyph</th><th>Cell</th><th>Fits</th></tr>
-        <tr><td class="k"><code>SMALL</code> 0</td><td>3 x 5</td><td>4 x 6</td><td>16 columns x 5 rows</td></tr>
+        <tr><td class="k"><code>SMALL</code> 0</td><td>3 x 5</td><td>4 x 6</td><td>16 columns x 5 rows; capitals only</td></tr>
         <tr><td class="k"><code>NORMAL</code> 1</td><td>5 x 7</td><td>6 x 8</td><td>10 columns x 4 rows</td></tr>
         <tr><td class="k"><code>LARGE</code> 2</td><td>10 x 14</td><td>12 x 16</td><td>5 columns x 2 rows</td></tr>
         <tr><td class="k"><code>BIG</code> 3</td><td>15 x 28</td><td>18 x 32</td><td>3 characters, one row</td></tr>

@@ -83,6 +83,20 @@
             <CheckBox Name="Pd3Pin" Content="PD3" Click="OnPinClicked" />
             <Button Name="Pd3Button" Content="Pulse" />
           </StackPanel>
+
+          <TextBlock Classes="heading" Text="Analog inputs (for ANALOG)" />
+          <Grid ColumnDefinitions="Auto,*,48" RowDefinitions="Auto,Auto" Width="440" HorizontalAlignment="Left">
+            <CheckBox Name="Pd2Analog" Grid.Row="0" Content="PD2" Click="OnPinClicked"
+                      ToolTip.Tip="Feed PD2 an analog level instead of its digital one" />
+            <Slider Name="Pd2Level" Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="1023" Margin="12,0"
+                    ValueChanged="OnAnalogLevelChanged" />
+            <TextBlock Name="Pd2Text" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" />
+            <CheckBox Name="Pd3Analog" Grid.Row="1" Content="PD3" Click="OnPinClicked"
+                      ToolTip.Tip="Feed PD3 an analog level instead of its digital one" />
+            <Slider Name="Pd3Level" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="1023" Margin="12,0"
+                    ValueChanged="OnAnalogLevelChanged" />
+            <TextBlock Name="Pd3Text" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" />
+          </Grid>
         </StackPanel>
       </ScrollViewer>
     </Border>

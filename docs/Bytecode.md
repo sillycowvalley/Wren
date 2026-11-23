@@ -40,6 +40,35 @@ $9400 + 64 n.
 | $4038 | 48 | Times each block has been written |
 | $4068 | 24 | Program settings (`EEREAD`, `EEWRITE`, n = 0-23) |
 
+## Uploading from a host
+
+A host (the Reggie, a Teensy) can upload a program over the Thing's own pins, without
+SWIM. `HostUpload` in Wren.Script builds the frame; `firmware/kernel/Loader.inc` takes it.
+
+1. Hold PD2 low while the Thing starts (power on or NRST). It shows "Upload" and 0
+   instead of running its program. Release PD2 once it does: the kernel only looks at
+   PD2 at start-up.
+2. Send the frame one byte at a time: put the byte on b0-b7, then pull PD3 low and let
+   it go high. The byte is read at the falling edge. Allow 20 µs a byte.
+3. After every 64th program byte, and after the last one, wait 25 ms while the Thing
+   writes a flash block and shows how many bytes it has.
+
+| Bytes | Contents |
+|---|---|
+| 4 | "WREN" (anything before it is ignored) |
+| 2 | Program length, high byte first: 1 to 3072 |
+| n | The program image |
+| 2 | CRC-16/CCITT of the program, high byte first |
+
+The blocks go to the least-written blocks the current program does not use, so a
+failed upload leaves it in place. Only when the CRC checks out is the FAT written
+(chain, write counts, then the header from the end, FAT_FIRST next to last); then the
+new program starts at once. A bad length or CRC shows "Failed" until the Thing is reset,
+and the previous program runs again after that reset.
+
+The kernel image also sets the UBC option byte to 80 blocks, so firmware can never
+write the kernel ($8000-$93FF); only a SWIM programmer can.
+
 ## Opcodes
 
 Stack effects are written before -- after; the top of the stack is on the right.

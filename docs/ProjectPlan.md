@@ -59,7 +59,9 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    S103 board first, then a Thing.
 3. **The firmware (done in emulation).** The kernel (VM, graphics, events, FAT loader)
    fits in 8 KB flash and 1 KB RAM beside a 3 KB program store. Next: run it on the
-   development board with a real OLED, then flash it once to each Thing.
+   development board with a real OLED, then flash it once to each Thing. After that,
+   programs reach a Thing over SWIM (Wren.Link) or from a host over its own pins
+   (the kernel's loader).
 4. **Wren BASIC (done).** The Thing's own behaviour is about 310 bytes of BASIC.
 5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug
    module, as OpenOCD's STM8 support does), and a home-made SWIM programmer on a Teensy
@@ -96,8 +98,10 @@ The detailed design, for approval, is in [Design.md](Design.md).
 - Modelled: the CPU (all instructions), GPIO with pull-ups and true open-drain on
   PB4/PB5, EXTI, the interrupt controller with priorities, the clock dividers, TIM4,
   the I2C peripheral in master mode, flash and EEPROM programming with write counts,
-  and the SSD1315.
-- Not modelled: TIM1, TIM2, UART1, SPI, ADC1, the watchdogs, AWU and BEEP. Their
+  ADC1 (single and continuous conversion, with analog levels set per pin), and the
+  SSD1315.
+- Not modelled: TIM1, TIM2, UART1, SPI, ADC1's buffered and scan modes, the watchdogs,
+  AWU and BEEP. Their
   registers hold values; Wren lists any the firmware touches. I2C bit-banged on PB4/PB5
   is not decoded. EXTI's "falling edge and low level" mode acts as falling edge only.
 - Cycle counts are approximate. Timing is right in order, not to the cycle.

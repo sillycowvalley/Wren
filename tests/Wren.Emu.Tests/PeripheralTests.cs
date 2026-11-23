@@ -139,3 +139,55 @@ public class PeripheralTests
         Assert.True(oled.Pixel(0, 0));
     }
 }
+
+public class FlashProgrammingTests
+{
+    private static Stm8Device Run(string body, byte ubc = 0)
+    {
+        var assembler = new Wren.Asm.Assembler
+        {
+            IncludeResolver = name => File.ReadAllText(Path.Combine(Firmware.Folder, "include", name)),
+        };
+        var r = assembler.Assemble("    include \"stm8s003.inc\"\n    org $8000\n    int start\n    org $8080\n" + body);
+        Assert.True(r.Success, string.Join("\n", r.Errors));
+        var d = new Stm8Device(DeviceInfo.Stm8s003f3);
+        d.Load(r.Image.Bytes);
+        d.Load(new[] { new KeyValuePair<int, byte>(0x4801, ubc), new KeyValuePair<int, byte>(0x4802, (byte)~ubc) });
+        d.PowerOn();
+        d.Run(0.01);
+        return d;
+    }
+
+    private const string Unlock = "start: mov FLASH_PUKR,#$56\n    mov FLASH_PUKR,#$AE\n";
+
+    [Fact]
+    public void UbcProtectsTheBootArea()
+    {
+        var d = Run(Unlock + "    mov $8100,#$12\n    mov $9000,#$34\n    break\n", ubc: 32);  // $8000-$87FF protected
+        Assert.NotEqual(0x12, d.Read(0x8100));
+        Assert.Equal(0x34, d.Read(0x9000));
+        Assert.Equal(32, d.ProtectedBlocks);
+    }
+
+    [Fact]
+    public void BlockProgrammingFromFlashIsAFault()
+    {
+        var d = Run(Unlock + "    mov FLASH_CR2,#$01\n    mov FLASH_NCR2,#$FE\n    mov $9000,#$55\nhere: jra here\n");
+        Assert.Equal("Block programming of flash must run from RAM", d.Cpu.Fault);
+    }
+
+    [Fact]
+    public void BlockProgrammingFromRamIsOneCycle()
+    {
+        // Copy a 64-byte writer loop to RAM at $0100 and run it there.
+        var d = Run(Unlock +
+            "    ldw x,#writer\n    ldw y,#$0100\ncopy: ld a,(x)\n    ld (y),a\n    incw x\n    incw y\n    cpw x,#writer_end\n    jrne copy\n" +
+            "    call $0100\n    break\n" +
+            "writer: mov FLASH_CR2,#$01\n    mov FLASH_NCR2,#$FE\n    ldw x,#$9000\n    ld a,#64\nwloop: ld (x),a\n    incw x\n    dec a\n    jrne wloop\n" +
+            "wait: btjf FLASH_IAPSR,#2,wait\n    ret\nwriter_end:\n");
+        Assert.Null(d.Cpu.Fault);
+        Assert.Equal(64, d.Read(0x9000));
+        Assert.Equal(1, d.Read(0x903F));
+        Assert.Equal(1, d.FlashBlockCycles[(0x9000 - 0x8000) / 64]);
+    }
+}
