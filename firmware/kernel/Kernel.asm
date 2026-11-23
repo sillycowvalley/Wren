@@ -15,8 +15,8 @@ KERNEL_VERSION  equ 1
 
 ; ---- Memory ----
 
-STORE       equ $9400       ; program store: 48 blocks of 64 bytes, to the end of flash
-STORE_BLOCKS equ 48
+STORE       equ $9440       ; program store: 64-byte blocks from here to the end of flash
+STORE_BLOCKS equ ($A000-STORE)/64   ; 47
 
 FAT         equ $4000
 FAT_VERSION equ FAT+0

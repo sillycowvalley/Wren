@@ -6,15 +6,15 @@ namespace Wren.Script;
 /// </summary>
 public static class ProgramStore
 {
-    public const int Blocks = Compiler.StoreBlocks;     // 48
+    public const int Blocks = Compiler.StoreBlocks;     // 47
     public const int BlockSize = 64;
-    public const int StoreAddress = 0x9400;
+    public const int StoreAddress = 0x9440;
     public const int FatAddress = 0x4000;
     public const int FatSize = 128;
     public const int ChainOffset = 8;
-    public const int CountsOffset = ChainOffset + Blocks;       // $38
-    public const int SettingsOffset = CountsOffset + Blocks;    // $68
-    public const int SettingsSize = FatSize - SettingsOffset;   // 24
+    public const int CountsOffset = ChainOffset + Blocks;       // $37
+    public const int SettingsOffset = CountsOffset + Blocks;    // $66
+    public const int SettingsSize = FatSize - SettingsOffset;   // 26
     public const byte LastBlock = 0xFE;
     public const byte FreeBlock = 0xFF;
 
