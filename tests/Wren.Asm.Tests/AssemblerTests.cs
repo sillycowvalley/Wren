@@ -124,6 +124,15 @@ public class AssemblerTests
     }
 
     [Fact]
+    public void OverlapIsAnError()
+    {
+        var r = new Assembler().Assemble("    org $8000\n    dc.b 1,2,3\n    org $8002\n    dc.b 4\n");
+        Assert.False(r.Success);
+        Assert.Contains("overlaps", r.Errors[0].Message);
+        Assert.Equal(4, r.Errors[0].Line);
+    }
+
+    [Fact]
     public void DuplicateLabel()
     {
         var r = new Assembler().Assemble("a1:\na1:\n");

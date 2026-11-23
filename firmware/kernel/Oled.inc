@@ -67,24 +67,7 @@ oled_init_loop:
 oled_init_end:
         jra i2c_stop
 
-oled_init_table:
-        dc.b $AE                    ; display off
-        dc.b $D5,$80                ; clock
-        dc.b $A8,$1F                ; multiplex 32
-        dc.b $D3,$00                ; display offset 0
-        dc.b $40                    ; start line 0
-        dc.b $8D,$14                ; charge pump on
-        dc.b $20,$00                ; horizontal addressing
-        dc.b $A0                    ; columns not mirrored
-        dc.b $C0                    ; rows not mirrored
-        dc.b $DA,$12                ; COM pins
-        dc.b $81,$CF                ; contrast
-        dc.b $D9,$F1                ; pre-charge
-        dc.b $DB,$40                ; VCOMH
-        dc.b $A4                    ; show RAM
-        dc.b $A6                    ; not inverted
-        dc.b $AF                    ; display on
-        dc.b $FF                    ; end of table
+; oled_init_table is in Kernel.asm, in spare vector space.
 
 ; Sends the frame buffer to the panel's window: columns 32-95, pages 0-3.
 oled_show:

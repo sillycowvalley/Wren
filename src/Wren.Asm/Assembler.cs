@@ -222,6 +222,11 @@ public sealed class Assembler
                 {
                     if (address < 0 || address + produced.Length > 0x1000000)
                         throw new AsmException($"Address out of range: ${address:X}");
+                    for (int i = 0; i < produced.Length; i++)
+                    {
+                        if (result.Image.Contains((int)address + i))
+                            throw new AsmException($"This overlaps bytes already placed at ${address + i:X4}");
+                    }
                     result.Image.Write((int)address, produced);
                 }
                 address += produced.Length;

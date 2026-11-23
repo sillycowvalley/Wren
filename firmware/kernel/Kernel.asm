@@ -33,6 +33,7 @@ VSTACK_TOP  equ $0100
 FB          equ $0100       ; frame buffer: 4 pages of 64 columns
 VARS        equ $0200       ; program variables; the block map sits at the top
 VARS_END    equ $0300
+MAP_TOP     equ VARS_END-1  ; the block map: entry i at MAP_TOP - i
 CSTACK_LOW  equ $0300       ; VM call stack, 4 bytes a frame, grows down from $0340
 CSTACK_TOP  equ $0340
 CPU_STACK   equ RAM_END
@@ -51,7 +52,6 @@ millis      equ $0E         ; 2  milliseconds since start
 lost        equ $10         ; 2  events lost to a full queue
 qhead       equ $12         ; 1  queue: next to take
 qtail       equ $13         ; 1  queue: next free
-handled     equ $14         ; 3  one bit per event that has a handler
 inputs_last equ $17         ; 1  b0-b7 at the last check
 prev_pins   equ $18         ; 1  PA1,PA2,PA3,PD2,PD3 (bits 0-4) at the last edge
 latch_now   equ $19         ; 1  the same, now (in the edge interrupt)
@@ -105,7 +105,8 @@ QUEUE       equ $0340       ; 16 event queue: 8 entries of event, value (below t
 QUEUE_SIZE  equ 8
 latch_cfg   equ $0350       ; 5  LATCH settings per pin (0 = no handler), see docs/Bytecode.md
 box_save    equ $0355       ; 8  rectangle saved while drawing a box
-                            ;    $035D-$036F free; the CPU stack grows down from $03FF to here
+HANDLED     equ $035D       ; 22 one byte per event: non-zero when the program handles it
+                            ;    the CPU stack grows down from $03FF to $0373
 
 ; ---- Events ----
 
@@ -131,29 +132,41 @@ DEBOUNCE_MS equ 20
         int unused_irq              ; 4 port B
         int unused_irq              ; 5 port C
         int exti_d                  ; 6 port D
-        int unused_irq              ; 7 port E
-        int unused_irq              ; 8
-        int unused_irq              ; 9
-        int unused_irq              ; 10 SPI
-        int unused_irq              ; 11 TIM1
-        int unused_irq              ; 12 TIM1
-        int unused_irq              ; 13 TIM2
-        int unused_irq              ; 14 TIM2
-        int unused_irq              ; 15
-        int unused_irq              ; 16
-        int unused_irq              ; 17 UART1
-        int unused_irq              ; 18 UART1
-        int unused_irq              ; 19 I2C
-        int unused_irq              ; 20
-        int unused_irq              ; 21
-        int unused_irq              ; 22 ADC1
+
+; IRQs 7 to 22 are never enabled, and the CPU only reads the vector of an interrupt it
+; takes, so their 64 bytes of vector space hold constant tables instead.
+        org $8024
+bit_masks:  dc.b $01,$02,$04,$08,$10,$20,$40,$80
+
+oled_init_table:
+        dc.b $AE                    ; display off
+        dc.b $D5,$80                ; clock
+        dc.b $A8,$1F                ; multiplex 32
+        dc.b $D3,$00                ; display offset 0
+        dc.b $40                    ; start line 0
+        dc.b $8D,$14                ; charge pump on
+        dc.b $20,$00                ; horizontal addressing
+        dc.b $A0                    ; columns not mirrored
+        dc.b $C0                    ; rows not mirrored
+        dc.b $DA,$12                ; COM pins
+        dc.b $81,$CF                ; contrast
+        dc.b $D9,$F1                ; pre-charge
+        dc.b $DB,$40                ; VCOMH
+        dc.b $A4                    ; show RAM
+        dc.b $A6                    ; not inverted
+        dc.b $AF                    ; display on
+        dc.b $FF                    ; end of table
+
+; Messages: x, y, font, then the counted text.
+msg_err:    dc.b 0,0,1, 4,"ERR "
+msg_at:     dc.b 0,10,1, 3,"AT "
+msg_wren:   dc.b 20,4,2, 4,"Wren"
+
+        org $8064
         int tim4_irq                ; 23 TIM4
-        int unused_irq              ; 24 FLASH
-        int unused_irq              ; 25
-        int unused_irq              ; 26
-        int unused_irq              ; 27
-        int unused_irq              ; 28
-        int unused_irq              ; 29
+
+; IRQs 24 to 29 are never enabled either: 24 more bytes.
+msg_noprog: dc.b 2,22,1, 10,"No program"
 
         org $8080
 unused_irq:
@@ -253,26 +266,24 @@ idle:
 no_program:
         call gfx_cls
         ldw x,#msg_wren
-        ldw tmp2,x
-        ldw x,#20
-        ldw tx,x
-        ldw x,#4
-        ldw ty,x
-        ld a,#2                     ; LARGE
-        call kernel_text
+        call draw_message
         ldw x,#msg_noprog
-        ldw tmp2,x
-        ldw x,#2
-        ldw tx,x
-        ldw x,#22
-        ldw ty,x
-        ld a,#1                     ; NORMAL
-        call kernel_text
+        call draw_message
         call oled_show
         jra idle
 
-msg_wren:   dc.b 4,"Wren"
-msg_noprog: dc.b 10,"No program"
+; Draws the message record at X: x, y, font, then the counted text.
+draw_message:
+        clr tx
+        ld a,(x)
+        ld tx+1,a
+        clr ty
+        ld a,(1,x)
+        ld ty+1,a
+        ld a,(2,x)
+        addw x,#3
+        ldw tmp2,x
+        jp kernel_text
 
 ; ---- Loading the program ----
 
@@ -281,56 +292,28 @@ msg_noprog: dc.b 10,"No program"
 load_program:
         ld a,FAT_VERSION
         cp a,#1
-        jrne load_bad_far
-        ld a,FAT_FIRST
-        cp a,#STORE_BLOCKS
-        jrult load_first_ok
-load_bad_far:
-        jp load_bad
-load_first_ok:
-        ; count the blocks first, so the map can sit at the top of VARS
+        jrne load_bad_near
         clr blocks
+        ldw y,#MAP_TOP
         ld a,FAT_FIRST
-count_loop:
+map_loop:
         cp a,#STORE_BLOCKS
-        jruge load_bad
+        jruge load_bad_near
+        ld (y),a
+        decw y
         inc blocks
         clrw x
         ld xl,a
         ld a,(FAT_CHAIN,x)          ; next block
         cp a,#$FE
-        jreq count_done
-        push a
-        ld a,blocks
-        cp a,#STORE_BLOCKS
-        pop a                       ; (POP keeps the flags)
-        jruge load_bad              ; longer than the store: a loop in the chain
-        jra count_loop
-count_done:
-        ; map_base = VARS_END - blocks
-        ldw x,#VARS_END
-        ld a,blocks
-        ld tmp+1,a
-        clr tmp
-        subw x,tmp
-        ldw map_base,x
-        ; fill the map
-        ldw y,map_base
-        ld a,FAT_FIRST
-fill_loop:
-        cp a,#STORE_BLOCKS
-        jruge load_bad
-        ld (y),a
+        jreq map_done
+        cpw y,#MAP_TOP-STORE_BLOCKS
+        jrne map_loop               ; longer than the store: a loop in the chain
+load_bad_near:
+        jp load_bad
+map_done:
         incw y
-        clrw x
-        ld xl,a
-        ld a,(FAT_CHAIN,x)
-        cp a,#$FE
-        jreq fill_done
-        cpw y,#VARS_END
-        jrult fill_loop
-        jra load_bad
-fill_done:
+        ldw map_base,y              ; the lowest byte of the map
         ; length: 1 to blocks*64
         ldw x,FAT_LENGTH
         ldw prog_len,x
@@ -416,7 +399,8 @@ read_program:
         srlw x
         srlw x
         srlw x
-        addw x,map_base
+        negw x
+        addw x,#MAP_TOP
         ld a,(x)                    ; physical block
         clrw x
         ld xl,a
@@ -446,9 +430,11 @@ setup_loop:
         incw x
         incw x
         incw x                      ; past event and address
-        push a
-        call mark_handled
-        pop a
+        clrw y
+        ld yl,a
+        inc a
+        ld (HANDLED,y),a            ; event + 1: never 0
+        dec a
         cp a,#EV_EVERY
         jrult setup_not_every
         cp a,#EV_EVERY+4
@@ -489,54 +475,6 @@ setup_done:
         call read_pins
         ld prev_pins,a
         ld pins_stable,a
-        ret
-
-; Sets the 'handled' bit for event A.
-mark_handled:
-        pushw x
-        ld tmp2,a
-        srl a
-        srl a
-        srl a
-        clrw x
-        ld xl,a                     ; byte
-        ld a,tmp2
-        and a,#7
-        pushw x
-        clrw x
-        ld xl,a
-        ld a,(bit_masks,x)
-        popw x
-        or a,(handled,x)
-        ld (handled,x),a
-        popw x
-        ret
-
-bit_masks:  dc.b $01,$02,$04,$08,$10,$20,$40,$80
-
-; Carry clear when event A has a handler.
-is_handled:
-        pushw x
-        ld tmp2,a
-        srl a
-        srl a
-        srl a
-        clrw x
-        ld xl,a
-        ld a,(handled,x)
-        ld tmp2+1,a
-        ld a,tmp2
-        and a,#7
-        clrw x
-        ld xl,a
-        ld a,(bit_masks,x)
-        and a,tmp2+1
-        popw x
-        jreq not_handled
-        rcf
-        ret
-not_handled:
-        scf
         ret
 
 ; A = LATCH pin (0-4: PA1, PA2, PA3, PD2, PD3): interrupts on that pin.
@@ -609,10 +547,10 @@ find_none:
 ; Events without a handler are not queued. CHANGE and PINS replace a waiting one of
 ; the same kind instead of adding another.
 queue_event:
-        push a
-        call is_handled
-        pop a
-        jrc queue_done
+        clrw y
+        ld yl,a
+        tnz (HANDLED,y)
+        jreq queue_done
         ld tmp2,a
         cp a,#EV_CHANGE
         jreq queue_merge
@@ -910,25 +848,14 @@ vm_error:
         rim
         call gfx_cls
         ldw x,#msg_err
-        ldw tmp2,x
-        clrw x
-        ldw tx,x
-        ldw ty,x
-        ld a,#1
-        call kernel_text
+        call draw_message
         ; fault number
         ld a,vm_fault
         add a,#'0'
         call text_char
         ; program address
         ldw x,#msg_at
-        ldw tmp2,x
-        clrw x
-        ldw tx,x
-        ldw x,#10
-        ldw ty,x
-        ld a,#1
-        call kernel_text
+        call draw_message
         ldw x,vpc
         ldw args+4,x
         ld a,#4
@@ -936,8 +863,6 @@ vm_error:
         call oled_show
         jp idle
 
-msg_err:    dc.b 4,"ERR "
-msg_at:     dc.b 3,"AT "
 
         include "Vm.inc"
         include "Graphics.inc"
