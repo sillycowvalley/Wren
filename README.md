@@ -14,7 +14,8 @@ SWIM are ST's names, used here to describe compatibility.
   reloads when the program file is saved.
 - **Wren BASIC**: the Thing's language. Programs react to events (`ON CHANGE`,
   `ON LATCH PD3 RISING WHILE PD2 LOW`, `ON EVERY 100` ...) and draw with statements
-  such as `HEX`, `BITS`, `TEXT` and `BOX`. See [docs/Design.md](docs/Design.md).
+  such as `HEX`, `BITS`, `TEXT` and `BOX`. See [docs/Design.md](docs/Design.md), and the
+  one-page [quick reference](docs/Infographics/Wren_BASIC_Quick_Reference.png).
 - **The kernel**: the Thing's firmware in STM8 assembly: the bytecode VM, graphics,
   fonts, events and the program loader. Programs live in a wear-levelled store
   described by a table in EEPROM.
