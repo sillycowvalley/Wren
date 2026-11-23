@@ -11,9 +11,10 @@ Each Thing gets a **kernel** once, over SWIM: the VM, the OLED driver, graphics,
 timers and the loader. The kernel sits in the first part of flash, locked by the
 user boot code (UBC) option byte so nothing can erase it except a SWIM programmer.
 Programs are written in Wren BASIC, compiled by Wren on the PC, and uploaded into the
-rest of flash, the **program store**, as many times as needed. Uploads go round the
-store like a ring, so the ~100-write limit is spread over all its blocks instead of
-spent on one.
+rest of flash, the **program store**, as many times as needed. A **file allocation
+table (FAT)** in the EEPROM says which blocks hold the program and how often each block
+has been written, so every upload goes to the least-worn free blocks and the ~100-write
+limit is spread over the whole store.
 
 ## Flash and EEPROM
 
@@ -35,52 +36,56 @@ Proposed layout (the split is settled once the kernel's real size is known):
 | 0-1 | $8000-$807F | 128 B | Interrupt vectors (locked) |
 | 2-71 | $8080-$91FF | 4.4 KB | Kernel (locked) |
 | 72-127 | $9200-$9FFF | 3.5 KB | Program store: 56 blocks |
-| EEPROM 0-1 | $4000-$407F | 128 B | Settings and program data (`EEREAD`/`EEWRITE`) |
+| EEPROM | $4000-$4077 | 120 B | The FAT: header, block chain and write counts |
+| EEPROM | $4078-$407F | 8 B | Program settings (`EEREAD`/`EEWRITE`) |
 
-## Wear levelling: the program ring
+## Wear levelling: the FAT in EEPROM
 
-Every upload is a **program image**: a 64-byte-aligned run of blocks. Its first 8
-bytes are a header:
+A program may sit in any blocks of the store, in any order. The EEPROM describes them:
 
-| Bytes | Field |
-|---|---|
-| 2 | Magic "WB" |
-| 2 | Sequence number (one more than the newest program in the store) |
-| 2 | Length of the bytecode in bytes |
-| 2 | CRC-16 of the bytecode |
+| EEPROM | Bytes | Contents |
+|---|---|---|
+| $4000 | 1 | Format version |
+| $4001 | 1 | First block of the program (0-55), or $FF for no program |
+| $4002 | 2 | Length of the bytecode in bytes |
+| $4004 | 2 | CRC-16 of the bytecode |
+| $4006 | 2 | Upload count |
+| $4008 | 56 | Chain: for each block, the next block of the program (0-55), $FE for the last one, $FF for free |
+| $4040 | 56 | Write counts: how many times each block has been written |
+| $4078 | 8 | Free for program settings |
 
-Writing a program:
+Writing a program (Wren does this over SWIM and reads everything back):
 
-1. Find the newest valid program (highest sequence with a good CRC). The new one goes
-   in the first block after its end. If it does not fit before the end of the store, it
-   goes at the start of the store instead.
-2. Write the program's blocks in order, the **header block last**. Each block is one
-   block write: one wear cycle.
-3. If power fails part way, the new header is missing or its CRC is wrong, so the
-   previous program still runs. The new program never overlaps the current one.
+1. Read the FAT. The blocks the new program needs are taken from all 56, least-written
+   first. The old program is replaced, so all its blocks are free for the new one: a
+   program can use the whole store (3.5 KB).
+2. Write the program's blocks; each is one block write, one wear cycle.
+3. Write the new FAT: chain, header and the raised write counts.
+4. Read back the blocks and the FAT and compare. If anything differs, do it again.
 
-At start-up the kernel scans the store's block starts for headers and runs the newest
-valid program. Older programs are simply overwritten as the ring comes round.
+At start-up the kernel checks the CRC, follows the chain once and builds a RAM table
+from program address to physical block, so the VM finds any byte with one lookup.
 
-How far this stretches the ~100 writes (56-block store):
+How far this stretches the ~100 writes (56-block store). Choosing the least-written
+blocks keeps all 56 within one write of each other:
 
 | Program size | Blocks | Uploads before any block reaches 100 writes |
 |---|---|---|
 | 256 B | 4 | about 1,400 |
 | 512 B | 8 | about 700 |
 | 1 KB | 16 | about 350 |
-| 1.75 KB (largest) | 28 | about 200 |
+| 3.5 KB (largest) | 56 | 100 |
 
-A program can be at most half the store, so a new one always fits beside the current
-one. The sequence number also tells Wren how worn the store is: Wren shows an estimate
-after every upload.
+Wren shows the write counts after every upload. The EEPROM itself is rated ~100k
+writes, so the FAT outlasts the flash many times over.
 
-Uploads arrive two ways, into the same ring:
+Uploads arrive two ways, with the same FAT:
 
-- **SWIM (first):** Wren.Link reads the store's headers through the ST-LINK, picks the
-  place as above and writes the blocks.
+- **SWIM (first):** Wren.Link reads the FAT through the ST-LINK, writes the blocks,
+  then the FAT, and verifies.
 - **From a host (later):** the Reggie or a Teensy sends the program on b0-b7 with PD3
-  as the strobe; the kernel's loader writes it (from a routine copied to RAM).
+  as the strobe; the kernel's loader writes it (from a routine copied to RAM) and
+  reports the CRC so the host can check it and resend.
 
 Kernel updates go over SWIM only and need the UBC lock cleared and set again. Each one
 costs a wear cycle on the kernel blocks, so the kernel is developed on the emulator and
@@ -103,7 +108,8 @@ RAM budget (1 KB):
 | Bytes | Use |
 |---|---|
 | 256 | Frame buffer (64x32, 1 bit per pixel) |
-| 256 | Program variables and arrays |
+| 200 | Program variables and arrays |
+| 56 | Program address to block table |
 | 128 | VM value stack |
 | 64 | VM call stack |
 | 32 | Event queue |
@@ -151,7 +157,7 @@ Built-in services:
 | Fonts | `SMALL` (3x5: 16 columns x 5 rows), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 4 characters on one line) |
 | Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023) |
 | Time | `MILLIS` (wraps every 65.5 s), `WAIT ms` |
-| Storage | `EEREAD(addr)`, `EEWRITE addr, v` (only writes when the value changes) |
+| Storage | `EEREAD(n)`, `EEWRITE n, v` for the 8 setting bytes, n = 0-7 (only writes when the value changes) |
 | Other | `RND(n)`, `ABS(v)`, `MIN(a,b)`, `MAX(a,b)`, `LOST` |
 
 `LARGE` and `BIG` are drawn by scaling the 5x7 font at run time, which saves the 1 KB a
@@ -240,8 +246,9 @@ END SUB
 
 1. **Keyword names and spelling** of the services above: any to rename before the
    compiler is written?
-2. **Several programs at once:** keep only the newest, or let the store hold a few
-   named programs chosen from a menu on the mode buttons?
+2. **Several programs at once:** keep one program, or let the FAT hold a few named
+   programs chosen from a menu on the mode buttons? The chain already allows it; the
+   header would need a small directory, taking from the 8 setting bytes.
 3. **Host upload protocol** over b0-b7 and PD3: settle when the Reggie side is built.
 4. **The S103's extra EEPROM** (and possibly the S003's): if the test shows 640 bytes,
-   use the extra for program data?
+   use the extra for program settings?
