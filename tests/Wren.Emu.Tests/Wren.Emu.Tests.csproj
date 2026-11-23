@@ -26,6 +26,7 @@
   <ItemGroup>
     <None Update="Data\**" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Programs\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\firmware\**" LinkBase="firmware" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
