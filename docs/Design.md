@@ -131,7 +131,7 @@ RAM budget (1 KB):
 | 256 | Program variables and arrays, sharing with the block map: the map takes one byte per block the program uses (1-48) and the variables get the rest (255-208) |
 | 128 | VM value stack |
 | 64 | VM call stack |
-| 32 | Event queue |
+| 16 | Event queue (8 slots of event and value; 7 can wait) |
 | 96 | Kernel variables (timers, latches, debounce) |
 | 160 | CPU stack and RAM routine for flash writes |
 
@@ -150,8 +150,9 @@ nothing.
 | `ON CHANGE` | b0-b7 differ from their last value (checked every millisecond), and once after `ON START`; `VALUE` holds the byte |
 | `ON EVERY n` | Every n milliseconds (up to 4 timers) |
 
-If events arrive faster than the handlers finish they wait in the queue (16 deep);
-any lost when it is full are counted and readable as `LOST`.
+If events arrive faster than the handlers finish they wait in the queue (up to 7; a new
+`CHANGE` or `PINS` replaces one of its kind still waiting); any lost when it is full are
+counted and readable as `LOST`.
 
 ## Wren BASIC
 
@@ -178,7 +179,7 @@ Built-in services:
 |---|---|
 | Display | `CLS`, `SHOW` (send the frame buffer to the OLED), `PIXEL x,y[,c]`, `LINE x1,y1,x2,y2[,c]`, `BOX x,y,w,h[,c]`, `FILL x,y,w,h[,c]`, `INVERT x,y,w,h`, `CONTRAST n`, `INVERSE on`, `FLIP on` (upside down, for a Thing mounted the other way up) |
 | Text and numbers | `TEXT x,y,"text"[,font]`, `HEX x,y,v,digits[,font]`, `DEC x,y,v[,font]`, `BIN x,y,v,bits[,font]`, `BITS x,y,w,h,v` (eight cells, b7 on the left: filled for a 1 bit, outlined for a 0, as the Thing's own BAR view), `BAR x,y,w,h,v,max` |
-| Fonts | `SMALL` (3x5: 16 columns x 5 rows; capitals only: lowercase is drawn as capitals), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 4 characters on one line) |
+| Fonts | `SMALL` (3x5: 16 columns x 5 rows; capitals only: lowercase is drawn as capitals), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 15x28 in an 18x32 cell, 3 characters on one line) |
 | Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023; this turns the pin's pull-up off, so that pin is then an analog input, not a button) |
 | Time | `MILLIS` (wraps every 65.5 s), `WAIT ms` |
 | Storage | `EEREAD(n)`, `EEWRITE n, v` for the 24 setting bytes, n = 0-23 (only writes when the value changes) |
