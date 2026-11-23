@@ -86,7 +86,8 @@ buffer  ds.b 16
 
 A label starts in column 1 (the colon is optional there) or ends with a colon.
 Directives: `ORG`, `DC.B`/`DB`, `DC.W`/`DW`, `DS.B`/`DS`, `DS.W`, `EQU` or `=`,
-`INCLUDE`, `END`.
+`INCLUDE`, `RELAX` (from there on `JP` and `CALL` become 2-byte `JRA`/`CALLR` where the
+target is in reach), `END`. Placing two things at the same address is an error.
 
 ## Licence
 

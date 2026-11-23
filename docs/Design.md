@@ -35,7 +35,7 @@ Proposed layout (the split is settled once the kernel's real size is known):
 | Blocks | Address | Size | Use |
 |---|---|---|---|
 | 0-1 | $8000-$807F | 128 B | Interrupt vectors (locked) |
-| 2-79 | $8080-$93FF | 4.9 KB | Kernel (locked); it is about 5.1 KB with the vectors |
+| 2-79 | $8080-$93FF | 4.9 KB | Kernel (locked); it is about 4.5 KB with the vectors, so about 530 bytes are free for what it still needs |
 | 80-127 | $9400-$9FFF | 3 KB | Program store: 48 blocks |
 | EEPROM | $4000-$4067 | 104 B | The FAT: header, block chain and write counts |
 | EEPROM | $4068-$407F | 24 B | Program settings (`EEREAD`/`EEWRITE`) |
@@ -262,7 +262,11 @@ BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold. It is
 ## How it is built and tested
 
 - **Kernel** in STM8 assembly under `firmware/kernel/`, assembled by Wren.Asm when Wren
-  starts. It is about 5.1 KB and must end below the store at $9400 (a test checks).
+  starts. It is about 4.5 KB and must end below the store at $9400 (a test checks).
+  Kept small by: the VM calling each instruction's routine (which ends in a 1-byte
+  `RET`), one dispatch table for opcodes $30-$74, the assembler's `RELAX` directive
+  (`JP`/`CALL` become 2-byte `JRA`/`CALLR` where the target is near), and the vector
+  slots of interrupts that are never enabled holding constant tables.
 - **Wren.Script** (C#): the BASIC compiler, the FAT planner (`ProgramStore`), a bytecode
   disassembler, and `ThingSession`, which runs a program on the emulated Thing for the
   debugger: stepping by statement, line breakpoints, globals and locals.
@@ -276,7 +280,8 @@ BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold. It is
 
 ## Open questions
 
-- **Kernel size.** The kernel fills its space to within a few bytes. Shrinking it (or
-  moving the store boundary) comes before adding the host upload loader and `ANALOG`.
+- **The store boundary.** About 530 bytes are free below the store. The host upload
+  loader (about 250 bytes) and `ANALOG` (about 40) come next; once they are in, the
+  store could grow by the blocks still free.
 
 1. **Host upload protocol** over b0-b7 and PD3: settle when the Reggie side is built.
