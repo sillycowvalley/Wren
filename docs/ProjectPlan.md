@@ -37,7 +37,7 @@ A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 | **Wren** | The Avalonia app (Windows, Mac, Linux). | Runs and debugs Wren BASIC on the emulated Thing. |
 | **Wren.Asm** | An STM8 assembler, ST's syntax (PM0044). | Done. Every instruction form checked against sdasstm8. |
 | **Wren.Emu** | An STM8 emulator, the SSD1315 model and the OLED Thing board. | Done for the Thing's needs. CPU checked against ucsim. |
-| **Wren.Link** | USB and SWIM to the ST-LINK V2, replacing STVP. | Next, when the hardware arrives. |
+| **Wren.Link** | USB and SWIM to the ST-LINK V2, replacing STVP. | Built and tested against a simulated ST-LINK; the real USB is still to be tried on Windows. |
 | **Wren.Script** | The Wren BASIC compiler, the FAT planner and the debugging session. | Done. Tested against the kernel on the emulator. |
 
 Each library has its own test project (`Wren.Asm.Tests` and so on) and stays UI-free.
@@ -108,10 +108,15 @@ The detailed design, for approval, is in [Design.md](Design.md).
 
 ## Open questions
 
-1. **The USB driver (first).** Can Wren open the ST-LINK through ST's installed Windows
-   driver, via WinUSB P/Invoke or LibUsbDotNet? Or does it need a WinUSB driver
-   installed with Zadig, which would then stop STVP working? Mac and Linux would use
-   libusb. To be answered with a small spike on Michael's machine.
+1. **The USB driver (first).** Wren.Link opens the ST-LINK through WinUSB, which ST's
+   own ST-LINK driver (STSW-LINK009) uses, so it should work beside STVP without Zadig.
+   To check, with the ST-LINK plugged in and nothing else using it:
+   1. In Visual Studio, run **Wren** and click **ST-LINK…** in the toolbar.
+   2. The log should say "Found 1 ST-LINK". If it says "No ST-LINK found", open Device
+      Manager and note where the ST-LINK appears and what driver it shows.
+   3. Wire the ST-LINK to the S103 board (RST, SWIM, GND, and 3.3 V to the board), click
+      **Connect**, and copy the log back: version, target voltage, and what the board holds.
+   Mac and Linux need libusb, which is not written yet.
 2. **ST-LINK clones.** Do the clones behave like a genuine V2 (firmware version, SWIM
    speed)?
 3. **The OLED module's wiring.** The model shows RAM columns 32-95 and rows 0-31, and

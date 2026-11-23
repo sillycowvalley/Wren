@@ -34,6 +34,8 @@
         <Button Content="Reset" Click="OnReset" ToolTip.Tip="Pull NRST low: the program starts again; RAM and the OLED keep their contents" />
         <Button Content="Power cycle" Click="OnPowerCycle" ToolTip.Tip="Power off and on: RAM and the OLED are cleared" />
         <Border Width="12" />
+        <Button Content="ST-LINK…" Click="OnOpenLink" ToolTip.Tip="Program a real Thing through an ST-LINK" />
+        <Border Width="12" />
         <ComboBox Name="BoardBox" SelectionChanged="OnBoardChanged" MinWidth="250">
           <ComboBoxItem>OLED Thing (STM8S003F3)</ComboBoxItem>
           <ComboBoxItem>Development board (STM8S103F3)</ComboBoxItem>

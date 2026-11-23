@@ -174,6 +174,22 @@ public partial class MainWindow : Window
         watcher.Renamed += (_, _) => reloadPending = true;
     }
 
+    // ---- A real Thing ----
+
+    private LinkWindow? linkWindow;
+
+    private void OnOpenLink(object? sender, RoutedEventArgs e)
+    {
+        if (linkWindow != null)
+        {
+            linkWindow.Activate();
+            return;
+        }
+        linkWindow = new LinkWindow(kernel, () => session?.Program);
+        linkWindow.Closed += (_, _) => linkWindow = null;
+        linkWindow.Show(this);
+    }
+
     // ---- Running and stepping ----
 
     private void OnRun(object? sender, RoutedEventArgs e)

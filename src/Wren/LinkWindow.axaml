@@ -1,0 +1,28 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Wren.LinkWindow"
+        Title="Wren — ST-LINK"
+        Width="720" Height="560" MinWidth="560" MinHeight="420">
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Top" Spacing="8">
+      <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                 Text="Programs a Thing (or the development board) through an ST-LINK V2 on its SWIM header: RST to NRST, SWIM to SWIM, GND to GND, and 3.3 V or 5 V to the Thing's VCC." />
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB" />
+        <ComboBox Name="DeviceBox" MinWidth="260" />
+        <Button Name="ConnectButton" Content="Connect" Click="OnConnect" ToolTip.Tip="Open the ST-LINK, enter SWIM and read the Thing" />
+        <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
+                ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
+        <Button Name="UploadButton" Content="Upload program" Click="OnUpload"
+                ToolTip.Tip="Uploads the program open in Wren through the FAT (least-written blocks first)" />
+        <Button Name="RunButton" Content="Run" Click="OnRun" ToolTip.Tip="Reset the Thing and let it run" />
+      </StackPanel>
+      <TextBlock Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold" />
+    </StackPanel>
+    <TextBox Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+             FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" Margin="0,8,0,0" />
+  </DockPanel>
+</Window>

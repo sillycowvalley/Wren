@@ -22,7 +22,11 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 
 ## Layout
 - `src/Wren` (Avalonia app), `src/Wren.Asm`, `src/Wren.Emu`, `src/Wren.Script` (BASIC
-  compiler, FAT, debugging session); tests in `tests/`.
+  compiler, FAT, debugging session), `src/Wren.Link` (ST-LINK V2 over WinUSB, SWIM,
+  kernel install and program upload); tests in `tests/`. `tests/Wren.Link.Tests` has a
+  simulated ST-LINK (`FakeStLink`) that answers the USB commands from the emulator.
+- Wren.Link's protocol comes from the open-source stm8flash and OpenOCD (both GPL): read
+  them for the protocol, never copy their code into this MIT repository.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
   `firmware/demo/HexDemo.asm` (an early test program).
 - `programs/` holds Wren BASIC programs; `OledThing.bas` is the Thing's own behaviour.
