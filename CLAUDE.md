@@ -26,8 +26,12 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
   `firmware/demo/HexDemo.asm` (an early test program).
 - `programs/` holds Wren BASIC programs; `OledThing.bas` is the Thing's own behaviour.
+- `art/` holds the SVG sources for the wren; `src/Wren/Assets` holds what the app uses
+  (`wren.ico`, `wren.png`, `wren-oled.png`).
 - `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
   `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` (pins).
+- Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
+  rendered from, and the render steps are in that file's opening comment.
 - Michael works in Wren BASIC; the app never shows assembly or CPU registers.
 
 ## Reference data in the tests

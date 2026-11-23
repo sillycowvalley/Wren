@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Wren.SplashWindow"
+        Title="Wren"
+        Icon="/Assets/wren.ico"
+        Width="480" Height="300"
+        CanResize="False"
+        SystemDecorations="None"
+        WindowStartupLocation="CenterScreen"
+        Background="#FBF4E8">
+
+  <Border BorderBrush="#3E2410" BorderThickness="1">
+    <Grid ColumnDefinitions="180,*" Margin="16,0,20,0">
+      <Image Grid.Column="0" Source="/Assets/wren.png" Width="172" Height="172"
+             VerticalAlignment="Center" HorizontalAlignment="Center" />
+
+      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4" Margin="10,0,0,0">
+        <TextBlock Text="Wren" FontSize="46" FontWeight="Bold" Foreground="#3E2410" />
+        <TextBlock Text="BASIC for the 8-bit OLED Thing" FontSize="15" Foreground="#6B4A2E" />
+
+        <Border Background="#1B2A4A" CornerRadius="4" Padding="6" Margin="0,16,0,0"
+                HorizontalAlignment="Left">
+          <Image Source="/Assets/wren-oled.png" Width="128" Height="64"
+                 RenderOptions.BitmapInterpolationMode="None" />
+        </Border>
+
+        <TextBlock Name="VersionText" FontSize="12" Foreground="#8A6B4E" Margin="0,14,0,0" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

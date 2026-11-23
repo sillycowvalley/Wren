@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Wren, simplified for small icon sizes (16 to 256 px). Original artwork, MIT licence. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 34 236 236">
+  <defs>
+    <g id="silhouette">
+      <rect x="-20" y="-66" width="40" height="96" rx="20" transform="translate(76 124) rotate(-28)" />
+      <ellipse cx="120" cy="156" rx="80" ry="64" />
+      <circle cx="170" cy="112" r="50" />
+    </g>
+    <clipPath id="bodyClip">
+      <ellipse cx="120" cy="156" rx="80" ry="64" />
+      <circle cx="170" cy="112" r="50" />
+    </clipPath>
+  </defs>
+
+  <!-- Legs -->
+  <g stroke="#4A2C14" stroke-width="10" stroke-linecap="round" fill="none">
+    <path d="M110 210 L106 244" />
+    <path d="M142 212 L144 244" />
+  </g>
+
+  <!-- Beak -->
+  <path d="M200 98 Q232 102 252 118 Q232 126 200 126 Z" fill="#2E1C0F" />
+
+  <!-- Outline, then fill -->
+  <use href="#silhouette" fill="#3E2410" stroke="#3E2410" stroke-width="14" stroke-linejoin="round" />
+  <use href="#silhouette" fill="#A8693A" />
+
+  <g clip-path="url(#bodyClip)">
+    <!-- Buff belly -->
+    <ellipse cx="160" cy="180" rx="60" ry="42" fill="#F0CF9F" />
+    <ellipse cx="192" cy="142" rx="28" ry="22" fill="#F0CF9F" />
+    <!-- Wing -->
+    <ellipse cx="100" cy="150" rx="52" ry="32" transform="rotate(-14 100 150)" fill="#7C4A24" />
+  </g>
+
+  <!-- Eyebrow -->
+  <path d="M142 98 Q170 80 206 94" stroke="#F8E8C8" stroke-width="10" stroke-linecap="round" fill="none" />
+  <!-- Eye -->
+  <circle cx="186" cy="110" r="12" fill="#140C06" />
+  <circle cx="190" cy="105" r="4" fill="#FFFFFF" />
+</svg>
