@@ -6,6 +6,16 @@ Wren is a C# / .NET 8 development environment for STM8S003F3-class microcontroll
 It is driven through an ST-LINK V2 over SWIM. The first target is the Digicool
 "8-bit OLED Thing" (STM8S003F3U, 64x32 SSD1315 OLED over I2C on PB4/PB5). Licence: MIT.
 
+## Strategy: protect the Things' flash
+
+A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
+
+1. **Emulator.** Both the MCU and the OLED are emulated in Wren. Rewrites are unlimited.
+2. **Development board.** A roomier STM8 board with a real 0.49" 64x32 OLED module wired
+   to it. The firmware keeps to the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM.
+3. **The OLED Thing.** Each Thing is flashed once with the finished firmware. After that,
+   changes go to its EEPROM only.
+
 ## Parts
 
 | Project | What it is |
@@ -29,7 +39,7 @@ Each library has its own test project (`Wren.Link.Tests` and so on) and stays UI
    output is checked byte for byte against known encodings.
 3. **The firmware: the graphics library and the interpreter.** It proves the design fits
    in 8 KB flash and 1 KB RAM. It is developed in the emulator, then run on the
-   STM8S103F3 boards, then flashed once to each Thing.
+   development board with a real OLED, then flashed once to each Thing.
 4. **Wren.Script.** It proves a useful program fits in 128 bytes of EEPROM and can be
    changed without reflashing.
 5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug
@@ -50,6 +60,12 @@ Each library has its own test project (`Wren.Link.Tests` and so on) and stays UI
 
 ## Open questions
 
+0. **Which development board.** The recommendation is the STM8S103F3P6 "minimum system"
+   board. It has the same core, peripherals and pins as the S003, including I2C on
+   PB4/PB5, so the same binary runs on both. It has 10 KB flash rated ~10k writes, and it
+   costs a few dollars. Its test LED is usually on PB5 (SDA); remove it. The alternative
+   is the NUCLEO-8S207K8. It has a built-in ST-LINK and much more room, but its I2C is on
+   different pins (PE1/PE2), so its binary would differ from the Thing's.
 1. **The USB driver (first).** Can Wren open the ST-LINK through ST's installed Windows
    driver, via WinUSB P/Invoke or LibUsbDotNet? Or does it need a WinUSB driver
    installed with Zadig, which would then stop STVP working? Mac and Linux would use
