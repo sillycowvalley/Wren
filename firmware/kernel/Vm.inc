@@ -820,17 +820,11 @@ sv_eewrite:
         ldw x,args
         cpw x,#SETTINGS_SIZE
         jruge eewrite_done          ; outside the settings: ignored
-        ld a,args+1
-        clrw x
-        ld xl,a
-        ld a,args+3                 ; value
-        cp a,(SETTINGS,x)
-        jreq eewrite_done           ; unchanged: no write
+        addw x,#SETTINGS
         mov FLASH_DUKR,#$AE
         mov FLASH_DUKR,#$56
-        ld (SETTINGS,x),a
-eewrite_wait:
-        btjf FLASH_IAPSR,#2,eewrite_wait
+        ld a,args+3
+        call ee_write               ; only writes when the value changes
         bres FLASH_IAPSR,#3         ; lock again
 eewrite_done:
         ret

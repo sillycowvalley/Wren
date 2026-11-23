@@ -315,6 +315,12 @@ text_char:
 char_unknown:
         ld a,#'?'
 char_known:
+        tnz tfont
+        jrne char_table
+        cp a,#96
+        jrult char_table
+        sub a,#32                   ; SMALL has no lowercase: a-z as A-Z
+char_table:
         sub a,#32
         clrw x
         ld xl,a

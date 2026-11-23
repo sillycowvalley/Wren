@@ -48,6 +48,7 @@ public sealed class Stm8Device : IBus
         flash = new byte[info.FlashSize];
         EepromWrites = new int[info.EepromSize];
         FlashWrites = new int[info.FlashSize];
+        FlashBlockCycles = new int[info.FlashSize / 64];
 
         Itc = new InterruptController();
         PortA = new GpioPort('A', 0x5000);
@@ -118,6 +119,15 @@ public sealed class Stm8Device : IBus
     /// <summary>How many times firmware has written each flash byte since loading.</summary>
     public int[] FlashWrites { get; }
 
+    /// <summary>Program/erase cycles per 64-byte flash block caused by firmware since loading.</summary>
+    public int[] FlashBlockCycles { get; }
+
+    /// <summary>Flash blocks protected by the UBC option byte (OPT1 at $4801), from $8000.</summary>
+    public int ProtectedBlocks => options[1];
+
+    private int blockStart = -1;
+    private int blockBytes;
+
     /// <summary>Names of peripherals the firmware used that Wren does not model.</summary>
     public HashSet<string> UnmodelledPeripherals { get; } = new();
 
@@ -150,6 +160,7 @@ public sealed class Stm8Device : IBus
         }
         Array.Clear(EepromWrites);
         Array.Clear(FlashWrites);
+        Array.Clear(FlashBlockCycles);
     }
 
     /// <summary>Clears flash, EEPROM and RAM, as a programmer's erase would.</summary>
@@ -258,11 +269,7 @@ public sealed class Stm8Device : IBus
         }
         if (address >= FlashStart && address < FlashStart + flash.Length)
         {
-            if (FlashControl.TryWrite(program: true))
-            {
-                flash[address - FlashStart] = value;
-                FlashWrites[address - FlashStart]++;
-            }
+            WriteFlash(address - FlashStart, value);
             return;
         }
         if (address >= EepromStart && address < EepromStart + eeprom.Length)
@@ -297,6 +304,54 @@ public sealed class Stm8Device : IBus
             return;
         }
         if (address == CfgGcr) cfgGcr = (byte)(value & 3);
+    }
+
+    /// <summary>
+    /// A write into program flash: refused while locked or inside the UBC; in block mode
+    /// the 64 bytes of a block are collected and count as one cycle, and the code doing
+    /// it must run from RAM, as RM0016 requires.
+    /// </summary>
+    private void WriteFlash(int offset, byte value)
+    {
+        if (offset < ProtectedBlocks * 64)
+        {
+            FlashControl.Refuse();
+            return;
+        }
+        if (FlashControl.BlockMode)
+        {
+            if (!FlashControl.ProgramUnlocked)
+            {
+                FlashControl.Refuse();
+                return;
+            }
+            if (Cpu.PC >= FlashStart)
+            {
+                Cpu.Fault = "Block programming of flash must run from RAM";
+                return;
+            }
+            int start = offset & ~63;
+            if (start != blockStart)
+            {
+                blockStart = start;
+                blockBytes = 0;
+            }
+            flash[offset] = value;
+            FlashWrites[offset]++;
+            if (++blockBytes == 64)
+            {
+                FlashBlockCycles[start / 64]++;
+                blockStart = -1;
+                FlashControl.BlockDone();
+            }
+            return;
+        }
+        if (FlashControl.TryWrite(program: true))
+        {
+            flash[offset] = value;
+            FlashWrites[offset]++;
+            FlashBlockCycles[offset / 64]++;
+        }
     }
 
     private void NoteUnmodelled(int address)

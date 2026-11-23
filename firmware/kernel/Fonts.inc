@@ -4,7 +4,8 @@
 ; FontNormal: 5 columns x 7 rows, from the X11 misc-fixed 5x7 font (public domain),
 ;   with Wren's own 5-wide digits 0-9 and A-F. Drawn on a 6-pixel pitch.
 ; FontSmall: 3 columns x 6 rows, from the X11 misc-fixed 4x6 font (public domain),
-;   last column dropped. Drawn on a 4-pixel pitch.
+;   last column dropped. Drawn on a 4-pixel pitch. Characters 32-95 only: the kernel
+;   draws 96-126 (lowercase and ` { | } ~) as the character 32 below.
 
 FontNormal:
         dc.b $00,$00,$00,$00,$00   ; ' '
@@ -168,34 +169,3 @@ FontSmall:
         dc.b $11,$1F,$00   ; ']'
         dc.b $02,$01,$02   ; '^'
         dc.b $20,$20,$20   ; '_'
-        dc.b $00,$01,$02   ; '`'
-        dc.b $0C,$12,$1E   ; 'a'
-        dc.b $1F,$12,$0C   ; 'b'
-        dc.b $0C,$12,$12   ; 'c'
-        dc.b $0C,$12,$1F   ; 'd'
-        dc.b $0C,$1A,$14   ; 'e'
-        dc.b $04,$1E,$05   ; 'f'
-        dc.b $24,$2A,$1E   ; 'g'
-        dc.b $1F,$02,$1C   ; 'h'
-        dc.b $14,$1D,$10   ; 'i'
-        dc.b $20,$20,$1D   ; 'j'
-        dc.b $1F,$04,$1A   ; 'k'
-        dc.b $11,$1F,$10   ; 'l'
-        dc.b $1E,$04,$1E   ; 'm'
-        dc.b $1E,$02,$1C   ; 'n'
-        dc.b $0C,$12,$0C   ; 'o'
-        dc.b $3E,$0A,$04   ; 'p'
-        dc.b $0C,$12,$3E   ; 'q'
-        dc.b $1E,$04,$02   ; 'r'
-        dc.b $14,$16,$0A   ; 's'
-        dc.b $02,$0F,$12   ; 't'
-        dc.b $0E,$10,$1E   ; 'u'
-        dc.b $0E,$10,$0E   ; 'v'
-        dc.b $1E,$08,$1E   ; 'w'
-        dc.b $12,$0C,$12   ; 'x'
-        dc.b $26,$28,$1E   ; 'y'
-        dc.b $12,$1A,$16   ; 'z'
-        dc.b $04,$1E,$21   ; '{'
-        dc.b $00,$1F,$00   ; '|'
-        dc.b $21,$1E,$04   ; '}'
-        dc.b $02,$01,$02   ; '~'
