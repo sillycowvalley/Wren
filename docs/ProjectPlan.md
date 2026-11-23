@@ -64,7 +64,9 @@ large hex digits and is what Wren opens on first run.
    module, as OpenOCD's STM8 support does), and a home-made SWIM programmer on a Teensy
    4.1 or an RP2040 (whose PIO suits SWIM's timing; run the Thing at 3.3 V with it).
 
-## The firmware in outline (to be settled at step 3)
+## The firmware in outline
+
+The detailed design, for approval, is in [Design.md](Design.md).
 
 - **Flash, written once:** an I2C/SSD1315 driver with a 256-byte frame buffer. Fonts:
   5x7 (10x4 text), 3x5 (16x5 text) and large 16x32 digits. Drawing primitives. Number
