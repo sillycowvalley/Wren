@@ -30,6 +30,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   (`wren.ico`, `wren.png`, `wren-oled.png`).
 - `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
   `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` (pins).
+- Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
+  rendered from, and the render steps are in that file's opening comment.
 - Michael works in Wren BASIC; the app never shows assembly or CPU registers.
 
 ## Reference data in the tests
