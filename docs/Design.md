@@ -237,9 +237,9 @@ END SUB
 - **Wren.Script** (C#): the BASIC compiler and a bytecode disassembler, with its own
   tests.
 - **Wren.Emu** gains block programming, the UBC lock and wear counted per 64-byte
-  block, so the ring can be tested for thousands of uploads in the emulator.
+  block, so the FAT can be tested for thousands of uploads in the emulator.
 - **Tests** compile BASIC programs, run them on the emulated Thing with the kernel, and
-  compare the OLED's pixels; ring tests upload thousands of programs and check the
+  compare the OLED's pixels; FAT tests upload thousands of programs and check the
   wear spread and power-failure recovery.
 
 ## Open questions
