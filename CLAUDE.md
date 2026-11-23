@@ -12,7 +12,7 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - He reviews and merges everything into main. Never push to main.
 - Decisions of substance are his: ask with AskUserQuestion, recommendation first.
 - Documents state current truth and open issues, never a change log.
-- He is on Sydney time. "rt" means "Roger that".
+- He is in Nelson, New Zealand (NZ time). "rt" means "Roger that".
 - Keep answers simple and direct.
 
 ## Public-repo rules
@@ -20,9 +20,36 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - Keep ST's names (STM8, ST-LINK, SWIM) out of the project's own names. Using them to
   describe compatibility is fine.
 
+## Layout
+- `src/Wren` (Avalonia app), `src/Wren.Asm`, `src/Wren.Emu`, `src/Wren.Script` (BASIC
+  compiler, FAT, debugging session); tests in `tests/`.
+- `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
+  `firmware/demo/HexDemo.asm` (an early test program).
+- `programs/` holds Wren BASIC programs; `OledThing.bas` is the Thing's own behaviour.
+- `art/` holds the SVG sources for the wren; `src/Wren/Assets` holds what the app uses
+  (`wren.ico`, `wren.png`, `wren-oled.png`).
+- `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
+  `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` (pins).
+- Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
+  rendered from, and the render steps are in that file's opening comment.
+- Michael works in Wren BASIC; the app never shows assembly or CPU registers.
+
+## Reference data in the tests
+- `tests/Wren.Asm.Tests/Data/Encodings.txt`: bytes from sdasstm8 (SDCC 4.2.0) for every
+  instruction form. sdasstm8 gets forward branches to plain numbers wrong, so branch
+  offsets there are computed (target - next address).
+- `tests/Wren.Emu.Tests/Data/Flags.txt` and `Programs/CpuMix.expected`: results from
+  ucsim 0.6.4 (`sstm8 -t STM8S103`). ucsim's Z flag after DIV/DIVW is inverted against
+  PM0044; the tests skip that bit and Wren follows PM0044.
+- Regenerating needs `sdcc` and `sdcc-ucsim` in a Linux container; Michael never needs them.
+
 ## Code rules
 - Avalonia UI for the app. Each library is UI-free and has its own test project, so it
   can be tested headless.
 - Firmware is STM8 assembly. There is no C compiler.
-- Firmware must fit the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM.
+- Firmware must fit the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM. The kernel
+  must end below the program store at $9440; a test checks.
+- Wren.Asm directives beyond ST's syntax: `RELAX` (short JRA/CALLR where in reach),
+  and overlapping output is an error. Kernel opcodes $30 up are one contiguous table:
+  add new opcodes at the end and keep `Op.cs`, `Vm.inc` and `docs/Bytecode.md` in step.
 - A cloud session cannot reach USB. Michael tests Wren.Link on Windows.
