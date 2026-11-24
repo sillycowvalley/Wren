@@ -80,7 +80,10 @@ public class BoardAndLayoutTests
         Assert.Equal(eeprom, info.EepromSize);
         Assert.Equal(settings, info.SettingsAddress);
         Assert.Equal(Board.OledThing, link.Programmer.DetectBoard().Board);
-        Assert.Equal(info, link.Programmer.ReadStatus(Kernel.Image).Info);
+        var status = link.Programmer.ReadStatus(Kernel.Image);
+        Assert.Equal(info, status.Info);
+        Assert.Equal(FlashContents.WrenKernel, status.Flash);     // compared as installed: with this Thing's EEPROM
+        Assert.Equal(0, status.KernelBlocksDiffering);
     }
 
     [Fact]
@@ -107,9 +110,14 @@ public class BoardAndLayoutTests
             v1[55 + oldBlocks[i]] = (byte)(5 + i);
         }
         image.Write(0x4000, v1);
+        image.Write(0x8000, new byte[] { 0x82, 0x00, 0x80, 0x81, 0x82, 0x00, 0x80, 0x80 });   // an old kernel's vectors
         thing.Mcu.Load(image.Bytes);
 
         var link = Connect(thing.Mcu);
+        var before = link.Programmer.ReadStatus(Kernel.Image);
+        Assert.Equal(FlashContents.WrenKernelOlder, before.Flash);
+        Assert.Equal(program.Image.Length, before.ProgramLength);
+        Assert.Equal(oldBlocks.Select(b => b + 7), link.Programmer.ReadWear().ProgramBlocks);
         Assert.Throws<LinkException>(() => link.Programmer.UploadProgram(program.Image));   // the old kernel's layout
         link.Programmer.InstallKernel(Kernel.Image);
         link.Target.Connect();

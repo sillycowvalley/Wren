@@ -12,13 +12,13 @@ namespace Wren;
 public partial class LinkWindow : Window
 {
     private readonly Kernel? kernel;
-    private readonly Func<CompiledProgram?> currentProgram;
     private IReadOnlyList<ProgrammerInfo> devices = Array.Empty<ProgrammerInfo>();
     private ThingLink? link;
     private bool kernelConfirmed;
     private bool unprotectConfirmed;
     private bool factoryConfirmed;
     private bool hasWrenKernel;
+    private bool hasCurrentKernel;
     private WearWindow? wearWindow;
     private string? imageToWrite;
 
@@ -26,20 +26,24 @@ public partial class LinkWindow : Window
     private EepromProbe? eepromProbe;
     private readonly WindowLayout layout;
 
-    public LinkWindow() : this(null, () => null) { }
+    public LinkWindow() : this(null) { }
 
-    public LinkWindow(Kernel? kernel, Func<CompiledProgram?> currentProgram)
+    /// <summary>
+    /// For setting a Thing up and checking it: install the kernel, restore factory settings,
+    /// write images, read the wear, run the checks. Programs are uploaded, run and debugged
+    /// from the main window (Debug → Target → Thing on the programmer).
+    /// </summary>
+    public LinkWindow(Kernel? kernel)
     {
         InitializeComponent();
         this.kernel = kernel;
-        this.currentProgram = currentProgram;
         layout = new WindowLayout(this, SavedSettings.Current.ProgrammerWindow);
         Closing += (_, _) =>
         {
             KeepLayout();
             SavedSettings.Save();
         };
-        Closed += (_, _) => link?.Dispose();
+        Closed += (_, _) => ReleaseThing();
         UpdateButtons();
         OnFind(null, new RoutedEventArgs());
     }
@@ -65,14 +69,12 @@ public partial class LinkWindow : Window
         ConnectButton.IsEnabled = !connected && devices.Count > 0;
         DisconnectButton.IsEnabled = connected;
         KernelButton.IsEnabled = open && kernel != null;
-        UploadButton.IsEnabled = open;
         FactoryButton.IsEnabled = connected;
         ImageButton.IsEnabled = open;
         WearButton.IsEnabled = open && hasWrenKernel;
-        DebugChecksButton.IsEnabled = open && hasWrenKernel && kernel != null;
+        DebugChecksButton.IsEnabled = open && hasCurrentKernel && kernel != null;
         EepromButton.IsEnabled = open;
         EepromButton.Content = eepromProbe != null ? "EEPROM check: read back" : "EEPROM size check";
-        RunButton.IsEnabled = connected;
         UnprotectButton.IsEnabled = connected && link!.Target.NoAccess;
         KernelButton.Content = kernelConfirmed ? "Click again to install" : "Install kernel";
         FactoryButton.Content = factoryConfirmed ? "Click again to restore" : "Restore factory settings";
@@ -126,7 +128,7 @@ public partial class LinkWindow : Window
                     Log($"Sync pulse: {esp.SyncMicroseconds:F1} µs (16 is right).");
                 if (opened.Link is PicoLink pico)
                     Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs (16 is right).");
-                Log($"SWIM connected; the Thing's CPU is stalled. SWIM_CSR = ${opened.Target.ConnectedCsr:X2}" +
+                Log($"SWIM connected; the Thing's program is stopped while it is connected. SWIM_CSR = ${opened.Target.ConnectedCsr:X2}" +
                     (opened.Target.WaitedForAccess > 0 ? $", after waiting {opened.Target.WaitedForAccess} ms for the chip to allow memory access." : "."));
                 if (opened.Target.NoAccess)
                 {
@@ -155,12 +157,16 @@ public partial class LinkWindow : Window
     {
         var s = l.Programmer.ReadStatus(kernel?.Image);
         hasWrenKernel = s.HasKernel;
+        hasCurrentKernel = s.Info != null;
         string text = s.ReadOutProtected
             ? "Read-out protection is on: the Thing's contents cannot be read. Installing the kernel needs it removed, which erases the chip."
             : s.Flash switch
             {
                 FlashContents.Empty => $"The flash is empty.  Locked blocks (UBC): {s.ProtectedBlocks}.",
                 FlashContents.OtherFirmware => $"The flash holds other firmware, not Wren's kernel.  Locked blocks (UBC): {s.ProtectedBlocks}.",
+                FlashContents.WrenKernelOlder =>
+                    $"Wren's kernel, an older build: Install kernel updates it and keeps the program.  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
+                    $"Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  Uploads: {s.Uploads}.",
                 FlashContents.WrenKernelOtherBuild =>
                     $"Wren's kernel, another build: Install kernel would rewrite {s.KernelBlocksDiffering} block{(s.KernelBlocksDiffering == 1 ? "" : "s")}.  " +
                     $"Locked blocks (UBC): {s.ProtectedBlocks}.  Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  " +
@@ -178,23 +184,38 @@ public partial class LinkWindow : Window
                 Board.LedThing => "An LED Thing",
                 _ => "The board is not known",
             } + $" ({board.How}).";
-            if (s.Info == null && s.HasKernel) boardText += "  Its kernel is older than this Wren's: click Install kernel before uploading.";
             text = boardText + "  " + text;
         }
         Log(text);
         Dispatcher.UIThread.Post(() => StatusText.Text = text);
     }
 
-    private void OnDisconnect(object? sender, RoutedEventArgs e)
+    private void OnDisconnect(object? sender, RoutedEventArgs e) => ReleaseThing();
+
+    /// <summary>
+    /// Lets go of the Thing, leaving it running (connected, its CPU is stalled): Disconnect,
+    /// closing the window, and the main window taking the programmer to run or debug a program.
+    /// </summary>
+    public void ReleaseThing()
     {
-        link?.Dispose();
+        if (link == null) return;
+        try
+        {
+            if (!link.Target.NoAccess) link.Programmer.Run();
+        }
+        catch (Exception ex) when (ex is LinkException or IOException or TimeoutException or InvalidOperationException)
+        {
+            Log($"Could not start the Thing as it was let go: {ex.Message}");
+        }
+        link.Dispose();
         link = null;
         kernelConfirmed = false;
         unprotectConfirmed = false;
         factoryConfirmed = false;
         hasWrenKernel = false;
+        hasCurrentKernel = false;
         imageToWrite = null;
-        Log("Disconnected.");
+        Log("Disconnected: the Thing runs.");
         UpdateButtons();
     }
 
@@ -410,42 +431,4 @@ public partial class LinkWindow : Window
         });
     }
 
-    private async void OnUpload(object? sender, RoutedEventArgs e)
-    {
-        if (link == null) return;
-        var program = currentProgram();
-        if (program == null || !program.Success)
-        {
-            Log("The program does not build: see Messages in Wren's main window.");
-            return;
-        }
-        var l = link;
-        await Work("Upload program", () =>
-        {
-            l.Programmer.Progress += Log;
-            try
-            {
-                l.Programmer.UploadProgram(program.Image);
-                ShowStatus(l);
-            }
-            finally
-            {
-                l.Programmer.Progress -= Log;
-            }
-        });
-    }
-
-    private async void OnRun(object? sender, RoutedEventArgs e)
-    {
-        if (link == null) return;
-        var l = link;
-        await Work("Run", () =>
-        {
-            l.Programmer.Run();
-            Log("The Thing is running. Connect again to talk to it.");
-        });
-        link?.Dispose();
-        link = null;
-        UpdateButtons();
-    }
 }

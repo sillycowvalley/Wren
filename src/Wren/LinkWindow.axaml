@@ -11,16 +11,14 @@
         <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB and Picos on serial ports" />
         <ComboBox Name="DeviceBox" MinWidth="260" />
         <Button Name="ConnectButton" Content="Connect" Click="OnConnect" ToolTip.Tip="Open the programmer, enter SWIM and read the Thing" />
-        <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect" />
+        <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect"
+                ToolTip.Tip="Lets go of the Thing, which then runs (connected, its program is stopped)" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button Name="FactoryButton" Content="Restore factory settings" Click="OnRestoreFactory"
                 ToolTip.Tip="Writes Digicool's factory firmware back (removing read-out protection first if it is on, which erases the chip), clears the EEPROM and leaves the Thing unprotected" />
         <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
                 ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
-        <Button Name="UploadButton" Content="Upload program" Click="OnUpload"
-                ToolTip.Tip="Uploads the program open in Wren through the FAT (least-written blocks first)" />
-        <Button Name="RunButton" Content="Run" Click="OnRun" ToolTip.Tip="Reset the Thing and let it run" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"

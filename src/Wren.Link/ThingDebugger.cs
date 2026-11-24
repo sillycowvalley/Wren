@@ -99,10 +99,10 @@ public sealed class ThingDebugger : IDisposable
     /// <summary>
     /// Uploads the program if the Thing holds anything else, then starts it: under the
     /// debugger (reset with the debug module on, stopping at the first statement when
-    /// stopAtFirst), or on its own (debug false: the Thing is reset, left running, and this
+    /// stopAtFirst, or at line runTo), or on its own (debug false: the Thing is reset, left running, and this
     /// debugger is done).
     /// </summary>
-    public void Start(CompiledProgram compiled, bool debug, bool stopAtFirst = false)
+    public void Start(CompiledProgram compiled, bool debug, bool stopAtFirst = false, int runTo = 0)
     {
         program = compiled;
         statementStarts = compiled.Lines.Select(l => l.Address).ToHashSet();
@@ -124,7 +124,7 @@ public sealed class ThingDebugger : IDisposable
         link.Target.WriteByte(DmEnfctr, 0xFE);         // TIM4 frozen while stalled: MILLIS and EVERY pause too
         skipVpc = -1;
         pausedAtStatement = pausedBeforeFetch = false;
-        targetLine = 0;
+        targetLine = runTo;
         started = true;
         if (stopAtFirst) Go(StepKind.Into, 0, ThingRunState.Stepping);
         else Go(StepKind.None, 0, ThingRunState.Running);

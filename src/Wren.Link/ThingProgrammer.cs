@@ -15,7 +15,7 @@ public sealed record StoreWear(IReadOnlyList<int> WriteCounts, IReadOnlyList<int
 /// another build (most of its blocks match: a kernel update writes only the rest); or other
 /// firmware.
 /// </summary>
-public enum FlashContents { Empty, WrenKernel, WrenKernelOtherBuild, OtherFirmware }
+public enum FlashContents { Empty, WrenKernel, WrenKernelOtherBuild, WrenKernelOlder, OtherFirmware }
 
 /// <summary>
 /// What a Thing (or the development board) holds, as read over SWIM. The program and the
@@ -31,8 +31,8 @@ public sealed record ThingStatus(
     IReadOnlyList<int> WriteCounts,
     KernelInfo? Info = null)
 {
-    /// <summary>Wren's kernel, this build or another: the program table is Wren's.</summary>
-    public bool HasKernel => Flash is FlashContents.WrenKernel or FlashContents.WrenKernelOtherBuild;
+    /// <summary>Wren's kernel, any build: the program table is Wren's.</summary>
+    public bool HasKernel => Flash is FlashContents.WrenKernel or FlashContents.WrenKernelOtherBuild or FlashContents.WrenKernelOlder;
 }
 
 /// <summary>
@@ -63,7 +63,7 @@ public sealed class ThingProgrammer
     /// </summary>
     public StoreWear ReadWear()
     {
-        byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
+        byte[] fat = ReadFat();
         bool formatted = ProgramStore.IsFormatted(fat);
         return new StoreWear(
             formatted ? ProgramStore.WriteCounts(fat) : new int[ProgramStore.Blocks],
@@ -80,22 +80,27 @@ public sealed class ThingProgrammer
     {
         byte rop = target.ReadByte(OptionRop);
         byte ubc = target.ReadByte(OptionUbc);
-        byte[] reset = target.Read(FlashStart, 4);
+        byte[] vectors = target.Read(FlashStart, WrenVectors.Length);
+        var info = ReadInfo();
         int differing = 0;
         FlashContents flash;
-        if (reset[0] != 0x82) flash = FlashContents.Empty; // every STM8 program's reset vector holds INT ($82)
+        if (vectors[0] != 0x82) flash = FlashContents.Empty; // every STM8 program's reset vector holds INT ($82)
         else if (kernel == null) flash = FlashContents.WrenKernel; // nothing to compare against: assume Wren's
         else
         {
-            var (blocks, differ) = CompareBlocks(kernel);
+            // Compare with the kernel as Wren installed it here: its info block carries this Thing's EEPROM.
+            var installed = info != null ? KernelInfo.ForEeprom(kernel, info.EepromSize) : kernel;
+            var (blocks, differ) = CompareBlocks(installed);
             differing = differ;
-            // Another build of Wren's kernel shares nearly all its blocks; other firmware shares none.
+            // Another build of Wren's kernel shares nearly all its blocks; an older layout
+            // (before the info block) still starts with Wren's vectors; other firmware shares neither.
             flash = differ == 0 ? FlashContents.WrenKernel
                 : differ * 4 <= blocks ? FlashContents.WrenKernelOtherBuild
+                : info == null && vectors.AsSpan().SequenceEqual(WrenVectors) ? FlashContents.WrenKernelOlder
                 : FlashContents.OtherFirmware;
         }
-        byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
-        bool formatted = flash is FlashContents.WrenKernel or FlashContents.WrenKernelOtherBuild && ProgramStore.IsFormatted(fat);
+        byte[] fat = ReadFat();
+        bool formatted = flash is not (FlashContents.Empty or FlashContents.OtherFirmware) && ProgramStore.IsFormatted(fat);
         return new ThingStatus(
             rop == RopOn,
             ubc,
@@ -104,7 +109,17 @@ public sealed class ThingProgrammer
             formatted && fat[1] != ProgramStore.FreeBlock ? (fat[2] << 8) | fat[3] : 0,
             formatted ? (fat[6] << 8) | fat[7] : 0,
             formatted ? ProgramStore.WriteCounts(fat) : new int[ProgramStore.Blocks],
-            ReadInfo());
+            info);
+    }
+
+    /// <summary>The first 8 bytes of every Wren kernel: reset to start ($8081), TRAP to an IRET ($8080).</summary>
+    private static readonly byte[] WrenVectors = { 0x82, 0x00, 0x80, 0x81, 0x82, 0x00, 0x80, 0x80 };
+
+    /// <summary>The program table, an older version 1 table read as this layout (its program in place).</summary>
+    private byte[] ReadFat()
+    {
+        byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
+        return ProgramStore.MigrateVersion1(fat) ?? fat;
     }
 
     /// <summary>The kernel's info block, or null when the flash holds no Wren kernel with one.</summary>
@@ -299,7 +314,7 @@ public sealed class ThingProgrammer
             if (target.ReadByte(OptionUbc + i) != DefaultOptions[i]) target.WriteOptionByte(OptionUbc + i, DefaultOptions[i]);
         }
         Verify(eeprom, "EEPROM");
-        Say("Factory firmware restored, without read-out protection. Click Run to start it.");
+        Say("Factory firmware restored, without read-out protection. Disconnect (or close this window) and it runs.");
     }
 
     /// <summary>ST's default option bytes from $4801 on: everything off, each with its complement.</summary>
