@@ -127,3 +127,13 @@ The detailed design, for approval, is in [Design.md](Design.md).
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.
+5. **Debugging on the Thing.** The chip's debug module (UM0470 chapter 4) can stop the
+   CPU, read and write memory and registers, and break on a data read in an address
+   range, all over SWIM, with no kernel code. The plan is a BASIC line breakpoint as a
+   data-read breakpoint on the line's first bytecode. UM0470 leaves three things open,
+   which **Tools → Debug module checks…** tests on a Thing running Wren's kernel and a
+   program (it writes no flash or EEPROM):
+   1. Does a data-read breakpoint fire when the kernel reads the program from flash?
+   2. Can SWIM read RAM while the kernel idles in WFI (NO_ACCESS is documented as set in WFI)?
+   3. Does DM_ENFCTR freeze TIM4 (the 1 ms tick) while the CPU is stopped?
+   Connect, click **Debug module checks**, and copy the log back.

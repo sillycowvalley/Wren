@@ -445,6 +445,12 @@ public partial class MainWindow : Window
         linkWindow.Show(this);
     }
 
+    private void OnDebugChecks(object? sender, RoutedEventArgs e)
+    {
+        OnOpenLink(sender, e);
+        linkWindow?.ExplainDebugChecks();
+    }
+
     // ---- Running and stepping ----
 
     private void OnRun(object? sender, RoutedEventArgs e)

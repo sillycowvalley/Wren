@@ -61,6 +61,8 @@
       </MenuItem>
       <MenuItem Header="_Tools">
         <MenuItem Header="_Programmer…" Click="OnOpenLink" />
+        <MenuItem Header="_Debug module checks…" Click="OnDebugChecks"
+                  ToolTip.Tip="Bench checks of the chip's debug module, for debugging on a real Thing: opens the programmer" />
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="Wren BASIC _quick reference" Click="OnQuickReference" />
