@@ -15,6 +15,7 @@ public partial class LinkWindow : Window
     private IReadOnlyList<ProgrammerInfo> devices = Array.Empty<ProgrammerInfo>();
     private ThingLink? link;
     private bool kernelConfirmed;
+    private readonly WindowLayout layout;
 
     public LinkWindow() : this(null, () => null) { }
 
@@ -23,10 +24,19 @@ public partial class LinkWindow : Window
         InitializeComponent();
         this.kernel = kernel;
         this.currentProgram = currentProgram;
+        layout = new WindowLayout(this, SavedSettings.Current.ProgrammerWindow);
+        Closing += (_, _) =>
+        {
+            KeepLayout();
+            SavedSettings.Save();
+        };
         Closed += (_, _) => link?.Dispose();
         UpdateButtons();
         OnFind(null, new RoutedEventArgs());
     }
+
+    /// <summary>Puts this window's placement in the settings (saved when a window closes).</summary>
+    public void KeepLayout() => SavedSettings.Current.ProgrammerWindow = layout.Placement;
 
     private void Log(string message) =>
         Dispatcher.UIThread.Post(() =>

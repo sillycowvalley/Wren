@@ -43,6 +43,9 @@ See [docs/ProjectPlan.md](docs/ProjectPlan.md).
 Open `Wren.sln` in Visual Studio 2022 (with the .NET 8 SDK), set **Wren** as the startup
 project and run it. The tests are in Test Explorer.
 
+Wren remembers its window positions and sizes, the Board choice and the last program
+opened in `%AppData%\Wren\Settings.json`. Delete that file to go back to the defaults.
+
 ## A taste of Wren BASIC
 
 ```
