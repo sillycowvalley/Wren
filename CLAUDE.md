@@ -19,8 +19,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - Keep answers simple and direct.
 
 ## Public-repo rules
-- Digicool's factory firmware is in `firmware/digicool` with Greg's (Digicool's owner)
-  permission; it is not MIT. Never commit Digicool's artwork.
+- Digicool's factory firmware for both boards (OLED Thing and LED Thing) is in
+  `firmware/digicool` with Greg's (Digicool's owner) permission; it is not MIT. Never commit Digicool's artwork.
 - Keep ST's names (STM8, ST-LINK, SWIM) out of the project's own names. Using them to
   describe compatibility is fine.
 
@@ -41,7 +41,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - `art/` holds the SVG sources for the wren; `src/Wren/Assets` holds what the app uses
   (`wren.ico`, `wren.png`, `wren-oled.png`).
 - `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
-  `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` (pins).
+  `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` and `docs/LedThing.md`
+  (the two Digicool boards' pins).
 - Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
   rendered from, and the render steps are in that file's opening comment.
 - Michael works in Wren BASIC; the app never shows assembly or CPU registers.

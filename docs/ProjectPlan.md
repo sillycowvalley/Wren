@@ -148,3 +148,14 @@ The detailed design, for approval, is in [Design.md](Design.md).
    program grows from 3,008 to 3,520 bytes, and `EEREAD`/`EEWRITE` keep 10 setting bytes
    instead of 26. The FAT's version goes up; installing the kernel carries each block's
    write count over (old block n is new block n + 8), and the program is uploaded again.
+   With it, `PULLUPS mask` joins Wren BASIC: one bit per b input, 1 pulled up, 0 floating
+   (`PULLUPS &HFF` is the OLED Thing's default today). The STM8S has no internal
+   pull-downs.
+7. **The LED Thing.** Digicool's second board (`docs/LedThing.md`) has the same chip, with
+   b0-b7 on other pins and eight charlieplexed LEDs on PD3-PD6 instead of the OLED. The
+   plan, after item 6: kernel board profiles (a shared core with an OLED layer or an LED
+   layer; the LED kernel drops the graphics, OLED driver and fonts, about 1.8 KB, which
+   goes to its program store); `LEDS value` and `LED n, ON|OFF` in Wren BASIC, the
+   graphics statements refused on the LED board; a board byte in kernels and programs, so
+   neither lands on the wrong board; an emulated LED Thing in the app; and
+   `programs/LedThing.bas` recreating its eight modes. Michael has LED Things to test on.
