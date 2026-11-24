@@ -6,15 +6,18 @@ namespace Wren.Script;
 /// </summary>
 public static class ProgramStore
 {
-    public const int Blocks = Compiler.StoreBlocks;     // 47
+    public const int Blocks = Compiler.StoreBlocks;     // 54
     public const int BlockSize = 64;
-    public const int StoreAddress = 0x9440;
+    public const int StoreAddress = 0x9280;
+
+    /// <summary>The FAT's version byte for this layout (version 1 was the 47-block store at $9440).</summary>
+    public const byte FatVersion = 2;
     public const int FatAddress = 0x4000;
     public const int FatSize = 128;
     public const int ChainOffset = 8;
-    public const int CountsOffset = ChainOffset + Blocks;       // $37
-    public const int SettingsOffset = CountsOffset + Blocks;    // $66
-    public const int SettingsSize = FatSize - SettingsOffset;   // 26
+    public const int CountsOffset = ChainOffset + Blocks;       // $3E
+    public const int SettingsOffset = CountsOffset + Blocks;    // $74
+    public const int SettingsSize = FatSize - SettingsOffset;   // 12
     public const byte LastBlock = 0xFE;
     public const byte FreeBlock = 0xFF;
 
@@ -45,7 +48,7 @@ public static class ProgramStore
         int needed = (program.Length + BlockSize - 1) / BlockSize;
         if (needed > Blocks) throw new ArgumentException($"The program needs {needed} blocks; the store has {Blocks}", nameof(program));
 
-        bool formatted = currentFat is { Length: FatSize } && currentFat[0] == 1;
+        bool formatted = IsFormatted(currentFat);
         var counts = new int[Blocks];
         var settings = new byte[SettingsSize];
         int uploads = 0;
@@ -60,7 +63,7 @@ public static class ProgramStore
         var chosen = Enumerable.Range(0, Blocks).OrderBy(b => counts[b]).ThenBy(b => b).Take(needed).ToList();
 
         var fat = new byte[FatSize];
-        fat[0] = 1;
+        fat[0] = FatVersion;
         fat[1] = (byte)chosen[0];
         fat[2] = (byte)(program.Length >> 8);
         fat[3] = (byte)program.Length;
@@ -93,7 +96,7 @@ public static class ProgramStore
     public static IReadOnlyList<int> ProgramBlocks(byte[]? fat)
     {
         var blocks = new List<int>();
-        if (fat == null || fat.Length < FatSize || fat[0] != 1) return blocks;
+        if (!IsFormatted(fat)) return blocks;
         int block = fat[1];
         while (block < Blocks && blocks.Count < Blocks && !blocks.Contains(block))
         {
@@ -106,9 +109,37 @@ public static class ProgramStore
     public static int[] WriteCounts(byte[]? fat)
     {
         var counts = new int[Blocks];
-        if (fat is { Length: FatSize } && fat[0] == 1)
-            for (int b = 0; b < Blocks; b++) counts[b] = fat[CountsOffset + b];
+        if (IsFormatted(fat))
+            for (int b = 0; b < Blocks; b++) counts[b] = fat![CountsOffset + b];
         return counts;
+    }
+
+    /// <summary>True for a FAT of this layout.</summary>
+    public static bool IsFormatted(byte[]? fat) => fat is { Length: FatSize } && fat[0] == FatVersion;
+
+    /// <summary>
+    /// The FAT of version 1 (47 blocks at $9440, 26 setting bytes) as this layout: old block n
+    /// is new block n + 7 at the same address, so the program stays where it is, with its write
+    /// counts; the 7 blocks the old kernel ended in start at 0. Null if fat is not version 1.
+    /// </summary>
+    public static byte[]? MigrateVersion1(byte[] fat)
+    {
+        const int OldBlocks = 47, OldCounts = 8 + OldBlocks, OldSettings = OldCounts + OldBlocks;
+        int shift = (0x9440 - StoreAddress) / BlockSize;     // 7
+        if (fat.Length != FatSize || fat[0] != 1) return null;
+        var v2 = new byte[FatSize];
+        v2[0] = FatVersion;
+        Array.Copy(fat, 2, v2, 2, 6);                         // length, CRC, uploads
+        v2[1] = fat[1] < OldBlocks ? (byte)(fat[1] + shift) : FreeBlock;
+        for (int b = 0; b < Blocks; b++) v2[ChainOffset + b] = FreeBlock;
+        for (int b = 0; b < OldBlocks; b++)
+        {
+            byte next = fat[8 + b];
+            v2[ChainOffset + b + shift] = next < OldBlocks ? (byte)(next + shift) : next;
+            v2[CountsOffset + b + shift] = fat[OldCounts + b];
+        }
+        Array.Copy(fat, OldSettings, v2, SettingsOffset, SettingsSize);
+        return v2;
     }
 
     /// <summary>CRC-16/CCITT: start $FFFF, polynomial $1021, as the kernel checks it.</summary>

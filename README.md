@@ -24,7 +24,7 @@ SWIM are ST's names, used here to describe compatibility.
   such as `HEX`, `BITS`, `TEXT` and `BOX`. See [docs/Design.md](docs/Design.md), and the
   one-page [quick reference](docs/Infographics/Wren_BASIC_Quick_Reference.png).
 - **The kernel**: the Thing's firmware in STM8 assembly: the bytecode VM, graphics,
-  fonts, events and the program loader. Programs live in a wear-levelled store
+  fonts, events and loading the program. Programs live in a wear-levelled store
   described by a table in EEPROM.
 - **Wren.Script**: the BASIC compiler and the debugger's engine.
 - **Wren.Asm**: an STM8 assembler using ST's instruction syntax. It writes Intel HEX

@@ -47,8 +47,8 @@ public sealed class CompiledProgram
 /// <summary>Compiles Wren BASIC to bytecode. See docs/Design.md and docs/Bytecode.md.</summary>
 public sealed class Compiler
 {
-    /// <summary>Flash blocks in the program store, $9440-$9FFF. The kernel's STORE must agree.</summary>
-    public const int StoreBlocks = (0xA000 - 0x9440) / 64;
+    /// <summary>Flash blocks in the program store, $9280-$9FFF. The kernel's STORE must agree.</summary>
+    public const int StoreBlocks = (0xA000 - 0x9280) / 64;
     public const int VariableArea = 256;
 
     private sealed class RoutineSymbol

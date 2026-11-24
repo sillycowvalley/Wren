@@ -68,7 +68,7 @@ must not be powered from anything else while the board is connected. The OLED is
 4. **Restore factory settings** writes Digicool's firmware (`firmware/digicool`) back, two
    clicks. If read-out protection is on, it is removed first, which erases the chip. The
    EEPROM is cleared, and the Thing is left unprotected. Click **Run** to start it.
-5. **Wear report…**, under Wren's kernel, shows the 47 program-store blocks. It reads the
+5. **Wear report…**, under Wren's kernel, shows the 54 program-store blocks. It reads the
    writes the Thing itself has recorded for each block and marks the current program's
    blocks. It reads only.
 6. **Install kernel**, **Upload program** and **Run** work as they do with an ST-LINK.

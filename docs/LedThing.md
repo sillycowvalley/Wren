@@ -2,7 +2,7 @@
 
 Digicool Things' second board, from its schematic (Rev 1.0, 2019-12-12) and its factory
 firmware (`firmware/digicool/8-bit_led_thing.s19`). Wren does not support it yet: the plan
-is item 7 of `docs/ProjectPlan.md`.
+is item 6 of `docs/ProjectPlan.md`.
 
 ## Parts
 

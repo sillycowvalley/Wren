@@ -4,12 +4,12 @@
 
 Decided so far: programs are **bytecode** run by a virtual machine (VM); the language is
 **BASIC-flavoured**; programs react to the outside world through **event handlers**; a
-Thing holds **one program**; the EEPROM is used as below (the S103's extra EEPROM is not).
+Thing holds **one program**; the EEPROM is used as below.
 
 ## The idea in one paragraph
 
 Each Thing gets a **kernel** once, over SWIM: the VM, the OLED driver, graphics, fonts,
-timers and the loader. The kernel sits in the first part of flash, locked by the
+timers and the program loading. The kernel sits in the first part of flash, locked by the
 user boot code (UBC) option byte so nothing can erase it except a SWIM programmer.
 Programs are written in Wren BASIC, compiled by Wren on the PC, and uploaded into the
 rest of flash, the **program store**, as many times as needed. A **file allocation
@@ -28,17 +28,19 @@ Facts from RM0016 for the STM8S003 (low density):
 - Whole-block writes to program flash must run from RAM, and the CPU stops while flash
   is written.
 - The UBC option byte locks blocks 0 to N-1 against all writes from firmware.
-- The 128-byte data EEPROM is 2 blocks of 64 bytes, rated ~100k writes.
-
-Proposed layout (the split is settled once the kernel's real size is known):
+- The 128-byte data EEPROM is 2 blocks of 64 bytes, rated ~100k writes. Some STM8S003s
+  have the S103's 640 bytes ($4000-$427F); Wren checks each Thing as it installs the
+  kernel (the Programmer window's EEPROM size check proves it with a power cycle).
 
 | Blocks | Address | Size | Use |
 |---|---|---|---|
 | 0-1 | $8000-$807F | 128 B | Interrupt vectors (locked) |
-| 2-80 | $8080-$943F | 5 KB | Kernel, locked by the UBC option byte; 7 bytes are free |
-| 81-127 | $9440-$9FFF | 2.9 KB | Program store: 47 blocks (3,008 bytes) |
-| EEPROM | $4000-$4065 | 102 B | The FAT: header, block chain and write counts |
-| EEPROM | $4066-$407F | 26 B | Program settings (`EEREAD`/`EEWRITE`) |
+| 2-73 | $8080-$927F | 4.6 KB | Kernel, locked by the UBC option byte; 19 bytes free before the info block |
+| 73 | $9270-$927F | 16 B | The kernel info block (Bytecode.md), the end of the kernel's last block |
+| 74-127 | $9280-$9FFF | 3.4 KB | Program store: 54 blocks (3,456 bytes) |
+| EEPROM | $4000-$4073 | 116 B | The FAT: header, block chain and write counts |
+| EEPROM | $4074-$407F | 12 B | Program settings (`EEREAD`/`EEWRITE`) on a 128-byte EEPROM |
+| EEPROM | $4080-$427F | 512 B | Program settings on a 640-byte EEPROM instead |
 
 ## Wear levelling: the FAT in EEPROM
 
@@ -46,20 +48,20 @@ A program may sit in any blocks of the store, in any order. The EEPROM describes
 
 | EEPROM | Bytes | Contents |
 |---|---|---|
-| $4000 | 1 | Format version |
-| $4001 | 1 | First block of the program (0-46), or $FF for no program |
+| $4000 | 1 | Format version: 2 |
+| $4001 | 1 | First block of the program (0-53), or $FF for no program |
 | $4002 | 2 | Length of the bytecode in bytes |
 | $4004 | 2 | CRC-16 of the bytecode |
 | $4006 | 2 | Upload count |
-| $4008 | 47 | Chain: for each block, the next block of the program (0-46), $FE for the last one, $FF for free |
-| $4037 | 47 | Write counts: how many times each block has been written |
-| $4066 | 26 | Free for program settings |
+| $4008 | 54 | Chain: for each block, the next block of the program (0-53), $FE for the last one, $FF for free |
+| $403E | 54 | Write counts: how many times each block has been written |
+| $4074 | 12 | Program settings, on a 128-byte EEPROM |
 
 Writing a program (Wren does this over SWIM and reads everything back):
 
-1. Read the FAT. The blocks the new program needs are taken from all 47, least-written
+1. Read the FAT. The blocks the new program needs are taken from all 54, least-written
    first. The old program is replaced, so all its blocks are free for the new one: a
-   program can use the whole store (3,008 bytes).
+   program can use the whole store (3,456 bytes).
 2. Write the program's blocks; each is one block write, one wear cycle.
 3. Write the new FAT: chain, header and the raised write counts.
 4. Read back the blocks and the FAT and compare. If anything differs, do it again.
@@ -67,33 +69,31 @@ Writing a program (Wren does this over SWIM and reads everything back):
 At start-up the kernel checks the CRC, follows the chain once and builds a RAM table
 from program address to physical block, so the VM finds any byte with one lookup.
 
-How far this stretches the ~100 writes (47-block store). Choosing the least-written
-blocks keeps all 47 within one write of each other:
+How far this stretches the ~100 writes (54-block store). Choosing the least-written
+blocks keeps all 54 within one write of each other:
 
 | Program size | Blocks | Uploads before any block reaches 100 writes |
 |---|---|---|
-| 128 B | 2 | about 2,350 |
-| 256 B | 4 | about 1,175 |
-| 1 KB | 16 | about 290 |
-| 3,008 B (largest) | 47 | 100 |
+| 128 B | 2 | about 2,700 |
+| 256 B | 4 | about 1,350 |
+| 1 KB | 16 | about 335 |
+| 3,456 B (largest) | 54 | 100 |
 
 Wren shows the write counts after every upload. The EEPROM itself is rated ~100k
 writes, so the FAT outlasts the flash many times over.
 
-Uploads arrive two ways, with the same FAT:
+Uploads go over SWIM: Wren.Link reads the FAT through the programmer, writes the blocks,
+then the FAT, and verifies. It uploads only to a kernel whose info block says this
+layout, and skips the upload when the Thing already holds the program.
 
-- **SWIM (first):** Wren.Link reads the FAT through the ST-LINK, writes the blocks,
-  then the FAT, and verifies.
-- **From a host:** hold PD2 low while the Thing starts; it shows "Upload". The Reggie
-  or a Teensy then sends "WREN", the length, the program and its CRC on b0-b7, strobed
-  by PD3 (see "Uploading from a host" in Bytecode.md). The kernel writes each block
-  from a routine copied to RAM, to blocks the current program does not use, writes the
-  FAT once the CRC checks out and starts the new program. There is no wire back to the
-  host: a bad upload shows "Failed" on the OLED and the old program stays.
-
-Kernel updates go over SWIM only and need the UBC lock cleared and set again. Each one
+Kernel updates go over SWIM and need the UBC lock cleared and set again. Each one
 costs a wear cycle on the kernel blocks, so the kernel is developed on the emulator and
-the development board and installed on a Thing only a handful of times.
+the development board and installed on a Thing only a handful of times. Before writing,
+Install kernel checks the board (Digicool's firmware, a Wren kernel's info block, or an
+OLED answering on I2C) and refuses anything but an OLED Thing; it checks the EEPROM's
+size and records it in the kernel's info block. A Thing whose FAT is version 1 (the
+47-block store at $9440) keeps its program: old block n is new block n + 7 at the same
+address, so the table is rewritten with the program and its write counts in place.
 
 ## The VM
 
@@ -120,7 +120,7 @@ costs few bytes:
 - `IF` and loops use short relative jumps (2 bytes) wherever they reach.
 
 For example, `HEX 21, 2, shown, 2, LARGE` is 7 bytes. The whole "usual views" program
-below comes to about 100 bytes: 2 blocks, so about 2,350 uploads before a block
+below comes to about 100 bytes: 2 blocks, so about 2,700 uploads before a block
 reaches its rating.
 
 RAM budget (1 KB):
@@ -128,7 +128,7 @@ RAM budget (1 KB):
 | Bytes | Use |
 |---|---|
 | 256 | Frame buffer (64x32, 1 bit per pixel) |
-| 256 | Program variables and arrays, sharing with the block map: the map takes one byte per block the program uses (1-47) and the variables get the rest (255-209) |
+| 256 | Program variables and arrays, sharing with the block map: the map takes one byte per block the program uses (1-54) and the variables get the rest (255-202) |
 | 128 | VM value stack |
 | 64 | VM call stack |
 | 16 | Event queue (8 slots of event and value; 7 can wait) |
@@ -182,7 +182,8 @@ Built-in services:
 | Fonts | `SMALL` (3x5: 16 columns x 5 rows; capitals only: lowercase is drawn as capitals), `NORMAL` (5x7: 10 x 4), `LARGE` (5x7 drawn 2x: 10x14, 5 x 2), `BIG` (5x7 drawn 3x across and 4x down: 15x28 in an 18x32 cell, 3 characters on one line) |
 | Inputs | `INPUTS` (b0-b7 as a byte), `PIN(PA1)` and so on (0 or 1), `ANALOG(PD2)` and `ANALOG(PD3)` (0-1023; this turns the pin's pull-up off, so that pin is then an analog input, not a button) |
 | Time | `MILLIS` (wraps every 65.5 s), `WAIT ms` |
-| Storage | `EEREAD(n)`, `EEWRITE n, v` for the 26 setting bytes, n = 0-25 (only writes when the value changes) |
+| Storage | `EEREAD(n)`, `EEWRITE n, v` for the setting bytes: 12 on a 128-byte EEPROM (n = 0-11), 512 on a 640-byte one (only writes when the value changes; beyond the last, EEWRITE does nothing and EEREAD gives 0) |
+| Pins | `PULLUPS mask`: bit n pulls bn up (1) or leaves it floating (0); all are pulled up at start (`PULLUPS &HFF`). The chip has no pull-downs |
 | Other | `RND(n)`, `ABS(v)`, `MIN(a,b)`, `MAX(a,b)`, `LOST` |
 
 `LARGE` and `BIG` are drawn by scaling the 5x7 font at run time, which saves the 1 KB a
@@ -267,9 +268,10 @@ emulator, and its die with the faces in Digicool's image.
 ## How it is built and tested
 
 - **Kernel** in STM8 assembly under `firmware/kernel/`, assembled by Wren.Asm when Wren
-  starts. It is about 4.6 KB and must end below the store at $9440 (a test checks).
+  starts. It is about 4.6 KB and must end below its info block at $9270 (the assembler
+refuses an overlap; a test checks the store at $9280).
   Kept small by: the VM calling each instruction's routine (which ends in a 1-byte
-  `RET`), one dispatch table for opcodes $30-$74, the assembler's `RELAX` directive
+  `RET`), one dispatch table for opcodes $30-$75, the assembler's `RELAX` directive
   (`JP`/`CALL` become 2-byte `JRA`/`CALLR` where the target is near), and the vector
   slots of interrupts that are never enabled holding constant tables.
 - **Wren.Script** (C#): the BASIC compiler, the FAT planner (`ProgramStore`), a bytecode
@@ -277,19 +279,15 @@ emulator, and its die with the faces in Digicool's image.
   debugger: stepping by statement, line breakpoints, globals and locals.
 - **Wren** shows the program with the current line, breakpoints, variables, the running
   handler and its `VALUE`, and the store's write counts. The assembly level stays hidden.
-- **Wren.Emu** models block programming (which must run from RAM) and the UBC lock, so
-  the host upload is tested end to end: tests send programs over the pins, check the
-  FAT, the wear spread over many uploads, a bad CRC, and that the kernel is never
-  written.
+- **Wren.Emu** models block programming and the UBC lock, so uploads and kernel installs
+  through the simulated programmers are tested end to end, including an old Thing's
+  program surviving the kernel update.
 - **Tests** compile BASIC programs, run them on the emulated Thing with the kernel, and
   compare the OLED's pixels; FAT tests upload thousands of programs and check the
   wear spread, and that a failed upload is caught by the read-back.
 
 ## Open questions
 
-- **Kernel space.** 7 bytes are free below the store at $9440. A larger kernel
+- **Kernel space.** 19 bytes are free below the info block at $9270. A larger kernel
   feature needs more trimming or the store moved up another block (64 bytes of program
   space each).
-
-1. **Host upload protocol.** Built as described above; the Reggie side still has to be
-   written and tried against it.

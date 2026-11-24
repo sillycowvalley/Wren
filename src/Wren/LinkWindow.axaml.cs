@@ -169,6 +169,18 @@ public partial class LinkWindow : Window
                     $"Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  Uploads: {s.Uploads}.  " +
                     $"Most writes to one store block: {s.WriteCounts.Max()}.",
             };
+        if (!s.ReadOutProtected)
+        {
+            var board = l.Programmer.DetectBoard();
+            string boardText = board.Board switch
+            {
+                Board.OledThing => "An OLED Thing",
+                Board.LedThing => "An LED Thing",
+                _ => "The board is not known",
+            } + $" ({board.How}).";
+            if (s.Info == null && s.HasKernel) boardText += "  Its kernel is older than this Wren's: click Install kernel before uploading.";
+            text = boardText + "  " + text;
+        }
         Log(text);
         Dispatcher.UIThread.Post(() => StatusText.Text = text);
     }

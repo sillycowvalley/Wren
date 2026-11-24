@@ -64,8 +64,10 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   live in a standard menu bar with the usual shortcuts, not in toolbars. Each library is
   UI-free and has its own test project, so it can be tested headless.
 - Firmware is STM8 assembly. There is no C compiler.
-- Firmware must fit the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM. The kernel
-  must end below the program store at $9440; a test checks.
+- Firmware must fit the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM (some Things
+  have 640 B; Install kernel checks and records it in the kernel's info block). The kernel
+  must end below its info block at $9270, just under the program store at $9280; the
+  assembler refuses an overlap and a test checks.
 - Wren.Asm directives beyond ST's syntax: `RELAX` (short JRA/CALLR where in reach),
   and overlapping output is an error. Kernel opcodes $30 up are one contiguous table:
   add new opcodes at the end and keep `Op.cs`, `Vm.inc` and `docs/Bytecode.md` in step.
