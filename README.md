@@ -44,7 +44,8 @@ Open `Wren.sln` in Visual Studio 2022 (with the .NET 8 SDK), set **Wren** as the
 project and run it. The tests are in Test Explorer.
 
 Wren remembers its window positions and sizes, the width of the column beside the program,
-the Board choice and the last program opened in `%AppData%\Wren\Settings.json`. Delete that file to go back to the defaults.
+the Board choice, the last programmer connected to and the last program opened in
+`%AppData%\Wren\Settings.json`. Delete that file to go back to the defaults.
 
 ## A taste of Wren BASIC
 

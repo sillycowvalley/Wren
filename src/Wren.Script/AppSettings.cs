@@ -52,6 +52,9 @@ public sealed class AppSettings
 
     public BoardChoice Board { get; set; } = BoardChoice.Thing;
 
+    /// <summary>The programmer last connected to, as the Programmer window names it.</summary>
+    public string? LastProgrammer { get; set; }
+
     /// <summary>The program file last opened.</summary>
     public string? LastFile { get; set; }
 
