@@ -10,7 +10,24 @@ public partial class SplashWindow : Window
     {
         InitializeComponent();
         VersionText.Text = $"Version {Version}   ·   Starting…";
+        PointerPressed += (_, _) =>
+        {
+            if (IsAbout) Close();
+        };
     }
+
+    /// <summary>Shown from Help, About: says so, and closes on a click.</summary>
+    public bool IsAbout
+    {
+        get => isAbout;
+        init
+        {
+            isAbout = value;
+            if (value) VersionText.Text = $"Version {Version}   ·   MIT licence   ·   Click to close";
+        }
+    }
+
+    private readonly bool isAbout;
 
     /// <summary>The app's version, without any source revision suffix.</summary>
     public static string Version

@@ -8,143 +8,166 @@
         Width="1240" Height="760" MinWidth="980" MinHeight="600">
 
   <Window.Styles>
-    <Style Selector="TextBlock.heading">
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Margin" Value="0,12,0,6" />
-    </Style>
     <Style Selector="ToggleButton.bit">
-      <Setter Property="Width" Value="44" />
-      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Width" Value="42" />
+      <Setter Property="Padding" Value="0,3" />
     </Style>
     <Style Selector="TextBlock.code">
-      <Setter Property="FontFamily" Value="Cascadia Mono, Consolas, Menlo, monospace" />
+      <Setter Property="FontFamily" Value="Consolas, Cascadia Mono, Menlo, monospace" />
       <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="TextBlock.note">
+      <Setter Property="Foreground" Value="#5A5A5A" />
+      <Setter Property="Margin" Value="0,0,0,4" />
     </Style>
   </Window.Styles>
 
   <DockPanel>
-    <!-- Toolbar -->
-    <Border DockPanel.Dock="Top" Padding="8" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-      <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Content="Open…" Click="OnOpen" ToolTip.Tip="Open a Wren BASIC program (.bas)" />
-        <Button Content="Reload" Click="OnReload" ToolTip.Tip="Compile and upload again (also happens when the file is saved)" />
-        <Border Width="12" />
-        <Button Name="RunButton" Content="Run" Click="OnRun" MinWidth="64" />
-        <Button Name="StepButton" Content="Step" Click="OnStep" ToolTip.Tip="Run one BASIC statement" />
-        <Button Content="Reset" Click="OnReset" ToolTip.Tip="Pull NRST low: the program starts again; RAM and the OLED keep their contents" />
-        <Button Content="Power cycle" Click="OnPowerCycle" ToolTip.Tip="Power off and on: RAM and the OLED are cleared" />
-        <Border Width="12" />
-        <Button Content="ST-LINK…" Click="OnOpenLink" ToolTip.Tip="Program a real Thing through an ST-LINK" />
-        <Border Width="12" />
-        <ComboBox Name="BoardBox" SelectionChanged="OnBoardChanged" MinWidth="250">
-          <ComboBoxItem>OLED Thing (STM8S003F3)</ComboBoxItem>
-          <ComboBoxItem>Development board (STM8S103F3)</ComboBoxItem>
-        </ComboBox>
-        <TextBlock Name="FileText" VerticalAlignment="Center" Margin="12,0,0,0" Opacity="0.7" />
-      </StackPanel>
-    </Border>
+    <!-- Menu bar -->
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_File">
+        <MenuItem Header="_Open…" InputGesture="Ctrl+O" Click="OnOpen" />
+        <MenuItem Header="_Reload" InputGesture="Ctrl+R" Click="OnReload" />
+        <Separator />
+        <MenuItem Header="E_xit" InputGesture="Alt+F4" Click="OnExit" />
+      </MenuItem>
+      <MenuItem Header="_Program">
+        <MenuItem Name="RunMenu" Header="_Run" InputGesture="F5" Click="OnRun" />
+        <MenuItem Name="StepMenu" Header="_Step" InputGesture="F10" Click="OnStep" />
+        <Separator />
+        <MenuItem Header="R_eset" Click="OnReset" />
+        <MenuItem Header="_Power cycle" Click="OnPowerCycle" />
+      </MenuItem>
+      <MenuItem Header="_Board">
+        <MenuItem Name="ThingMenu" Header="_OLED Thing (STM8S003F3)" ToggleType="Radio" GroupName="board" IsChecked="True" Click="OnBoardChanged" />
+        <MenuItem Name="DevBoardMenu" Header="_Development board (STM8S103F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
+      </MenuItem>
+      <MenuItem Header="_Tools">
+        <MenuItem Header="_ST-LINK…" Click="OnOpenLink" />
+      </MenuItem>
+      <MenuItem Header="_Help">
+        <MenuItem Header="Wren BASIC _quick reference" Click="OnQuickReference" />
+        <Separator />
+        <MenuItem Header="_About Wren" Click="OnAbout" />
+      </MenuItem>
+    </Menu>
 
     <!-- Status bar -->
-    <Border DockPanel.Dock="Bottom" Padding="8,4" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-      <TextBlock Name="StatusText" Opacity="0.8" />
+    <Border DockPanel.Dock="Bottom" Classes="statusbar">
+      <TextBlock Name="StatusText" />
     </Border>
 
     <!-- Left: the board -->
-    <Border DockPanel.Dock="Left" Padding="16" BorderThickness="0,0,1,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+    <Border DockPanel.Dock="Left" Padding="10,8">
       <ScrollViewer>
-        <StackPanel Spacing="4">
-          <Border CornerRadius="6" Padding="10" Background="#1B2A4A" HorizontalAlignment="Left">
-            <local:OledView Name="Oled" Width="448" Height="224" />
-          </Border>
+        <StackPanel Spacing="2">
+          <HeaderedContentControl Classes="group" Header="OLED">
+            <Border Background="#1B2A4A" Padding="8" HorizontalAlignment="Left" BorderBrush="#0E1626" BorderThickness="1">
+              <local:OledView Name="Oled" Width="448" Height="224" />
+            </Border>
+          </HeaderedContentControl>
 
-          <TextBlock Classes="heading" Text="Inputs b7 – b0" />
-          <StackPanel Orientation="Horizontal" Spacing="4">
-            <ToggleButton Classes="bit" Name="B7" Content="b7" Click="OnBitClicked" />
-            <ToggleButton Classes="bit" Name="B6" Content="b6" Click="OnBitClicked" />
-            <ToggleButton Classes="bit" Name="B5" Content="b5" Click="OnBitClicked" />
-            <ToggleButton Classes="bit" Name="B4" Content="b4" Click="OnBitClicked" />
-            <ToggleButton Classes="bit" Name="B3" Content="b3" Click="OnBitClicked" />
-            <ToggleButton Classes="bit" Name="B2" Content="b2" Click="OnBitClicked" />
-            <ToggleButton Classes="bit" Name="B1" Content="b1" Click="OnBitClicked" />
-            <ToggleButton Classes="bit" Name="B0" Content="b0" Click="OnBitClicked" />
-            <TextBox Name="HexBox" Width="56" Margin="8,0,0,0" Watermark="hex" KeyUp="OnHexKeyUp"
-                     ToolTip.Tip="Type a value in hex and press Enter" />
-          </StackPanel>
+          <HeaderedContentControl Classes="group" Header="Inputs b7 – b0">
+            <StackPanel Orientation="Horizontal" Spacing="3">
+              <ToggleButton Classes="bit" Name="B7" Content="b7" Click="OnBitClicked" />
+              <ToggleButton Classes="bit" Name="B6" Content="b6" Click="OnBitClicked" />
+              <ToggleButton Classes="bit" Name="B5" Content="b5" Click="OnBitClicked" />
+              <ToggleButton Classes="bit" Name="B4" Content="b4" Click="OnBitClicked" />
+              <ToggleButton Classes="bit" Name="B3" Content="b3" Click="OnBitClicked" />
+              <ToggleButton Classes="bit" Name="B2" Content="b2" Click="OnBitClicked" />
+              <ToggleButton Classes="bit" Name="B1" Content="b1" Click="OnBitClicked" />
+              <ToggleButton Classes="bit" Name="B0" Content="b0" Click="OnBitClicked" />
+              <TextBox Name="HexBox" Width="48" Margin="8,0,0,0" Watermark="hex" KeyUp="OnHexKeyUp"
+                       VerticalContentAlignment="Center" ToolTip.Tip="Type a value in hex and press Enter" />
+            </StackPanel>
+          </HeaderedContentControl>
 
-          <TextBlock Classes="heading" Text="Mode pins (checked = pulled to GND)" />
-          <StackPanel Orientation="Horizontal" Spacing="16">
-            <CheckBox Name="HexPin" Content="HEX (PA1)" Click="OnPinClicked" />
-            <CheckBox Name="BarPin" Content="BAR (PA2)" Click="OnPinClicked" />
-            <CheckBox Name="InvPin" Content="INV (PA3)" Click="OnPinClicked" />
-          </StackPanel>
+          <HeaderedContentControl Classes="group" Header="Mode pins">
+            <StackPanel>
+              <TextBlock Classes="note" Text="Checked = pulled to GND." />
+              <StackPanel Orientation="Horizontal" Spacing="16">
+                <CheckBox Name="HexPin" Content="HEX (PA1)" Click="OnPinClicked" />
+                <CheckBox Name="BarPin" Content="BAR (PA2)" Click="OnPinClicked" />
+                <CheckBox Name="InvPin" Content="INV (PA3)" Click="OnPinClicked" />
+              </StackPanel>
+            </StackPanel>
+          </HeaderedContentControl>
 
-          <TextBlock Classes="heading" Text="Spare pins (checked = held low; the button pulses low)" />
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <CheckBox Name="Pd2Pin" Content="PD2" Click="OnPinClicked" />
-            <Button Name="Pd2Button" Content="Pulse" />
-            <Border Width="16" />
-            <CheckBox Name="Pd3Pin" Content="PD3" Click="OnPinClicked" />
-            <Button Name="Pd3Button" Content="Pulse" />
-          </StackPanel>
+          <HeaderedContentControl Classes="group" Header="Spare pins">
+            <StackPanel>
+              <TextBlock Classes="note" Text="Checked = held low; Pulse pulls the pin low while it is pressed." />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <CheckBox Name="Pd2Pin" Content="PD2" Click="OnPinClicked" VerticalAlignment="Center" />
+                <Button Name="Pd2Button" Content="Pulse" />
+                <Border Width="16" />
+                <CheckBox Name="Pd3Pin" Content="PD3" Click="OnPinClicked" VerticalAlignment="Center" />
+                <Button Name="Pd3Button" Content="Pulse" />
+              </StackPanel>
+            </StackPanel>
+          </HeaderedContentControl>
 
-          <TextBlock Classes="heading" Text="Analog inputs (for ANALOG)" />
-          <Grid ColumnDefinitions="Auto,*,48" RowDefinitions="Auto,Auto" Width="440" HorizontalAlignment="Left">
-            <CheckBox Name="Pd2Analog" Grid.Row="0" Content="PD2" Click="OnPinClicked"
-                      ToolTip.Tip="Feed PD2 an analog level instead of its digital one" />
-            <Slider Name="Pd2Level" Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="1023" Margin="12,0"
-                    ValueChanged="OnAnalogLevelChanged" />
-            <TextBlock Name="Pd2Text" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" />
-            <CheckBox Name="Pd3Analog" Grid.Row="1" Content="PD3" Click="OnPinClicked"
-                      ToolTip.Tip="Feed PD3 an analog level instead of its digital one" />
-            <Slider Name="Pd3Level" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="1023" Margin="12,0"
-                    ValueChanged="OnAnalogLevelChanged" />
-            <TextBlock Name="Pd3Text" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" />
-          </Grid>
+          <HeaderedContentControl Classes="group" Header="Analog inputs (for ANALOG)">
+            <Grid ColumnDefinitions="Auto,*,48" RowDefinitions="Auto,Auto" Width="440" HorizontalAlignment="Left">
+              <CheckBox Name="Pd2Analog" Grid.Row="0" Content="PD2" Click="OnPinClicked"
+                        ToolTip.Tip="Feed PD2 an analog level instead of its digital one" />
+              <Slider Name="Pd2Level" Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="1023" Margin="12,0"
+                      ValueChanged="OnAnalogLevelChanged" />
+              <TextBlock Name="Pd2Text" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" />
+              <CheckBox Name="Pd3Analog" Grid.Row="1" Content="PD3" Click="OnPinClicked"
+                        ToolTip.Tip="Feed PD3 an analog level instead of its digital one" />
+              <Slider Name="Pd3Level" Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="1023" Margin="12,0"
+                      ValueChanged="OnAnalogLevelChanged" />
+              <TextBlock Name="Pd3Text" Grid.Row="1" Grid.Column="2" VerticalAlignment="Center" />
+            </Grid>
+          </HeaderedContentControl>
         </StackPanel>
       </ScrollViewer>
     </Border>
 
     <!-- Right: program, variables, messages -->
-    <Grid ColumnDefinitions="*,320" Margin="0">
-      <DockPanel Grid.Column="0">
-        <TextBlock DockPanel.Dock="Top" Classes="heading" Margin="12,8,0,4" Text="Program (click a line for a breakpoint)" />
-        <ScrollViewer Name="SourceScroll" HorizontalScrollBarVisibility="Auto">
-          <ItemsControl Name="SourceList">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="local:SourceLine">
-                <Border Background="{Binding Background}" Padding="4,0" Tapped="OnLineTapped" Cursor="Hand">
-                  <StackPanel Orientation="Horizontal">
-                    <TextBlock Classes="code" Width="18" Foreground="#D03030" Text="{Binding Marker}" />
-                    <TextBlock Classes="code" Width="36" Opacity="0.5" Text="{Binding Number}" />
-                    <TextBlock Classes="code" Text="{Binding Text}" />
-                  </StackPanel>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </DockPanel>
+    <Grid ColumnDefinitions="*,320" Margin="0,8,10,8">
+      <HeaderedContentControl Grid.Column="0" Classes="group" Header="Program (click a line for a breakpoint)" Margin="0,0,8,0">
+        <Border Classes="view">
+          <ScrollViewer Name="SourceScroll" HorizontalScrollBarVisibility="Auto">
+            <ItemsControl Name="SourceList">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="local:SourceLine">
+                  <Border Background="{Binding Background}" Padding="4,0" Tapped="OnLineTapped" Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Classes="code" Width="18" Foreground="#D03030" Text="{Binding Marker}" />
+                      <TextBlock Classes="code" Width="36" Foreground="#2B91AF" Text="{Binding Number}" />
+                      <TextBlock Classes="code" Text="{Binding Text}" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Border>
+      </HeaderedContentControl>
 
-      <Border Grid.Column="1" Padding="12" BorderThickness="1,0,0,0" BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-        <DockPanel>
-          <StackPanel DockPanel.Dock="Top">
-            <TextBlock Classes="heading" Text="Now" Margin="0,0,0,6" />
+      <DockPanel Grid.Column="1">
+        <StackPanel DockPanel.Dock="Top">
+          <HeaderedContentControl Classes="group" Header="Now">
             <TextBlock Name="NowText" TextWrapping="Wrap" />
-            <TextBlock Classes="heading" Text="Variables" />
+          </HeaderedContentControl>
+          <HeaderedContentControl Classes="group" Header="Variables">
             <TextBlock Name="VariablesText" Classes="code" TextWrapping="Wrap" />
-            <TextBlock Classes="heading" Text="Program and flash" />
-            <TextBlock Name="StoreText" TextWrapping="Wrap" FontSize="12" />
-            <TextBlock Classes="heading" Text="Messages" />
-          </StackPanel>
-          <ListBox Name="MessagesList" FontSize="12">
+          </HeaderedContentControl>
+          <HeaderedContentControl Classes="group" Header="Program and flash">
+            <TextBlock Name="StoreText" TextWrapping="Wrap" />
+          </HeaderedContentControl>
+        </StackPanel>
+        <HeaderedContentControl Classes="group" Header="Messages">
+          <ListBox Name="MessagesList">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="x:String">
                 <TextBlock Text="{Binding}" TextWrapping="Wrap" />
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-        </DockPanel>
-      </Border>
+        </HeaderedContentControl>
+      </DockPanel>
     </Grid>
   </DockPanel>
 </Window>

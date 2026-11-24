@@ -33,7 +33,7 @@ SWIM are ST's names, used here to describe compatibility.
 
 - **Wren.Link**: programming a real Thing through an ST-LINK V2 (Windows, WinUSB):
   install the kernel, upload programs through the FAT, read the wear history. Only
-  blocks that change are written. In Wren: **ST-LINK…** in the toolbar.
+  blocks that change are written. In Wren: **Tools → ST-LINK…**.
 
 See [docs/ProjectPlan.md](docs/ProjectPlan.md).
 

@@ -22,7 +22,9 @@
       </StackPanel>
       <TextBlock Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold" />
     </StackPanel>
-    <TextBox Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-             FontFamily="Cascadia Mono, Consolas, Menlo, monospace" FontSize="12" Margin="0,8,0,0" />
+    <HeaderedContentControl Classes="group" Header="Log" Margin="0,8,0,0">
+      <TextBox Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+               FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="12" />
+    </HeaderedContentControl>
   </DockPanel>
 </Window>

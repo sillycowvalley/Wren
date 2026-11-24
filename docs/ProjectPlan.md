@@ -111,7 +111,7 @@ The detailed design, for approval, is in [Design.md](Design.md).
 1. **The USB driver (first).** Wren.Link opens the ST-LINK through WinUSB, which ST's
    own ST-LINK driver (STSW-LINK009) uses, so it should work beside STVP without Zadig.
    To check, with the ST-LINK plugged in and nothing else using it:
-   1. In Visual Studio, run **Wren** and click **ST-LINK…** in the toolbar.
+   1. In Visual Studio, run **Wren** and choose **Tools → ST-LINK…**.
    2. The log should say "Found 1 ST-LINK". If it says "No ST-LINK found", open Device
       Manager and note where the ST-LINK appears and what driver it shows.
    3. Wire the ST-LINK to the S103 board (RST, SWIM, GND, and 3.3 V to the board), click
