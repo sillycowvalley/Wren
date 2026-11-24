@@ -120,6 +120,24 @@ public class LinkTests
     }
 
     [Fact]
+    public void AnotherBuildOfTheKernelIsStillWrensWithItsProgram()
+    {
+        var (_, _, link) = Connect();
+        link.Programmer.InstallKernel(Kernel.Image);
+        var program = Compiler.Compile("DIM a\nON START\n a = 1\nEND ON\n");
+        link.Programmer.UploadProgram(program.Image);
+
+        var newer = new Wren.Asm.MemoryImage();
+        foreach (var (address, value) in Kernel.Image.Bytes) newer[address] = value;
+        newer[0x8900] = (byte)(Kernel.Image[0x8900] ^ 0xFF);
+        var status = link.Programmer.ReadStatus(newer);
+        Assert.Equal(FlashContents.WrenKernelOtherBuild, status.Flash);
+        Assert.Equal(1, status.KernelBlocksDiffering);
+        Assert.True(status.HasKernel);
+        Assert.Equal(program.Image.Length, status.ProgramLength);
+    }
+
+    [Fact]
     public void AChangedKernelInstallsOverALockedOne()
     {
         // As on a real Thing: the lock is lifted, the chip reset so it counts, then only the

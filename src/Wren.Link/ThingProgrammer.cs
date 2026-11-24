@@ -7,7 +7,12 @@ namespace Wren.Link;
 public sealed record StoreWear(IReadOnlyList<int> WriteCounts, IReadOnlyList<int> ProgramBlocks, int Uploads, int ProgramLength);
 
 /// <summary>What the flash holds: nothing, Wren's kernel as this build makes it, or other firmware.</summary>
-public enum FlashContents { Empty, WrenKernel, OtherFirmware }
+/// <summary>
+/// What the flash holds: nothing; Wren's kernel as this build makes it; Wren's kernel from
+/// another build (most of its blocks match: a kernel update writes only the rest); or other
+/// firmware.
+/// </summary>
+public enum FlashContents { Empty, WrenKernel, WrenKernelOtherBuild, OtherFirmware }
 
 /// <summary>
 /// What a Thing (or the development board) holds, as read over SWIM. The program and the
@@ -17,11 +22,13 @@ public sealed record ThingStatus(
     bool ReadOutProtected,
     int ProtectedBlocks,
     FlashContents Flash,
+    int KernelBlocksDiffering,
     int ProgramLength,
     int Uploads,
     IReadOnlyList<int> WriteCounts)
 {
-    public bool HasKernel => Flash == FlashContents.WrenKernel;
+    /// <summary>Wren's kernel, this build or another: the program table is Wren's.</summary>
+    public bool HasKernel => Flash is FlashContents.WrenKernel or FlashContents.WrenKernelOtherBuild;
 }
 
 /// <summary>
@@ -70,28 +77,42 @@ public sealed class ThingProgrammer
         byte rop = target.ReadByte(OptionRop);
         byte ubc = target.ReadByte(OptionUbc);
         byte[] reset = target.Read(FlashStart, 4);
-        var flash = reset[0] != 0x82 ? FlashContents.Empty // every STM8 program's reset vector holds INT ($82)
-            : kernel != null && Matches(kernel) ? FlashContents.WrenKernel
-            : kernel != null ? FlashContents.OtherFirmware
-            : FlashContents.WrenKernel; // nothing to compare against: assume Wren's
+        int differing = 0;
+        FlashContents flash;
+        if (reset[0] != 0x82) flash = FlashContents.Empty; // every STM8 program's reset vector holds INT ($82)
+        else if (kernel == null) flash = FlashContents.WrenKernel; // nothing to compare against: assume Wren's
+        else
+        {
+            var (blocks, differ) = CompareBlocks(kernel);
+            differing = differ;
+            // Another build of Wren's kernel shares nearly all its blocks; other firmware shares none.
+            flash = differ == 0 ? FlashContents.WrenKernel
+                : differ * 4 <= blocks ? FlashContents.WrenKernelOtherBuild
+                : FlashContents.OtherFirmware;
+        }
         byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
-        bool formatted = flash == FlashContents.WrenKernel && fat[0] == 1;
+        bool formatted = flash is FlashContents.WrenKernel or FlashContents.WrenKernelOtherBuild && fat[0] == 1;
         return new ThingStatus(
             rop == RopOn,
             ubc,
             flash,
+            differing,
             formatted && fat[1] != ProgramStore.FreeBlock ? (fat[2] << 8) | fat[3] : 0,
             formatted ? (fat[6] << 8) | fat[7] : 0,
             formatted ? ProgramStore.WriteCounts(fat) : new int[ProgramStore.Blocks]);
     }
 
-    private bool Matches(MemoryImage kernel)
+    /// <summary>The kernel's 64-byte flash blocks, and how many of them the Thing holds differently.</summary>
+    private (int Blocks, int Differing) CompareBlocks(MemoryImage kernel)
     {
-        foreach (var (address, data) in kernel.Blocks().Where(b => b.Address >= FlashStart))
+        int blocks = 0, differing = 0;
+        foreach (var group in kernel.Bytes.Where(kv => kv.Key >= FlashStart).GroupBy(kv => kv.Key & ~(SwimTarget.BlockSize - 1)))
         {
-            if (!target.Read(address, data.Length).AsSpan().SequenceEqual(data)) return false;
+            blocks++;
+            byte[] held = target.Read(group.Key, SwimTarget.BlockSize);
+            if (group.Any(kv => held[kv.Key - group.Key] != kv.Value)) differing++;
         }
-        return true;
+        return (blocks, differing);
     }
 
     /// <summary>
