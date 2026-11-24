@@ -81,7 +81,7 @@ public partial class LinkWindow : Window
     {
         devices = ThingLink.Find(out string? why);
         DeviceBox.ItemsSource = devices;
-        DeviceBox.SelectedIndex = devices.Count > 0 ? 0 : -1;
+        DeviceBox.SelectedIndex = ThingLink.Preferred(devices, SavedSettings.Current.LastProgrammer);
         if (why != null) Log(why);
         Log(devices.Count == 0
             ? "No programmer found. An ST-LINK shows in Device Manager under \"Universal Serial Bus devices\"; a Pico under \"Ports (COM & LPT)\"."
@@ -103,6 +103,7 @@ public partial class LinkWindow : Window
                 Log("SWIM connected; the Thing's CPU is stalled.");
                 ShowStatus(opened);
                 link = opened;
+                SavedSettings.Current.LastProgrammer = device.ToString();
             }
             catch (Exception ex) when (opened.Link is PicoLink pico)
             {

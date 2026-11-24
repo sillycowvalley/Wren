@@ -63,6 +63,29 @@ public sealed class ThingLink : IDisposable
         return found;
     }
 
+    /// <summary>
+    /// Which of the programmers found to select: the one named last (its ToString), else one of
+    /// the same kind (a Pico may come back on another port), else the first; -1 when none.
+    /// </summary>
+    public static int Preferred(IReadOnlyList<ProgrammerInfo> found, string? last)
+    {
+        if (found.Count == 0) return -1;
+        if (string.IsNullOrEmpty(last)) return 0;
+        for (int i = 0; i < found.Count; i++)
+            if (found[i].ToString() == last) return i;
+        for (int i = 0; i < found.Count; i++)
+            if (Kind(found[i]) is string kind && last.StartsWith(kind, StringComparison.Ordinal)) return i;
+        return 0;
+    }
+
+    /// <summary>How a programmer's name starts, for the kinds worth matching across ports.</summary>
+    private static string? Kind(ProgrammerInfo programmer) => programmer switch
+    {
+        UsbDeviceInfo => "ST-LINK",
+        SerialProgrammerInfo { LikelyPico: true } => "Pico",
+        _ => null,
+    };
+
     /// <summary>Opens a programmer found by Find.</summary>
     public static ThingLink Open(ProgrammerInfo programmer)
     {

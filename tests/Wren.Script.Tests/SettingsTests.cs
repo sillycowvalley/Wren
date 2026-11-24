@@ -14,6 +14,7 @@ public class SettingsTests
             SidePanelWidth = 412.5,
             Board = BoardChoice.DevelopmentBoard,
             LastFile = @"C:\Programs\Blink.bas",
+            LastProgrammer = "Pico on COM5",
         };
         var back = AppSettings.FromJson(settings.ToJson());
         Assert.Equal(100, back.MainWindow!.X);
@@ -26,6 +27,7 @@ public class SettingsTests
         Assert.Equal(412.5, back.SidePanelWidth);
         Assert.Equal(BoardChoice.DevelopmentBoard, back.Board);
         Assert.Equal(@"C:\Programs\Blink.bas", back.LastFile);
+        Assert.Equal("Pico on COM5", back.LastProgrammer);
     }
 
     [Fact]
