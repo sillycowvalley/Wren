@@ -76,6 +76,77 @@ public class EventTests
         Assert.Equal(0x03, run.Global("v"));
     }
 
+    [Theory]
+    [InlineData("", true)]                  // falling
+    [InlineData(" RISING", false)]
+    public void ALatchAloneOnPortDCatchesAShortStrobe(string edge, bool falling)
+    {
+        // An 8 MHz 8086's write strobe: 210 ns, far shorter than the interrupt takes to react.
+        // The byte stays a few microseconds, as behind a 74HCT574 or a stretched strobe.
+        var run = Run.Start($"DIM n, v\nON LATCH PD3{edge}\n n = n + 1\n v = VALUE\nEND ON\n",
+            t => t.Pd3Low = !falling);
+        for (int i = 1; i <= 10; i++)
+        {
+            run.Thing.SetInputs((byte)(0x30 + i));
+            run.Thing.Pd3Low = falling;
+            run.For(210e-9);
+            run.Thing.Pd3Low = !falling;
+            run.For(4e-6);
+            run.Thing.SetInputs(0);
+            run.For(0.002);
+        }
+        Assert.Equal(10, run.Global("n"));
+        Assert.Equal(0x3A, run.Global("v"));
+    }
+
+    [Fact]
+    public void ALatchIsNotHeldUpByTheTick()
+    {
+        // Strobes 1.013 ms apart walk across the 1 ms tick, so some land while it runs.
+        // The byte is there for 4 us only: a LATCH that waited for the tick would miss it.
+        // An EVERY 1 handler has the tick adding to the queue as the LATCHes do.
+        var run = Run.Start("DIM n, good, ticks, lostn\n" +
+            "ON LATCH PD3\n n = n + 1\n IF VALUE = &H5A THEN good = good + 1\n lostn = LOST\nEND ON\n" +
+            "ON EVERY 1\n ticks = ticks + 1\nEND ON\n");
+        for (int i = 0; i < 150; i++)
+        {
+            run.Thing.SetInputs(0x5A);
+            run.Thing.Pd3Low = true;
+            run.For(210e-9);
+            run.Thing.Pd3Low = false;
+            run.For(4e-6);
+            run.Thing.SetInputs(0);
+            run.For(1.013e-3 - 4.21e-6);
+        }
+        run.For(0.002);
+        Assert.Equal(150, run.Global("n"));
+        Assert.Equal(150, run.Global("good"));
+        Assert.Equal(0, run.Global("lostn"));
+        Assert.InRange(run.Global("ticks"), 195, 215);  // 50 before the strobes
+    }
+
+    [Theory]
+    [InlineData("ON LATCH PD3\nEND ON\n", 4, true)]
+    [InlineData("ON LATCH PD2 RISING\nEND ON\n", 3, true)]
+    [InlineData("ON LATCH PD3 BOTH\nEND ON\n", 4, false)]
+    [InlineData("ON LATCH PD3 WHILE PA1 LOW\nEND ON\n", 4, false)]
+    [InlineData("ON LATCH PD3\nEND ON\nON LATCH PD2\nEND ON\n", 4, false)]
+    [InlineData("ON LATCH PD3\nEND ON\nON LATCH PA1\nEND ON\n", 4, true)]
+    [InlineData("ON LATCH PA1\nEND ON\n", 0, false)]
+    public void OnlyALatchAloneOnPortDWithOneEdgeIsSolo(string source, int pin, bool solo)
+    {
+        var program = Run.Compile(source);
+        byte[] image = program.Image;
+        int handlers = image[2];
+        for (int i = 0, at = 3; i < handlers; i++, at += 4)
+        {
+            if (image[at] != 3 + pin) continue;
+            Assert.Equal(solo, (image[at + 3] & Compiler.SoloLatch) != 0);
+            return;
+        }
+        Assert.Fail("no LATCH handler for the pin");
+    }
+
     [Fact]
     public void PressAndReleaseAreDebounced()
     {

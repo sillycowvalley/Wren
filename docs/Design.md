@@ -35,7 +35,7 @@ Proposed layout (the split is settled once the kernel's real size is known):
 | Blocks | Address | Size | Use |
 |---|---|---|---|
 | 0-1 | $8000-$807F | 128 B | Interrupt vectors (locked) |
-| 2-80 | $8080-$943F | 5 KB | Kernel, locked by the UBC option byte; about 84 bytes are free |
+| 2-80 | $8080-$943F | 5 KB | Kernel, locked by the UBC option byte; 7 bytes are free |
 | 81-127 | $9440-$9FFF | 2.9 KB | Program store: 47 blocks (3,008 bytes) |
 | EEPROM | $4000-$4065 | 102 B | The FAT: header, block chain and write counts |
 | EEPROM | $4066-$407F | 26 B | Program settings (`EEREAD`/`EEWRITE`) |
@@ -144,7 +144,7 @@ nothing.
 | Handler | When it runs |
 |---|---|
 | `ON START` | Once, after reset |
-| `ON LATCH pin [FALLING\|RISING\|BOTH] [WHILE pin LOW\|HIGH]` | An edge on PA1-PA3, PD2 or PD3 (falling unless stated), optionally only while another of those pins is at a level, e.g. `ON LATCH PD3 RISING WHILE PD2 LOW` for a clock and /WE. The interrupt reads b0-b7 and the pins at once; the handler gets b0-b7 as `VALUE`. The host must hold them steady for the 1-2 µs this takes |
+| `ON LATCH pin [FALLING\|RISING\|BOTH] [WHILE pin LOW\|HIGH]` | An edge on PA1-PA3, PD2 or PD3 (falling unless stated), optionally only while another of those pins is at a level, e.g. `ON LATCH PD3 RISING WHILE PD2 LOW` for a clock and /WE. The interrupt reads b0-b7 first; the handler gets them as `VALUE`. The host must hold b0-b7 for 3 µs after the edge (2.7 µs worst case from PM0044's cycle counts: an instruction finishing and the interrupt entry). A LATCH alone on port D (PD2 or PD3, one edge, no `WHILE`) is caught from a strobe of any length, since port D's interrupt is set to that edge and is the edge itself. Any other LATCH reads the pins back to find which pin moved, and which way, so its strobe must last about 5 µs. The port interrupts outrank the 1 ms tick, so a LATCH never waits for it; edges closer together than one interrupt's run (about 7 µs) can merge into one |
 | `ON PRESS pin` / `ON RELEASE pin` | A button on PA1-PA3, PD2 or PD3, debounced (20 ms) |
 | `ON PINS` | Any of PA1-PA3, PD2 or PD3 changes, debounced (20 ms), and once after `ON START` |
 | `ON CHANGE` | b0-b7 differ from their last value (checked every millisecond), and once after `ON START`; `VALUE` holds the byte |
@@ -285,7 +285,7 @@ BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold. It is
 
 ## Open questions
 
-- **Kernel space.** About 84 bytes are free below the store at $9440. A larger kernel
+- **Kernel space.** 7 bytes are free below the store at $9440. A larger kernel
   feature needs more trimming or the store moved up another block (64 bytes of program
   space each).
 

@@ -19,7 +19,10 @@ flash block.
 | ... | | Code |
 
 LATCH settings: bit 0 falling edge, bit 1 rising edge, bit 2 a qualifier is used,
-bit 3 the qualifier's level (1 high), bits 4-6 the qualifier pin.
+bit 3 the qualifier's level (1 high), bits 4-6 the qualifier pin, bit 7 solo: the only
+LATCH on PD2 or PD3, with one edge and no qualifier. The kernel sets port D's
+interrupt to a solo LATCH's edge and fires it from that interrupt alone, without
+reading the pins back, so a strobe of any length is caught.
 
 Event numbers: 0 START, 1 CHANGE, 2 PINS, 3-7 LATCH, 8-12 PRESS, 13-17 RELEASE
 (pins PA1, PA2, PA3, PD2, PD3 in that order), 18-21 EVERY (first to fourth).
