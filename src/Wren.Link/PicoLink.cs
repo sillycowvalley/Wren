@@ -7,7 +7,9 @@ namespace Wren.Link;
 /// A Raspberry Pi Pico (RP2040 or RP2350) running Wren's sketch (<c>firmware/PicoLink</c>),
 /// on a USB serial port. It drives SWIM at low speed from GP2 and NRST from GP3.
 /// The serial protocol is Wren's own; each request is a command byte and its arguments, and
-/// each reply is the command byte echoed, a status byte, then any data:
+/// each reply is the command byte echoed, a status byte, then any data. After an error
+/// status (sketch version 2 on) come three bytes: the frame of the request that failed
+/// (from 1; 0 for the entry) and how long the line was last held low, in 100 ns units:
 /// <list type="bullet">
 /// <item><c>H</c>: hello. Data: "WREN" and the sketch's version.</item>
 /// <item><c>R</c> n: NRST low (n = 1) or released (n = 0).</item>
@@ -152,7 +154,17 @@ public sealed class PicoLink : ITargetLink
         byte[] head = ReadExactly(2);
         if (head[0] != request[0])
             throw new LinkException($"The Pico answered '{(char)head[0]}' to '{(char)request[0]}': out of step. Disconnect and connect again.");
-        if (head[1] != StatusOk) throw new LinkException(Describe(head[1]));
+        if (head[1] != StatusOk)
+        {
+            string detail = "";
+            if (Version >= 2)
+            {
+                byte[] d = ReadExactly(3);
+                double low = ((d[1] << 8) | d[2]) / 10.0;
+                detail = d[0] == 0 ? $" [line low {low:F1} µs]" : $" [frame {d[0]}, line low {low:F1} µs]";
+            }
+            throw new LinkException(Describe(head[1]) + detail);
+        }
         return ReadExactly(dataLength);
     }
 

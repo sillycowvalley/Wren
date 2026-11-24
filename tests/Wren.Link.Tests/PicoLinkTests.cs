@@ -71,6 +71,7 @@ public class PicoLinkTests
         link.Link.Sleep = _ => { };
         var ex = Assert.Throws<LinkException>(() => link.Target.Connect());
         Assert.Contains("entry sequence", ex.Message);
+        Assert.Contains("line low 16.0 µs", ex.Message);
     }
 
     [Fact]

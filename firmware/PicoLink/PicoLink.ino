@@ -22,7 +22,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 1;
+const uint8_t SketchVersion = 2;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -32,10 +32,15 @@ enum : uint8_t { StatusOk = 0, StatusNoAnswer = 1, StatusNack = 2, StatusParity 
 // SWIM commands: a 0 start bit then three bits.
 const uint32_t SwimSrst = 0, SwimRotf = 1, SwimWotf = 2;
 
+// What went wrong last, reported after an error status: which frame of the request
+// (counting from 1) and how long the line was last seen low, in CPU cycles.
+static uint8_t failedFrame;
+static uint32_t lowCycles;
+
 // Times in CPU cycles, worked out from the clock in setup().
 static uint32_t bitPeriod, shortLow, longLow, sampleAt;
 static uint32_t answerTimeout, bitTimeout, riseTimeout;
-static uint32_t entryLow, entrySlow, entryFast, syncTimeout, afterSync;
+static uint32_t entryLow, entrySlow, entryFast, syncTimeout, afterSync, syncShortest, syncLongest, stuckTimeout;
 static uint32_t cpuHz;
 
 static uint32_t cycles(uint32_t ns) { return (uint32_t)((uint64_t)cpuHz * ns / 1000000000ull); }
@@ -102,7 +107,11 @@ static uint8_t __not_in_flash_func(sendFrame)(uint32_t value, int bits) {
     int ack = readBit(answerTimeout, &at);
     if (ack < 0) return StatusNoAnswer;
     waitUntil(at, bitPeriod);
-    if (!waitRise(riseTimeout)) return StatusBadFrame;
+    if (!waitRise(riseTimeout)) {
+      waitRise(stuckTimeout); // measure how long the target held the line
+      lowCycles = since(at);
+      return StatusBadFrame;
+    }
     if (ack) return StatusOk;
   }
   return StatusNack;
@@ -136,20 +145,21 @@ static uint8_t __not_in_flash_func(receiveFrame)(uint8_t *out) {
   return StatusParity;
 }
 
-// A command with its count and 24-bit address (ROTF and WOTF).
+// A command with its count and 24-bit address (ROTF and WOTF): frames 1 to 5.
 static uint8_t __not_in_flash_func(sendHeader)(uint32_t command, int count, uint32_t address) {
+  failedFrame = 1;
   uint8_t status = sendFrame(command, 4);
-  if (status == StatusOk) status = sendFrame((uint32_t)count, 9);
-  if (status == StatusOk) status = sendFrame((address >> 16) & 0xFF, 9);
-  if (status == StatusOk) status = sendFrame((address >> 8) & 0xFF, 9);
-  if (status == StatusOk) status = sendFrame(address & 0xFF, 9);
+  if (status == StatusOk) { failedFrame = 2; status = sendFrame((uint32_t)count, 9); }
+  if (status == StatusOk) { failedFrame = 3; status = sendFrame((address >> 16) & 0xFF, 9); }
+  if (status == StatusOk) { failedFrame = 4; status = sendFrame((address >> 8) & 0xFF, 9); }
+  if (status == StatusOk) { failedFrame = 5; status = sendFrame(address & 0xFF, 9); }
   return status;
 }
 
 static uint8_t __not_in_flash_func(readMemory)(int count, uint32_t address, uint8_t *data) {
   uint32_t saved = save_and_disable_interrupts();
   uint8_t status = sendHeader(SwimRotf, count, address);
-  for (int i = 0; i < count && status == StatusOk; i++) status = receiveFrame(&data[i]);
+  for (int i = 0; i < count && status == StatusOk; i++) { failedFrame = (uint8_t)(6 + i); status = receiveFrame(&data[i]); }
   restore_interrupts(saved);
   return status;
 }
@@ -157,13 +167,14 @@ static uint8_t __not_in_flash_func(readMemory)(int count, uint32_t address, uint
 static uint8_t __not_in_flash_func(writeMemory)(int count, uint32_t address, const uint8_t *data) {
   uint32_t saved = save_and_disable_interrupts();
   uint8_t status = sendHeader(SwimWotf, count, address);
-  for (int i = 0; i < count && status == StatusOk; i++) status = sendFrame(data[i], 9);
+  for (int i = 0; i < count && status == StatusOk; i++) { failedFrame = (uint8_t)(6 + i); status = sendFrame(data[i], 9); }
   restore_interrupts(saved);
   return status;
 }
 
 static uint8_t __not_in_flash_func(softReset)() {
   uint32_t saved = save_and_disable_interrupts();
+  failedFrame = 1;
   uint8_t status = sendFrame(SwimSrst, 4);
   restore_interrupts(saved);
   return status;
@@ -171,6 +182,8 @@ static uint8_t __not_in_flash_func(softReset)() {
 
 // The entry sequence: low for 16 us, four pulses at 1 kHz, four at 2 kHz; then the target
 // answers with a sync pulse 128 SWIM clocks (16 us) long. *syncCycles is how long it was.
+// The line takes a moment to rise once let go, so wait for it to be high before looking for
+// the pulse; a pulse far from 16 us is not the target's sync.
 static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
   uint32_t saved = save_and_disable_interrupts();
   uint32_t t = now();
@@ -188,19 +201,34 @@ static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
   letGo();
   uint32_t at;
   uint8_t status = StatusNoSync;
-  if (waitFall(syncTimeout, &at) && waitRise(syncTimeout)) {
-    *syncCycles = since(at);
-    t = now();
-    waitUntil(t, afterSync);
-    status = StatusOk;
+  failedFrame = 0;
+  lowCycles = 0;
+  if (waitRise(riseTimeout) && waitFall(syncTimeout, &at)) {
+    waitRise(syncTimeout);
+    lowCycles = since(at);
+    *syncCycles = lowCycles;
+    if (lowCycles >= syncShortest && lowCycles <= syncLongest) {
+      t = now();
+      waitUntil(t, afterSync);
+      status = StatusOk;
+    }
   }
   restore_interrupts(saved);
   return status;
 }
 
+// The reply's head; after an error status, the failed frame and how long the line was
+// last held low (in units of 100 ns, two bytes, high first).
 static void reply(uint8_t command, uint8_t status) {
   Serial.write(command);
   Serial.write(status);
+  if (status != StatusOk) {
+    uint32_t tenths = (uint32_t)((uint64_t)lowCycles * 10000000ull / cpuHz);
+    if (tenths > 0xFFFF) tenths = 0xFFFF;
+    Serial.write(failedFrame);
+    Serial.write((uint8_t)(tenths >> 8));
+    Serial.write((uint8_t)tenths);
+  }
 }
 
 static bool readArguments(uint8_t *buffer, int count) {
@@ -236,11 +264,16 @@ void setup() {
   entryFast = cycles(250000);
   syncTimeout = cycles(100000);
   afterSync = cycles(1000);
+  syncShortest = cycles(4000);  // 16 us is right; allow a target clock well off
+  syncLongest = cycles(64000);
+  stuckTimeout = cycles(2000000);
 }
 
 void loop() {
   if (Serial.available() <= 0) return;
   uint8_t command = (uint8_t)Serial.read();
+  failedFrame = 0;
+  lowCycles = 0;
   uint8_t args[4];
   uint8_t data[MaxChunk];
   digitalWrite(LED_BUILTIN, HIGH);

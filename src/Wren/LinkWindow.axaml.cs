@@ -89,6 +89,7 @@ public partial class LinkWindow : Window
             {
                 foreach (string line in opened.About) Log(line);
                 opened.Target.Connect();
+                if (opened.Link is PicoLink pico) Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs (16 is right).");
                 Log("SWIM connected; the Thing's CPU is stalled.");
                 ShowStatus(opened);
                 link = opened;

@@ -56,6 +56,7 @@ public sealed class FakePico : Stream
         replies.Enqueue(command);
         replies.Enqueue(status);
         if (status == PicoLink.StatusOk) foreach (byte b in data) replies.Enqueue(b);
+        else { replies.Enqueue(1); replies.Enqueue(0x00); replies.Enqueue(0xA0); } // frame 1, 16.0 µs
     }
 
     private void Answer()
@@ -66,7 +67,7 @@ public sealed class FakePico : Stream
         switch (r[0])
         {
             case PicoLink.Hello:
-                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 1);
+                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 2);
                 return;
             case PicoLink.Reset:
                 ResetHeld = r[1] != 0;
