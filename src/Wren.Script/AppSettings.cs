@@ -47,6 +47,9 @@ public sealed class AppSettings
 
     public WindowPlacement? ProgrammerWindow { get; set; }
 
+    /// <summary>Width of the main window's right-hand column (Now, Variables, Messages); null for the default.</summary>
+    public double? SidePanelWidth { get; set; }
+
     public BoardChoice Board { get; set; } = BoardChoice.Thing;
 
     /// <summary>The program file last opened.</summary>

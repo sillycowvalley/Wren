@@ -35,6 +35,23 @@ public partial class MainWindow : Window
     private int shownLine = -1;
     private readonly WindowLayout layout;
 
+    /// <summary>The right-hand column, sized with the splitter.</summary>
+    private ColumnDefinition SidePanel => RightGrid.ColumnDefinitions[2];
+
+    /// <summary>The right-hand column's width as last chosen with the splitter (or the default).</summary>
+    private double sideWidth = 320;
+
+    /// <summary>
+    /// Gives the right-hand column its chosen width, or less when the window is too narrow for
+    /// that and the program's minimum width.
+    /// </summary>
+    private void FitSidePanel()
+    {
+        double room = RightGrid.Bounds.Width - RightGrid.ColumnDefinitions[0].MinWidth - RightGrid.ColumnDefinitions[1].ActualWidth;
+        double width = Math.Max(Math.Min(sideWidth, room), SidePanel.MinWidth);
+        if (SidePanel.Width.Value != width) SidePanel.Width = new GridLength(width);
+    }
+
     public MainWindow() : this(null) { }
 
     /// <summary>Opens startPath if given, otherwise the program open last time, otherwise programs/OledThing.bas.</summary>
@@ -49,9 +66,15 @@ public partial class MainWindow : Window
         Closing += (_, _) =>
         {
             settings.MainWindow = layout.Placement;
+            settings.SidePanelWidth = sideWidth;
             linkWindow?.KeepLayout();
             SavedSettings.Save();
         };
+        if (settings.SidePanelWidth is double side && double.IsFinite(side))
+            sideWidth = Math.Clamp(side, SidePanel.MinWidth, SidePanel.MaxWidth);
+        SidePanel.Width = new GridLength(sideWidth);
+        RightGrid.SizeChanged += (_, _) => FitSidePanel();
+        Splitter.DragCompleted += (_, _) => sideWidth = SidePanel.ActualWidth;
         if (settings.Board == BoardChoice.DevelopmentBoard)
         {
             chip = DeviceInfo.Stm8s103f3;
