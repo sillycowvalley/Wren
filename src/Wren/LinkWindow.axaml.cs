@@ -112,8 +112,7 @@ public partial class LinkWindow : Window
                 if (opened.Link is EspStLink esp)
                     Log($"Sync pulse: {esp.SyncMicroseconds:F1} µs (16 is right).");
                 if (opened.Link is PicoLink pico)
-                    Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs at entry, {pico.ResetSyncMicroseconds:F1} µs after the reset " +
-                        $"(16 is right){(pico.Calibrated ? "; calibrated to it" : "")}.");
+                    Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs (16 is right).");
                 Log($"SWIM connected; the Thing's CPU is stalled. SWIM_CSR = ${opened.Target.ConnectedCsr:X2}" +
                     (opened.Target.WaitedForAccess > 0 ? $", after waiting {opened.Target.WaitedForAccess} ms for the chip to allow memory access." : "."));
                 if (opened.Target.NoAccess)
@@ -129,37 +128,6 @@ public partial class LinkWindow : Window
                 ShowStatus(opened);
                 link = opened;
                 SavedSettings.Current.LastProgrammer = device.ToString();
-            }
-            catch (Exception ex) when (opened.Link is PicoLink pico)
-            {
-                Log($"Failed: {ex.Message}");
-                Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs at entry, {pico.ResetSyncMicroseconds:F1} µs after the reset" +
-                    $"{(pico.Calibrated ? " (calibrated to it)" : "")}.");
-                try
-                {
-                    foreach (string line in pico.TraceFrame()) Log(line);
-                }
-                catch (Exception trace) when (trace is LinkException or IOException or TimeoutException)
-                {
-                    Log($"The frame trace failed: {trace.Message}");
-                }
-                try
-                {
-                    foreach (string line in pico.TraceRead()) Log(line);
-                }
-                catch (Exception trace) when (trace is LinkException or IOException or TimeoutException)
-                {
-                    Log($"The read trace failed: {trace.Message}");
-                }
-                try
-                {
-                    foreach (string line in pico.CheckLine()) Log(line);
-                }
-                catch (Exception check) when (check is LinkException or IOException or TimeoutException)
-                {
-                    Log($"The line check failed too: {check.Message}");
-                }
-                opened.Dispose();
             }
             catch
             {
@@ -177,8 +145,7 @@ public partial class LinkWindow : Window
             : s.Flash switch
             {
                 FlashContents.Empty => $"The flash is empty.  Locked blocks (UBC): {s.ProtectedBlocks}.",
-                FlashContents.OtherFirmware => $"The flash holds other firmware, not this build of Wren's kernel.  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
-                    "Back it up before installing the kernel.",
+                FlashContents.OtherFirmware => $"The flash holds other firmware, not this build of Wren's kernel.  Locked blocks (UBC): {s.ProtectedBlocks}.",
                 _ => $"Wren's kernel (this build).  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
                     $"Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  Uploads: {s.Uploads}.  " +
                     $"Most writes to one store block: {s.WriteCounts.Max()}.",

@@ -6,8 +6,9 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 
 ## About Michael
 - He has written C++ and C# for decades. Everything that lands on his machine is C#,
-  plus STM8 assembly for firmware. The Pico programmer runs pico-swimlib (BSD 3-Clause,
-  `firmware/pico-swimlib`, a prebuilt .uf2); Wren's own older sketch is `firmware/PicoLink`.
+  plus STM8 assembly for firmware, and one Arduino sketch for the Pico programmer
+  (`firmware/PicoLink`, using pico-swimlib's BSD PIO program; also shipped as a .uf2).
+  pico-swimlib's own firmware is `firmware/pico-swimlib`, a prebuilt .uf2.
   No Python, no JavaScript, no leading underscore in names.
 - He works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps written for
   him are GUI steps, never command lines.
@@ -33,9 +34,9 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - Wren.Link's protocol comes from the open-source stm8flash and OpenOCD (both GPL): read
   them for the protocol, never copy their code into this MIT repository.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
-  `firmware/demo/HexDemo.asm` (an early test program), `firmware/pico-swimlib` (the Pico
-  programmer's firmware, pico-swimlib built unchanged; `docs/PicoLink.md`), and
-  `firmware/PicoLink/PicoLink.ino` (Wren's older Pico sketch, superseded).
+  `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink` (Wren's Pico
+  programmer sketch and its .uf2) and `firmware/pico-swimlib` (pico-swimlib built
+  unchanged); both use the same wiring, `docs/PicoLink.md`.
 - `programs/` holds Wren BASIC programs; `OledThing.bas` is the Thing's own behaviour.
 - `art/` holds the SVG sources for the wren; `src/Wren/Assets` holds what the app uses
   (`wren.ico`, `wren.png`, `wren-oled.png`).
@@ -66,5 +67,6 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   and overlapping output is an error. Kernel opcodes $30 up are one contiguous table:
   add new opcodes at the end and keep `Op.cs`, `Vm.inc` and `docs/Bytecode.md` in step.
 - A cloud session cannot reach USB. Michael tests Wren.Link on Windows.
-- The Pico sketch is checked in a session by compiling it with g++ against stand-in SDK
-  headers and running it against a simulated SWIM target (scratch code, outside the clone).
+- The Pico sketch is compile-checked in a session with the Pico SDK and
+  `firmware/PicoLink/sdk` (which also builds its .uf2); the SDK and the ARM toolchain are
+  installed outside the clone. SWIM itself can only be tested on Michael's hardware.

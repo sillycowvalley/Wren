@@ -1,18 +1,22 @@
 # The Pico programmer
 
-A Raspberry Pi Pico, or a Pico-compatible board such as the Waveshare RP2040 Plus, running
-Richard Hulme's [pico-swimlib](https://github.com/rhulme/pico-swimlib) stands in for an
-ST-LINK V2. Wren finds it as a serial port, and **Tools → Programmer…** does the same jobs
-through it: install the kernel, upload programs, read the wear history, back up, run.
+A Raspberry Pi Pico, or a Pico-compatible board such as the Waveshare RP2040 Plus, stands in
+for an ST-LINK V2. Wren finds it as a serial port, and **Tools → Programmer…** does the same
+jobs through it: install the kernel, upload programs, read the wear history, write images,
+restore factory settings, run. Two firmwares are available. Both use the same wiring, and
+Wren recognises either.
 
-- **The firmware:** `firmware/pico-swimlib/pico-espstlink.uf2`, pico-swimlib (BSD 3-Clause)
-  built unchanged from its `pico-espstlink` example. Its licence and build notes sit
-  beside it.
-- **The timing:** SWIM is timed in hardware by the RP2040's PIO and DMA.
-- **The protocol:** the esp-stlink serial protocol, over USB.
+- **Wren's PicoLink** (`firmware/PicoLink`): Wren's own sketch, built with pico-swimlib's
+  BSD-licensed PIO program and method.
+  - **To install:** drag `PicoLink.uf2` onto the board, or upload `PicoLink.ino` from the
+    Arduino IDE.
+- **pico-swimlib** (`firmware/pico-swimlib/pico-espstlink.uf2`): Richard Hulme's
+  [pico-swimlib](https://github.com/rhulme/pico-swimlib) (BSD 3-Clause) built unchanged.
+  - **Protocol:** it speaks the esp-stlink protocol.
+  - **Status:** proven on a real Thing: it restored Digicool's firmware.
 
-SWIM runs at low speed only. A whole kernel takes a few seconds, a program upload well
-under one.
+In both, SWIM is timed in hardware by the RP2040's PIO. SWIM runs at low speed only. A whole
+kernel takes a few seconds, a program upload well under one.
 
 ## Parts
 
@@ -38,13 +42,16 @@ The breadboard cheatsheet: [Infographics/Pico_Programmer_Wiring.png](Infographic
 must not be powered from anything else while the board is connected. The OLED is fine at
 3.3 V.
 
-## Putting the firmware on the board (once)
+## Putting the firmware on the board
 
 1. Hold the board's **BOOTSEL** button while plugging it into USB, then let go. A drive
    called **RPI-RP2** appears.
-2. Drag `firmware\pico-swimlib\pico-espstlink.uf2` from your Wren folder onto that drive.
-   The board restarts as a USB serial port, "Pico ESPSTLink", under
-   **Ports (COM & LPT)** in Device Manager.
+2. From your Wren folder, drag one of these onto that drive:
+   - `firmware\PicoLink\PicoLink.uf2` (Wren's);
+   - `firmware\pico-swimlib\pico-espstlink.uf2` (pico-swimlib's).
+
+   The board restarts as a USB serial port under **Ports (COM & LPT)** in Device Manager.
+   To switch firmware later, repeat both steps.
 
 ## Using it in Wren
 
@@ -83,24 +90,20 @@ If Connect says the target did not answer in time, check:
 
 ## How Wren talks to it
 
-`src/Wren.Link/EspStLink.cs` speaks the esp-stlink protocol (reset, entry, SRST, read,
-write, version).
-
-- **Connecting:** it follows pico-swimlib's own example. NRST is held low, then the entry
-  sequence and an SRST, then SWIM_CSR is set to $A1.
-- **Releasing NRST:** Wren drives NRST **high** rather than letting go, unlike the example.
-  A let-go RP2040 pin keeps its default pull-down, which fights the Thing's weak NRST
-  pull-up and leaves the chip half in reset.
-- **Transfers:** reads go in pieces of up to 255 bytes. Writes go a flash block (64 bytes)
-  at a time.
-- **Recognising the board:** Wren asks the board for its esp-stlink version when it opens
-  the port. Anything else on the port is tried as Wren's older PicoLink sketch
-  (`firmware/PicoLink`).
+- **The two clients:** `src/Wren.Link/PicoLink.cs` speaks to Wren's sketch;
+  `src/Wren.Link/EspStLink.cs` speaks the esp-stlink protocol to pico-swimlib's firmware.
+- **Recognising the board:** Wren first asks for an esp-stlink version, then for Wren's
+  hello.
+- **Connecting:** both connect as pico-swimlib's example does. NRST is held low, then the
+  entry sequence and an SRST, then SWIM_CSR is set to $A1.
+- **Releasing NRST:** Wren drives NRST **high** rather than letting go. A let-go RP2040 pin
+  keeps its default pull-down, which fights the Thing's weak NRST pull-up and leaves the
+  chip half in reset.
+- **Transfers:** reads and writes go in pieces of up to 64 bytes with Wren's sketch, and
+  up to 255 (reads) or 64 (writes) bytes with pico-swimlib.
 
 ## Open issues
 
-1. **First run on a real Thing.** This has been tested against a simulated programmer
-   only. If Connect fails, paste the log.
-2. **Wren's PicoLink sketch** (`firmware/PicoLink`, `src/Wren.Link/PicoLink.cs`) is
-   superseded by pico-swimlib, and never read a byte reliably from a Thing. It goes once
-   pico-swimlib is shown working.
+1. **Wren's PicoLink on a real Thing.** It follows pico-swimlib's method and sequence, but
+   has only been compile-checked and tested against a simulated Pico. pico-swimlib's
+   firmware is the proven fallback.

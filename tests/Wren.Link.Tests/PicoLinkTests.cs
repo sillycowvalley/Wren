@@ -22,14 +22,14 @@ public class PicoLinkTests
     }
 
     [Fact]
-    public void ConnectsAtLowSpeedWithResetReleased()
+    public void ConnectsAsPicoSwimlibDoes()
     {
         var (_, fake, link) = Connect();
         Assert.True(fake.Entered);
         Assert.False(fake.ResetHeld);
+        Assert.False(fake.ResetLetGo); // NRST driven high, not let go
+        Assert.Equal(1, fake.Srsts);   // an SRST after the entry
         Assert.Equal(16.0, ((PicoLink)link.Link).SyncMicroseconds);
-        Assert.True(fake.CommsResets >= 1);
-        Assert.True(((PicoLink)link.Link).Calibrated);
         Assert.Contains("COM9", link.About[0]);
         Assert.Null(link.Version);
     }
@@ -73,50 +73,6 @@ public class PicoLinkTests
         link.Link.Sleep = _ => { };
         var ex = Assert.Throws<LinkException>(() => link.Target.Connect());
         Assert.Contains("entry sequence", ex.Message);
-        Assert.Contains("line low 16.0 µs", ex.Message);
-    }
-
-    [Fact]
-    public void TheLineCheckReadsAHealthyLine()
-    {
-        var (_, _, link) = Connect();
-        var lines = ((PicoLink)link.Link).CheckLine();
-        Assert.Contains(lines, l => l.Contains("SWIM at rest: high"));
-        Assert.Contains(lines, l => l.Contains("90 ns (good"));
-        Assert.Contains(lines, l => l.Contains("answered with its sync pulse: 16.0"));
-        Assert.DoesNotContain(lines, l => l.Contains("LOW") || l.Contains("did not answer"));
-    }
-
-    [Fact]
-    public void TheLineCheckCountsAPulseBegunBeforeTheRelease()
-    {
-        var thing = new OledThing();
-        var fake = new FakePico(thing.Mcu) { LineCheckReply = new byte[] { 1, 0, 1, 0x01, 0xB3, 0, 1, 0x00, 0xA7 } };
-        var link = new ThingLink(new PicoLink(fake), "COM6");
-        var lines = ((PicoLink)link.Link).CheckLine();
-        Assert.Contains(lines, l => l.Contains("answered with its sync pulse: 16.7"));
-        Assert.Contains(lines, l => l.Contains("435 ns (works"));
-    }
-
-    [Fact]
-    public void TheReadTraceDecodesTheReply()
-    {
-        var (_, _, link) = Connect();
-        var lines = ((PicoLink)link.Link).TraceRead();
-        string pulses = lines.Single(l => l.StartsWith("Low pulses"));
-        Assert.Contains("3.00/0.25=1", pulses);
-        Assert.Contains("8.50/2.50=0", pulses);
-        Assert.Contains(lines, l => l.StartsWith("Bit periods") && l.Contains("2.75"));
-    }
-
-    [Fact]
-    public void TheFrameTraceTellsThePicosPulsesFromTheThings()
-    {
-        var (_, _, link) = Connect();
-        string pulses = ((PicoLink)link.Link).TraceFrame().Single(l => l.StartsWith("Low pulses"));
-        Assert.Contains("0.00+2.00 Pico bit 0", pulses);
-        Assert.Contains("11.00+0.22 Pico bit 4", pulses);
-        Assert.Contains("11.60+0.25 Thing", pulses);
     }
 
     [Fact]
