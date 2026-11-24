@@ -20,16 +20,17 @@ namespace Wren.Link;
 /// <item><c>r</c> n a2 a1 a0: read n (1 to 64) bytes at address a. Data: the bytes.</item>
 /// <item><c>w</c> n a2 a1 a0 data: write n (1 to 64) bytes at address a.</item>
 /// <item><c>X</c>: let go of SWIM and NRST.</item>
-/// <item><c>D</c> (sketch version 3 on): the line check; see <see cref="CheckLine"/>.</item>
+/// <item><c>D</c>: the line check; see <see cref="CheckLine"/>.</item>
+/// <item><c>T</c> a2 a1 a0: the read trace; see <see cref="TraceRead"/>.</item>
 /// </list>
 /// </summary>
 public sealed class PicoLink : ITargetLink
 {
     public const byte Hello = (byte)'H', Reset = (byte)'R', Entry = (byte)'E', Srst = (byte)'S',
-        Read = (byte)'r', Write = (byte)'w', Release = (byte)'X', LineCheck = (byte)'D', CommsReset = (byte)'L';
+        Read = (byte)'r', Write = (byte)'w', Release = (byte)'X', LineCheck = (byte)'D', CommsReset = (byte)'L', ReadTrace = (byte)'T';
 
     /// <summary>The sketch version this Wren speaks to.</summary>
-    public const int SketchVersion = 7;
+    public const int SketchVersion = 8;
 
     public const byte StatusOk = 0, StatusNoAnswer = 1, StatusNack = 2, StatusParity = 3,
         StatusBadFrame = 4, StatusNoSync = 5, StatusBadCommand = 6;
@@ -222,6 +223,57 @@ public sealed class PicoLink : ITargetLink
             : pulses.Any(p => p is > 12 and < 20)
                 ? $"The Thing answered with its sync pulse: {pulses.First(p => p is > 12 and < 20):F1} µs (16 is right)."
                 : $"A pulse came back but not 16 µs: {string.Join(", ", pulses.Select(p => $"{p:F1}"))} µs.");
+        return lines;
+    }
+
+    /// <summary>
+    /// The read trace: a communication reset, a read of one byte at the address, and every
+    /// edge of the target's reply, decoded here into bits for the log. Shows what the target
+    /// actually sends when reads fail.
+    /// </summary>
+    public IReadOnlyList<string> TraceRead(int address = SwimTarget.SwimCsr)
+    {
+        byte[] d = Request(new[] { ReadTrace, (byte)(address >> 16), (byte)(address >> 8), (byte)address }, 7);
+        byte status = d[0], frame = d[1];
+        double sync = ((d[2] << 8) | d[3]) / 1000.0;
+        bool clean = d[4] != 0;
+        int level = d[5], count = d[6];
+        byte[] e = ReadExactly(2 * count);
+        var edges = Enumerable.Range(0, count).Select(i => ((e[2 * i] << 8) | e[2 * i + 1]) / 100.0).ToList();
+
+        var lines = new List<string> { $"--- Read trace (one byte at ${address:X4})" };
+        lines.Add(sync == 0
+            ? "Communication reset: no sync pulse seen after it."
+            : $"Communication reset: sync pulse {sync:F1} µs{(clean ? ", measured whole" : ", begun before the release")}.");
+        if (status != StatusOk)
+        {
+            lines.Add($"The read's header failed at frame {frame}: {Describe(status)}");
+            return lines;
+        }
+        lines.Add("The read's header was acknowledged. The reply, from the last ACK:");
+        lines.Add(count == 0
+            ? $"no edges in 80 µs (the line stayed {(level != 0 ? "high" : "low")})."
+            : $"starts {(level != 0 ? "high" : "low")}, edges at {string.Join(", ", edges.Select(t => $"{t:F2}"))} µs.");
+        // Low pulses: each is a bit if the line rose between them.
+        var pulses = new List<(double Start, double Length)>();
+        bool high = level != 0;
+        double? fell = high ? null : 0.0;
+        foreach (double t in edges)
+        {
+            high = !high;
+            if (!high) fell = t;
+            else if (fell is double f) { pulses.Add((f, t - f)); fell = null; }
+        }
+        if (pulses.Count > 0)
+        {
+            double unit = sync is > 12 and < 24 && clean ? sync / 128 : 0.125;
+            lines.Add("Low pulses (start / length µs, and the bit a length means at a " +
+                      $"{unit * 1000:F0} ns SWIM clock): " +
+                      string.Join("  ", pulses.Select(p => $"{p.Start:F2}/{p.Length:F2}={(p.Length <= 8.5 * unit ? 1 : 0)}")));
+            if (pulses.Count > 1)
+                lines.Add("Bit periods (start to start, µs): " +
+                          string.Join(" ", pulses.Zip(pulses.Skip(1), (a, b) => $"{b.Start - a.Start:F2}")));
+        }
         return lines;
     }
 

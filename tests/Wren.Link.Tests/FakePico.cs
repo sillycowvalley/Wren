@@ -51,6 +51,7 @@ public sealed class FakePico : Stream
     {
         PicoLink.Reset => request.Count == 2,
         PicoLink.Read => request.Count == 5,
+        PicoLink.ReadTrace => request.Count == 4,
         PicoLink.Write => request.Count >= 2 && request.Count == 5 + request[1],
         _ => true,
     };
@@ -77,6 +78,21 @@ public sealed class FakePico : Stream
                 ResetHeld = r[1] != 0;
                 Reply(r[0], PicoLink.StatusOk);
                 return;
+            case PicoLink.ReadTrace: // header acknowledged; the reply 1 then $A1 then parity 0 at 2.75 µs a bit
+            {
+                var edges = new List<int>();
+                int[] bits = { 1, 1, 0, 1, 0, 0, 0, 0, 1, 1 };
+                for (int i = 0; i < bits.Length; i++)
+                {
+                    int start = 300 + i * 275;
+                    edges.Add(start);
+                    edges.Add(start + (bits[i] == 1 ? 25 : 250));
+                }
+                var data = new List<byte> { 0, 0, 0x3E, 0x80, 1, 1, (byte)edges.Count };
+                foreach (int t in edges) { data.Add((byte)(t >> 8)); data.Add((byte)t); }
+                Reply(r[0], PicoLink.StatusOk, data.ToArray());
+                return;
+            }
             case PicoLink.LineCheck:
                 Reply(r[0], PicoLink.StatusOk, LineCheckReply);
                 return;

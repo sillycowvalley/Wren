@@ -110,6 +110,16 @@ public partial class LinkWindow : Window
             catch (Exception ex) when (opened.Link is PicoLink pico)
             {
                 Log($"Failed: {ex.Message}");
+                Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs at entry, {pico.ResetSyncMicroseconds:F1} µs after the reset" +
+                    $"{(pico.Calibrated ? " (calibrated to it)" : "")}.");
+                try
+                {
+                    foreach (string line in pico.TraceRead()) Log(line);
+                }
+                catch (Exception trace) when (trace is LinkException or IOException or TimeoutException)
+                {
+                    Log($"The read trace failed: {trace.Message}");
+                }
                 try
                 {
                     foreach (string line in pico.CheckLine()) Log(line);

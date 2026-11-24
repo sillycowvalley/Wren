@@ -99,6 +99,17 @@ public class PicoLinkTests
     }
 
     [Fact]
+    public void TheReadTraceDecodesTheReply()
+    {
+        var (_, _, link) = Connect();
+        var lines = ((PicoLink)link.Link).TraceRead();
+        string pulses = lines.Single(l => l.StartsWith("Low pulses"));
+        Assert.Contains("3.00/0.25=1", pulses);
+        Assert.Contains("8.50/2.50=0", pulses);
+        Assert.Contains(lines, l => l.StartsWith("Bit periods") && l.Contains("2.75"));
+    }
+
+    [Fact]
     public void RefusesHighSpeed() =>
         Assert.Throws<LinkException>(() => new PicoLink(new MemoryStream()).SetHighSpeed(true));
 }

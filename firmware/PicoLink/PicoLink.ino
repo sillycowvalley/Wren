@@ -26,7 +26,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 7;
+const uint8_t SketchVersion = 8;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -400,6 +400,58 @@ static void __not_in_flash_func(traceEntry)() {
   restore_interrupts(saved);
 }
 
+// The read trace ('T' a2 a1 a0): a communication reset, a ROTF of one byte at address a,
+// then every edge on the line for 80 us after the header's last ACK, with nothing decoded
+// and no ACK sent; then another communication reset to leave SWIM tidy.
+// Data: the header's status and failed frame, the reset's sync (ns, 2 bytes) and whether it
+// was measured whole, the level when recording began, the count of edges (64 at most) and
+// each edge's time in units of 10 ns (2 bytes each).
+const int MaxTraceEdges = 64;
+static uint16_t traceEdges[MaxTraceEdges];
+
+static void readTrace(uint32_t address) {
+  uint32_t syncCycles = 0;
+  bool clean = false;
+  uint8_t resetStatus = resetComms(&syncCycles, &clean);
+  uint32_t saved = save_and_disable_interrupts();
+  uint8_t status = resetStatus;
+  uint8_t frame = 0;
+  uint8_t level = 0, count = 0;
+  if (status == StatusOk) {
+    status = sendHeader(SwimRotf, 1, address);
+    frame = failedFrame;
+  }
+  if (status == StatusOk) {
+    uint32_t start = now();
+    bool high = lineHigh();
+    level = high ? 1 : 0;
+    uint32_t window = cycles(80000);
+    while (since(start) < window && count < MaxTraceEdges) {
+      if (lineHigh() != high) {
+        high = !high;
+        traceEdges[count++] = (uint16_t)((uint64_t)since(start) * 100000000ull / cpuHz);
+      }
+    }
+  }
+  restore_interrupts(saved);
+  uint32_t ignored;
+  bool alsoIgnored;
+  resetComms(&ignored, &alsoIgnored);
+  uint32_t ns = (uint32_t)((uint64_t)syncCycles * 1000000000ull / cpuHz);
+  if (ns > 0xFFFF) ns = 0xFFFF;
+  Serial.write(status);
+  Serial.write(frame);
+  Serial.write((uint8_t)(ns >> 8));
+  Serial.write((uint8_t)ns);
+  Serial.write(clean ? 1 : 0);
+  Serial.write(level);
+  Serial.write(count);
+  for (int i = 0; i < count; i++) {
+    Serial.write((uint8_t)(traceEdges[i] >> 8));
+    Serial.write((uint8_t)traceEdges[i]);
+  }
+}
+
 static void lineCheck() {
   sio_hw->gpio_oe_clr = SwimMask | ResetMask;
   delay(20);
@@ -534,6 +586,9 @@ void loop() {
     } else {
       reply(command, writeMemory(count, address, data));
     }
+  } else if (command == 'T' && readArguments(args, 3)) {
+    reply(command, StatusOk);
+    readTrace(((uint32_t)args[0] << 16) | ((uint32_t)args[1] << 8) | args[2]);
   } else if (command == 'D') {
     reply(command, StatusOk);
     lineCheck();
