@@ -6,6 +6,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Wren.Emu;
+using Wren.Link;
 using Wren.Script;
 
 namespace Wren;
@@ -29,9 +30,36 @@ public partial class MainWindow : Window
     private string[] sourceLines = Array.Empty<string>();
     private int errorLine;
     private FileSystemWatcher? watcher;
-    private bool running;
-    private bool stepping;
     private bool reloadPending;
+
+    /// <summary>
+    /// Where debugging stands, as in Visual Studio: not started (the emulator does not run),
+    /// running under the debugger, running without it, paused at a statement, or stepping
+    /// (waiting for the statement the step stops at).
+    /// </summary>
+    private enum Mode { Design, Debugging, RunningFree, Paused, Stepping }
+
+    private enum StepKind { Into, Over, Out, ToCursor }
+
+    private Mode mode = Mode.Design;
+    private StepKind stepKind;
+    private int stepDepth;
+    private int stepLine;
+
+    /// <summary>The last good build, and the text the last build was made from.</summary>
+    private CompiledProgram? built;
+    private string builtText = "";
+
+    /// <summary>Set while Ctrl+F5 works on a real Thing.</summary>
+    private bool thingBusy;
+
+    private bool running => mode is Mode.Debugging or Mode.RunningFree;
+    private bool stepping => mode == Mode.Stepping;
+
+    /// <summary>The program was edited since the last build, or never built.</summary>
+    private bool OutOfDate => built == null || (Editor.Text ?? "") != builtText;
+
+    private RunTarget Target => SavedSettings.Current.Target;
     private int shownLine = -1;
     private readonly BreakpointMargin breakpointMargin = new();
     private readonly LineHighlighter highlighter = new();
@@ -70,7 +98,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         bits = new[] { B0, B1, B2, B3, B4, B5, B6, B7 };
-        KeyDown += OnWindowKeyDown;
+        AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
         SetUpEditor();
 
         var settings = SavedSettings.Current;
@@ -93,6 +121,8 @@ public partial class MainWindow : Window
         SidePanel.Width = new GridLength(sideWidth);
         RightGrid.SizeChanged += (_, _) => FitSidePanel();
         Splitter.DragCompleted += (_, _) => sideWidth = SidePanel.ActualWidth;
+        ThingTargetMenu.IsChecked = settings.Target == RunTarget.Thing;
+        EmulatorTargetMenu.IsChecked = settings.Target == RunTarget.Emulator;
         if (settings.Board == BoardChoice.DevelopmentBoard)
         {
             chip = DeviceInfo.Stm8s103f3;
@@ -197,7 +227,10 @@ public partial class MainWindow : Window
         sourceLines = Array.Empty<string>();
         errorLine = 0;
         messages.Clear();
-        messages.Add("A new program: save it (Ctrl+S) to compile and run it.");
+        built = null;
+        builtText = "";
+        SetMode(Mode.Design);
+        messages.Add("A new program. Press F5 to build it and run it.");
         UpdateTitle();
         shownLine = -1;
         UpdateView();
@@ -207,7 +240,7 @@ public partial class MainWindow : Window
 
     private async void OnSaveAs(object? sender, RoutedEventArgs e) => await SaveAs();
 
-    /// <summary>Saves to the program's file (asking for one if it has none), then compiles and runs it.</summary>
+    /// <summary>Saves to the program's file (asking for one if it has none). Saving builds nothing.</summary>
     private async Task<bool> Save()
     {
         if (path == null) return await SaveAs();
@@ -224,7 +257,7 @@ public partial class MainWindow : Window
         }
         savedText = text;
         UpdateTitle();
-        Compile(text);
+        UpdateView();
         return true;
     }
 
@@ -246,7 +279,7 @@ public partial class MainWindow : Window
         return saved;
     }
 
-    /// <summary>The file changed on disk: our own save is already compiled; anything else replaces the text unless it has unsaved edits.</summary>
+    /// <summary>The file changed on disk: our own save is ignored; anything else replaces the text unless it has unsaved edits.</summary>
     private void ReloadFromDisk()
     {
         if (path == null) return;
@@ -335,34 +368,49 @@ public partial class MainWindow : Window
         Editor.Text = source;
         Editor.Document.UndoStack.ClearAll();
         UpdateTitle();
-        Compile(source);
-    }
-
-    /// <summary>Compiles the program and uploads it to the emulated Thing; errors go to Messages.</summary>
-    private void Compile(string source)
-    {
-        messages.Clear();
-        errorLine = 0;
         sourceLines = source.Replace("\r\n", "\n").Split('\n');
-        if (session != null)
-        {
-            var program = session.Upload(source);
-            string name = path != null ? Path.GetFileName(path) : "the program";
-            if (!program.Success)
-            {
-                foreach (var error in program.Errors) messages.Add(error.ToString());
-                errorLine = program.Errors[0].Line;
-                SetRunning(false);
-            }
-            else
-            {
-                messages.Add($"Uploaded {name}: {program.Image.Length} bytes in {program.Blocks} blocks.");
-                SetRunning(true);
-            }
-        }
+        errorLine = 0;
+        built = null;
+        builtText = "";
+        SetMode(Mode.Design);
+        messages.Clear();
+        messages.Add($"Opened {FileName}. F5 builds it and runs it with the debugger, Ctrl+F5 without.");
         shownLine = -1;
         UpdateView();
     }
+
+    // ---- Building ----
+
+    private void OnBuild(object? sender, RoutedEventArgs e) => Build();
+
+    /// <summary>Compiles the editor's text; errors go to Messages. Runs nothing. True when it built.</summary>
+    private bool Build()
+    {
+        string text = Editor.Text ?? "";
+        messages.Clear();
+        errorLine = 0;
+        sourceLines = text.Replace("\r\n", "\n").Split('\n');
+        var program = Compiler.Compile(text);
+        builtText = text;
+        if (!program.Success)
+        {
+            built = null;
+            foreach (var error in program.Errors) messages.Add(error.ToString());
+            errorLine = program.Errors[0].Line;
+            messages.Add("Build failed.");
+        }
+        else
+        {
+            built = program;
+            messages.Add($"Built {FileName}: {program.Image.Length} bytes in {program.Blocks} blocks.");
+        }
+        shownLine = -1;
+        UpdateView();
+        return built != null;
+    }
+
+    /// <summary>Builds when the program was edited since the last build, as Visual Studio does before it starts.</summary>
+    private bool BuildIfNeeded() => !OutOfDate || Build();
 
     /// <summary>Reloads when the file is saved.</summary>
     private void Watch(string file)
@@ -385,19 +433,36 @@ public partial class MainWindow : Window
     private void OnExit(object? sender, RoutedEventArgs e) => Close();
 
     /// <summary>
-    /// The menu shortcuts: F5 run or pause, F10 step, Ctrl+N new, Ctrl+O open, Ctrl+S save,
-    /// Ctrl+Shift+S save as, Ctrl+R reload. The editor handles the Edit menu's own keys.
+    /// The menu shortcuts, Visual Studio's where it has them: Ctrl+Shift+B build; F5 start
+    /// debugging or continue, Ctrl+F5 start without debugging, Shift+F5 stop, Ctrl+Shift+F5
+    /// restart, Ctrl+Alt+Break break all; F11 step into, F10 step over, Shift+F11 step out,
+    /// Ctrl+F10 run to cursor, F9 toggle breakpoint; and the File menu's. Caught before the
+    /// editor sees them. The editor handles the Edit menu's own keys.
     /// </summary>
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.F5) OnRun(sender, e);
-        else if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.F10) { if (StepMenu.IsEnabled) OnStep(sender, e); }
-        else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.N) OnNew(sender, e);
-        else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.O) OnOpen(sender, e);
-        else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.S) OnSave(sender, e);
-        else if (e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.S) OnSaveAs(sender, e);
-        else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.R) OnReload(sender, e);
-        else return;
+        var m = e.KeyModifiers;
+        const KeyModifiers None = KeyModifiers.None, Ctrl = KeyModifiers.Control, Shift = KeyModifiers.Shift;
+        switch (e.Key)
+        {
+            case Key.B when m == (Ctrl | Shift): OnBuild(sender, e); break;
+            case Key.F5 when m == None: OnStartDebugging(sender, e); break;
+            case Key.F5 when m == Ctrl: OnStartWithoutDebugging(sender, e); break;
+            case Key.F5 when m == Shift: OnStop(sender, e); break;
+            case Key.F5 when m == (Ctrl | Shift): OnRestart(sender, e); break;
+            case Key.Pause or Key.Cancel when m == (Ctrl | KeyModifiers.Alt): OnBreakAll(sender, e); break;
+            case Key.F11 when m == None: OnStepInto(sender, e); break;
+            case Key.F11 when m == Shift: OnStepOut(sender, e); break;
+            case Key.F10 when m == None: OnStepOver(sender, e); break;
+            case Key.F10 when m == Ctrl: OnRunToCursor(sender, e); break;
+            case Key.F9 when m == None: OnToggleBreakpoint(sender, e); break;
+            case Key.N when m == Ctrl: OnNew(sender, e); break;
+            case Key.O when m == Ctrl: OnOpen(sender, e); break;
+            case Key.S when m == Ctrl: OnSave(sender, e); break;
+            case Key.S when m == (Ctrl | Shift): OnSaveAs(sender, e); break;
+            case Key.R when m == Ctrl: OnReload(sender, e); break;
+            default: return;
+        }
         e.Handled = true;
     }
 
@@ -440,50 +505,207 @@ public partial class MainWindow : Window
             linkWindow.Activate();
             return;
         }
-        linkWindow = new LinkWindow(kernel, () => session?.Program);
+        linkWindow = new LinkWindow(kernel, () => BuildIfNeeded() ? built : null);
         linkWindow.Closed += (_, _) => linkWindow = null;
         linkWindow.Show(this);
     }
 
-    // ---- Running and stepping ----
-
-    private void OnRun(object? sender, RoutedEventArgs e)
+    private void OnDebugChecks(object? sender, RoutedEventArgs e)
     {
-        if (running)
-        {
-            // Pause: stop at the next statement if one comes soon, else wait for events.
-            SetRunning(false);
-            session?.Step(0.05);
-        }
-        else SetRunning(true);
+        OnOpenLink(sender, e);
+        linkWindow?.ExplainDebugChecks();
+    }
+
+    // ---- Starting, stopping and stepping (Visual Studio's keys) ----
+
+    private void SetMode(Mode next)
+    {
+        mode = next;
+        clock.Restart();
+    }
+
+    /// <summary>Builds if needed and loads the program into the emulator, powered on. False when the build failed.</summary>
+    private bool StartEmulator()
+    {
+        if (session == null || !BuildIfNeeded()) return false;
+        session.Load(built!);
+        ApplyPins();
+        shownLine = -1;
+        return true;
+    }
+
+    /// <summary>The Thing target: debugging waits for the debug module checks.</summary>
+    private bool OnThing()
+    {
+        if (Target != RunTarget.Thing) return false;
+        messages.Add("Debugging on the Thing comes once the debug module checks pass (Tools → Debug module checks…). " +
+            "For now Ctrl+F5 uploads the program (only if it changed) and runs it; Debug → Target → Emulator debugs it here.");
+        UpdateView();
+        return true;
+    }
+
+    private void OnStartDebugging(object? sender, RoutedEventArgs e)
+    {
+        if (OnThing()) return;
+        if (mode == Mode.Paused) SetMode(Mode.Debugging);
+        else if (mode == Mode.Design && StartEmulator()) SetMode(Mode.Debugging);
         UpdateView();
     }
 
-    private void SetRunning(bool run)
+    private void OnStartWithoutDebugging(object? sender, RoutedEventArgs e)
     {
-        running = run;
-        stepping = false;
-        RunMenu.Header = running ? "_Pause" : "_Run";
-        clock.Restart();
+        if (Target == RunTarget.Thing)
+        {
+            UploadAndRunOnThing();
+            return;
+        }
+        if (mode == Mode.Design && StartEmulator()) SetMode(Mode.RunningFree);
+        UpdateView();
     }
 
-    private void OnStep(object? sender, RoutedEventArgs e)
+    private void OnStop(object? sender, RoutedEventArgs e)
     {
-        SetRunning(false);
-        stepping = true;
-        clock.Restart();
+        if (mode == Mode.Design) return;
+        SetMode(Mode.Design);
+        shownLine = -1;
+        UpdateView();
+    }
+
+    private void OnRestart(object? sender, RoutedEventArgs e)
+    {
+        if (mode == Mode.Design) return;
+        bool free = mode == Mode.RunningFree;
+        SetMode(Mode.Design);
+        if (StartEmulator()) SetMode(free ? Mode.RunningFree : Mode.Debugging);
+        UpdateView();
+    }
+
+    private void OnBreakAll(object? sender, RoutedEventArgs e)
+    {
+        if (mode != Mode.Debugging && mode != Mode.Stepping) return;
+        // Stop at the next statement if one comes soon, else wait there for events.
+        SetMode(Mode.Paused);
+        session?.Step(0.05);
+        shownLine = -1;
+        UpdateView();
+    }
+
+    private void OnStepInto(object? sender, RoutedEventArgs e) => BeginStep(StepKind.Into);
+    private void OnStepOver(object? sender, RoutedEventArgs e) => BeginStep(StepKind.Over);
+    private void OnStepOut(object? sender, RoutedEventArgs e) => BeginStep(StepKind.Out);
+
+    private void OnRunToCursor(object? sender, RoutedEventArgs e)
+    {
+        int line = Editor.TextArea.Caret.Line;
+        if (OnThing()) return;
+        if (session?.Program != null && mode != Mode.Design && !session.HasStatement(line))
+        {
+            messages.Add($"Line {line} has no statement to stop at.");
+            UpdateView();
+            return;
+        }
+        stepLine = line;
+        BeginStep(StepKind.ToCursor);
+    }
+
+    /// <summary>
+    /// A step from a pause; from Design (not started) it starts the program and stops at its
+    /// first statement, as F10 and F11 do in Visual Studio (Run To Cursor runs to the line).
+    /// </summary>
+    private void BeginStep(StepKind kind)
+    {
+        if (OnThing() || session == null) return;
+        if (mode == Mode.Design)
+        {
+            if (kind == StepKind.Out || !StartEmulator()) { UpdateView(); return; }
+            stepKind = kind == StepKind.ToCursor ? StepKind.ToCursor : StepKind.Into;
+            stepDepth = 0;
+        }
+        else if (mode == Mode.Paused)
+        {
+            stepKind = kind;
+            stepDepth = session.CallDepth;
+        }
+        else return;
+        SetMode(Mode.Stepping);
+        UpdateView();
     }
 
     private void OnReset(object? sender, RoutedEventArgs e)
     {
-        session?.Board.Reset();
-        SetRunning(true);
+        if (session?.Program == null || mode == Mode.Design) return;
+        session.Board.Reset();
+        if (mode != Mode.RunningFree) SetMode(Mode.Debugging);
     }
 
     private void OnPowerCycle(object? sender, RoutedEventArgs e)
     {
-        session?.Board.PowerOn();
-        SetRunning(true);
+        if (session?.Program == null || mode == Mode.Design) return;
+        session.Board.PowerOn();
+        ApplyPins();
+        if (mode != Mode.RunningFree) SetMode(Mode.Debugging);
+    }
+
+    private void OnTargetChanged(object? sender, RoutedEventArgs e)
+    {
+        var chosen = ThingTargetMenu.IsChecked ? RunTarget.Thing : RunTarget.Emulator;
+        if (chosen == Target) return;
+        SavedSettings.Current.Target = chosen;
+        SetMode(Mode.Design);
+        messages.Add(chosen == RunTarget.Thing
+            ? "Target: the Thing on the programmer. Ctrl+F5 uploads the program (only if it changed) and runs it."
+            : "Target: the emulator.");
+        UpdateView();
+    }
+
+    /// <summary>
+    /// Ctrl+F5 on the Thing: builds if needed, connects through the programmer used last,
+    /// uploads the program only if the Thing holds something else, and runs it.
+    /// </summary>
+    private async void UploadAndRunOnThing()
+    {
+        if (thingBusy || kernel == null) return;
+        if (!BuildIfNeeded()) return;
+        var program = built!;
+        var k = kernel;
+        string? last = SavedSettings.Current.LastProgrammer;
+        thingBusy = true;
+        messages.Add("Starting the program on the Thing…");
+        UpdateView();
+        void Say(string text) => Dispatcher.UIThread.Post(() =>
+        {
+            messages.Add(text);
+            UpdateView();
+        });
+        try
+        {
+            await Task.Run(() =>
+            {
+                var found = ThingLink.Find(out _);
+                int index = ThingLink.Preferred(found, last);
+                if (index < 0) throw new LinkException("No programmer found. Plug it in, or open Tools → Programmer… to look for it.");
+                using var link = ThingLink.Open(found[index]);
+                Say($"Through {found[index]}.");
+                link.Target.Connect();
+                if (link.Target.NoAccess)
+                    throw new LinkException("The Thing refuses memory access (read-out protection?): see Tools → Programmer….");
+                if (!link.Programmer.ReadStatus(k.Image).HasKernel)
+                    throw new LinkException("The Thing does not run Wren's kernel: install it with Tools → Programmer… first.");
+                link.Programmer.Progress += Say;
+                link.Programmer.UploadIfChanged(program.Image);
+                link.Programmer.Run();
+            });
+            messages.Add("The Thing is running the program.");
+        }
+        catch (Exception ex) when (ex is LinkException or IOException or InvalidOperationException or UnauthorizedAccessException or TimeoutException)
+        {
+            messages.Add($"Could not run it on the Thing: {ex.Message} (If the Programmer window is connected, click Disconnect there first.)");
+        }
+        finally
+        {
+            thingBusy = false;
+            UpdateView();
+        }
     }
 
     private void OnTick(object? sender, EventArgs e)
@@ -499,19 +721,28 @@ public partial class MainWindow : Window
         double seconds = Math.Min(clock.Elapsed.TotalSeconds, 0.05);
         clock.Restart();
 
-        if (running)
+        switch (mode)
         {
-            var stop = session.Run(seconds);
-            if (stop == SessionStop.Breakpoint) SetRunning(false);
-        }
-        else if (stepping)
-        {
-            // A step can wait: the next statement may only come with an event.
-            var stop = session.Step(seconds);
-            if (stop != SessionStop.TimeUp) stepping = false;
+            case Mode.Debugging:
+                if (session.Run(seconds) == SessionStop.Breakpoint) SetMode(Mode.Paused);
+                break;
+            case Mode.RunningFree:
+                session.RunFree(seconds);
+                break;
+            case Mode.Stepping:
+                // A step can wait: the next statement may only come with an event.
+                var stop = stepKind switch
+                {
+                    StepKind.Over => session.StepOver(seconds, stepDepth),
+                    StepKind.Out => session.StepOut(seconds, stepDepth),
+                    StepKind.ToCursor => session.RunTo(seconds, stepLine),
+                    _ => session.Step(seconds),
+                };
+                if (stop != SessionStop.TimeUp) SetMode(Mode.Paused);
+                break;
         }
 
-        if (session.Fault != 0 && (running || stepping)) SetRunning(false);
+        if (session.Fault != 0 && (running || stepping)) SetMode(Mode.Paused);
         UpdateView();
     }
 
@@ -524,7 +755,9 @@ public partial class MainWindow : Window
         chip = chosen;
         SavedSettings.Current.Board = chip == DeviceInfo.Stm8s103f3 ? BoardChoice.DevelopmentBoard : BoardChoice.Thing;
         NewSession();
-        if (path != null) Open(path);
+        SetMode(Mode.Design);
+        messages.Add($"Board: {(chip == DeviceInfo.Stm8s103f3 ? "the development board" : "the OLED Thing")}. Press F5 to run the program on it.");
+        UpdateView();
     }
 
     private void OnBitClicked(object? sender, RoutedEventArgs e)
@@ -570,6 +803,8 @@ public partial class MainWindow : Window
 
     // ---- Breakpoints ----
 
+    private void OnToggleBreakpoint(object? sender, RoutedEventArgs e) => ToggleBreakpoint(Editor.TextArea.Caret.Line);
+
     private void ToggleBreakpoint(int line)
     {
         if (session == null) return;
@@ -590,7 +825,7 @@ public partial class MainWindow : Window
             if (!HexBox.IsFocused) HexBox.Text = board.Inputs.ToString("X2");
         }
 
-        int current = session != null && !running ? session.CurrentLine : 0;
+        int current = session != null && mode is Mode.Paused or Mode.Stepping ? session.CurrentLine : 0;
         UpdateSource(current);
         NowText.Text = NowDescription(current);
         VariablesText.Text = VariablesDescription();
@@ -599,10 +834,29 @@ public partial class MainWindow : Window
         if (!MessagesList.ItemsSource?.Cast<string>().SequenceEqual(messages) ?? true)
             MessagesList.ItemsSource = messages.ToList();
 
+        string state = mode switch
+        {
+            Mode.Design => "Not running: F5 starts debugging, Ctrl+F5 runs without",
+            Mode.Debugging => "Running (debugging)",
+            Mode.RunningFree => "Running without debugging",
+            Mode.Stepping => "Stepping: waiting for the next statement",
+            _ => "Paused",
+        };
+        string target = Target == RunTarget.Thing ? (thingBusy ? "Target: Thing (busy)" : "Target: Thing") : "Target: emulator";
         StatusText.Text = board == null ? "" :
-            $"{(running ? "Running" : stepping ? "Stepping: waiting for the next statement" : "Paused")}   " +
-            $"{board.Mcu.Seconds:F2} s since reset   OLED {(board.Oled.Lit ? "on" : "off")}";
-        StepMenu.IsEnabled = session?.Program != null;
+            $"{state}   {target}" + (OutOfDate && (Editor.Text ?? "").Length > 0 ? "   Edited since the last build" : "") +
+            (mode == Mode.Design ? "" : $"   {board.Mcu.Seconds:F2} s since reset   OLED {(board.Oled.Lit ? "on" : "off")}");
+
+        bool emulator = Target == RunTarget.Emulator;
+        StartMenu.Header = mode == Mode.Paused ? "_Continue" : "_Start Debugging";
+        StartMenu.IsEnabled = mode is Mode.Design or Mode.Paused;
+        StartFreeMenu.IsEnabled = mode == Mode.Design && !thingBusy;
+        StopMenu.IsEnabled = mode != Mode.Design;
+        RestartMenu.IsEnabled = mode != Mode.Design;
+        BreakMenu.IsEnabled = mode is Mode.Debugging or Mode.Stepping;
+        StepIntoMenu.IsEnabled = StepOverMenu.IsEnabled = RunToCursorMenu.IsEnabled = emulator && mode is Mode.Design or Mode.Paused;
+        StepOutMenu.IsEnabled = emulator && mode == Mode.Paused;
+        ResetMenu.IsEnabled = PowerMenu.IsEnabled = mode != Mode.Design;
         Oled.Refresh();
     }
 
@@ -622,7 +876,11 @@ public partial class MainWindow : Window
     private string NowDescription(int current)
     {
         if (session == null) return "";
-        if (session.Program == null) return errorLine > 0 ? "The program has errors: see Messages." : "No program.";
+        if (mode == Mode.Design)
+            return errorLine > 0 ? "The program has errors: see Messages." :
+                Target == RunTarget.Thing ? "Not running here. Ctrl+F5 runs the program on the Thing." :
+                "Not running. F5 starts debugging, F10 or F11 starts and stops at the first statement, Ctrl+F5 runs without debugging.";
+        if (session.Program == null) return "No program.";
         int fault = session.Fault;
         if (fault != 0)
         {
@@ -642,7 +900,7 @@ public partial class MainWindow : Window
 
     private string VariablesDescription()
     {
-        if (session?.Program == null) return "";
+        if (session?.Program == null || mode == Mode.Design) return "";
         var lines = session.Globals().Select(v => $"{v.Name} = {v.Value}").ToList();
         if (lines.Count == 0) lines.Add("(no global variables)");
         if (!running)

@@ -22,6 +22,7 @@ public sealed class ThingSession
     private readonly int eventValueAddress;
     private HashSet<int> statementStarts = new();
     private HashSet<int> breakAddresses = new();
+    private HashSet<int> handlerStarts = new();
 
     public ThingSession(Kernel kernel, DeviceInfo chip)
     {
@@ -53,14 +54,33 @@ public sealed class ThingSession
     public CompiledProgram Upload(string source)
     {
         var program = Compiler.Compile(source);
-        if (!program.Success) return program;
+        if (program.Success) Load(program);
+        return program;
+    }
+
+    /// <summary>
+    /// Loads a compiled program through the FAT and powers the Thing on, as Upload does. The
+    /// same program loaded again is not uploaded again: the Thing is only powered on, so the
+    /// write counts do not climb with every start.
+    /// </summary>
+    public void Load(CompiledProgram program)
+    {
+        if (!program.Success) throw new ArgumentException("The program has errors", nameof(program));
+        if (Program != null && Program.Image.AsSpan().SequenceEqual(program.Image))
+        {
+            Program = program;
+            Board.PowerOn();
+            return;
+        }
         Program = program;
         statementStarts = program.Lines.Select(l => l.Address).ToHashSet();
+        handlerStarts = program.Routines.Where(r => r.Name.StartsWith("ON "))
+            .Select(r => program.Lines.Where(l => l.Address >= r.Start && l.Address < r.End).Select(l => l.Address).DefaultIfEmpty(-1).Min())
+            .Where(a => a >= 0).ToHashSet();
         var upload = ProgramStore.Plan(ReadFat(), program.Image);
         Board.Mcu.Load(upload.Bytes());
         Board.PowerOn();
         UpdateBreakpoints();
-        return program;
     }
 
     public byte[] ReadFat()
@@ -115,6 +135,44 @@ public sealed class ThingSession
     /// </summary>
     public SessionStop Step(double seconds) =>
         RunUntil(seconds, address => statementStarts.Contains(address), SessionStop.Statement);
+
+    /// <summary>Runs for some emulated time without stopping at breakpoints (Start Without Debugging).</summary>
+    public SessionStop RunFree(double seconds)
+    {
+        var stop = Board.Mcu.Run(seconds);
+        return stop == StopReason.Fault ? SessionStop.Fault : SessionStop.TimeUp;
+    }
+
+    /// <summary>
+    /// Step Over: runs until a statement starts no deeper in calls than depth (CallDepth when the
+    /// step began), or a breakpoint. A SUB's statements run without stopping.
+    /// </summary>
+    public SessionStop StepOver(double seconds, int depth) =>
+        RunUntil(seconds, address => breakAddresses.Contains(address) || (statementStarts.Contains(address) && CallDepth <= depth),
+            SessionStop.Statement);
+
+    /// <summary>
+    /// Step Out: runs until a statement starts in the routine that called this one (fewer than
+    /// depth calls deep), or a breakpoint. In a handler (depth 0) there is no caller: it runs on
+    /// to the next statement of a later event.
+    /// </summary>
+    public SessionStop StepOut(double seconds, int depth) =>
+        RunUntil(seconds, address => breakAddresses.Contains(address) || (statementStarts.Contains(address) && (CallDepth < depth || depth == 0 && IsHandlerStart(address))),
+            SessionStop.Statement);
+
+    /// <summary>Run To Cursor: runs until line starts, or a breakpoint.</summary>
+    public SessionStop RunTo(double seconds, int line)
+    {
+        var first = Program?.Lines.FirstOrDefault(l => l.Line == line) ?? default;
+        int target = first == default ? -1 : first.Address;
+        return RunUntil(seconds, address => breakAddresses.Contains(address) || address == target, SessionStop.Statement);
+    }
+
+    /// <summary>True for the first statement of an event handler.</summary>
+    private bool IsHandlerStart(int address) => handlerStarts.Contains(address);
+
+    /// <summary>True when line has a statement a breakpoint or Run To Cursor can stop on.</summary>
+    public bool HasStatement(int line) => Program?.Lines.Any(l => l.Line == line) ?? false;
 
     private SessionStop RunUntil(double seconds, Func<int, bool> stopAt, SessionStop reason)
     {

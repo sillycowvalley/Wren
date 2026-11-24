@@ -246,6 +246,40 @@ public sealed class ThingProgrammer
         Say($"Uploaded {program.Length} bytes in {upload.BlockWrites.Count} blocks");
     }
 
+    /// <summary>
+    /// True when the Thing already holds exactly this program: same length, and the same bytes
+    /// in the blocks its program table chains. Reads only.
+    /// </summary>
+    public bool HoldsProgram(byte[] program)
+    {
+        byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
+        if (fat[0] != 1 || fat[1] == ProgramStore.FreeBlock || ((fat[2] << 8) | fat[3]) != program.Length) return false;
+        var blocks = ProgramStore.ProgramBlocks(fat);
+        if (blocks.Count * ProgramStore.BlockSize < program.Length) return false;
+        for (int i = 0; i * ProgramStore.BlockSize < program.Length; i++)
+        {
+            int n = Math.Min(ProgramStore.BlockSize, program.Length - i * ProgramStore.BlockSize);
+            byte[] held = target.Read(ProgramStore.StoreAddress + blocks[i] * ProgramStore.BlockSize, n);
+            if (!held.AsSpan().SequenceEqual(program.AsSpan(i * ProgramStore.BlockSize, n))) return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Uploads the program unless the Thing already holds it, so starting the same program
+    /// again costs no flash writes. True when it uploaded.
+    /// </summary>
+    public bool UploadIfChanged(byte[] program)
+    {
+        if (HoldsProgram(program))
+        {
+            Say("The Thing already holds this program: nothing uploaded, no flash written.");
+            return false;
+        }
+        UploadProgram(program);
+        return true;
+    }
+
     /// <summary>Resets the Thing and lets it run.</summary>
     public void Run() => target.Run();
 

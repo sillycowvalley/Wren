@@ -66,6 +66,7 @@ public partial class LinkWindow : Window
         FactoryButton.IsEnabled = connected;
         ImageButton.IsEnabled = open;
         WearButton.IsEnabled = open && hasWrenKernel;
+        DebugChecksButton.IsEnabled = open && hasWrenKernel && kernel != null;
         RunButton.IsEnabled = connected;
         UnprotectButton.IsEnabled = connected && link!.Target.NoAccess;
         KernelButton.Content = kernelConfirmed ? "Click again to install" : "Install kernel";
@@ -278,6 +279,28 @@ public partial class LinkWindow : Window
         }
     }
 
+    /// <summary>Says how to run the debug module checks (from Tools → Debug module checks).</summary>
+    public void ExplainDebugChecks() =>
+        Log("Debug module checks: connect to a Thing running Wren's kernel with a program on it, then click Debug module checks. " +
+            "They write no flash or EEPROM. When they finish, copy the whole log back.");
+
+    private async void OnDebugChecks(object? sender, RoutedEventArgs e)
+    {
+        if (link == null || kernel == null) return;
+        var l = link;
+        var k = kernel;
+        DebugModuleFindings? found = null;
+        await Work("Debug module checks", () =>
+        {
+            bool hasProgram = l.Programmer.ReadStatus(k.Image).ProgramLength > 0;
+            found = new DebugModuleChecks(l.Target, k, Log).Run(hasProgram);
+        });
+        if (found == null) return;
+        static string Say(bool? r) => r switch { true => "yes", false => "no", null => "unknown" };
+        Log($"Summary: breakpoint on reading flash {Say(found.ReadBreakpointOnFlash)}; reading RAM while idle {Say(found.LiveReadsWhileIdle)}; " +
+            $"STALL stops the CPU {Say(found.StallStopsTheCpu)}; TIM4 freezes {Say(found.Tim4Freezes)}.");
+    }
+
     private async void OnRestoreFactory(object? sender, RoutedEventArgs e)
     {
         if (link == null) return;
@@ -348,7 +371,7 @@ public partial class LinkWindow : Window
         var program = currentProgram();
         if (program == null || !program.Success)
         {
-            Log("Open a program that compiles in Wren first.");
+            Log("The program does not build: see Messages in Wren's main window.");
             return;
         }
         var l = link;
