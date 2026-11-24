@@ -75,6 +75,17 @@ public class PicoLinkTests
     }
 
     [Fact]
+    public void TheLineCheckReadsAHealthyLine()
+    {
+        var (_, _, link) = Connect();
+        var lines = ((PicoLink)link.Link).CheckLine();
+        Assert.Contains(lines, l => l.Contains("SWIM at rest: high"));
+        Assert.Contains(lines, l => l.Contains("90 ns (good"));
+        Assert.Contains(lines, l => l.Contains("16 µs sync pulse (good)"));
+        Assert.DoesNotContain(lines, l => l.Contains("LOW") || l.Contains("did not answer"));
+    }
+
+    [Fact]
     public void RefusesHighSpeed() =>
         Assert.Throws<LinkException>(() => new PicoLink(new MemoryStream()).SetHighSpeed(true));
 }

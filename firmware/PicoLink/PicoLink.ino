@@ -22,7 +22,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 2;
+const uint8_t SketchVersion = 3;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -184,8 +184,13 @@ static uint8_t __not_in_flash_func(softReset)() {
 // answers with a sync pulse 128 SWIM clocks (16 us) long. *syncCycles is how long it was.
 // The line takes a moment to rise once let go, so wait for it to be high before looking for
 // the pulse; a pulse far from 16 us is not the target's sync.
-static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
-  uint32_t saved = save_and_disable_interrupts();
+// When an entry fails, failedFrame says where: EntryNoRise (the line did not rise once let
+// go; lowCycles is how long it stayed low), EntryNoPulse (no pulse came), EntryBadPulse
+// (a pulse of the wrong length; lowCycles is its length).
+const uint8_t EntryNoRise = 0xF1, EntryNoPulse = 0xF2, EntryBadPulse = 0xF3;
+
+// The entry pulses, ending with the line let go. Interrupts must be off.
+static void __not_in_flash_func(sendEntryPulses)() {
   uint32_t t = now();
   driveLow();
   waitUntil(t, entryLow);
@@ -199,11 +204,24 @@ static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
     waitUntil(t, half);
   }
   letGo();
+}
+
+static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
+  uint32_t saved = save_and_disable_interrupts();
+  sendEntryPulses();
+  uint32_t t = now();
+  uint32_t released = t;
   uint32_t at;
   uint8_t status = StatusNoSync;
   failedFrame = 0;
   lowCycles = 0;
-  if (waitRise(riseTimeout) && waitFall(syncTimeout, &at)) {
+  if (!waitRise(riseTimeout)) {
+    failedFrame = EntryNoRise;
+    waitRise(stuckTimeout);
+    lowCycles = since(released);
+  } else if (!waitFall(syncTimeout, &at)) {
+    failedFrame = EntryNoPulse;
+  } else {
     waitRise(syncTimeout);
     lowCycles = since(at);
     *syncCycles = lowCycles;
@@ -211,10 +229,79 @@ static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
       t = now();
       waitUntil(t, afterSync);
       status = StatusOk;
+    } else {
+      failedFrame = EntryBadPulse;
     }
   }
   restore_interrupts(saved);
   return status;
+}
+
+// The line check ('D'): measures the wiring without trusting any of it.
+// Data: SWIM's level at rest, NRST's level when held low and when let go, the time SWIM
+// takes to rise once let go (ns, 0xFFFF for never), then the entry sequence with NRST low
+// and every edge for 300 us after it: the level at release, the count of edges (16 at most)
+// and each edge's time after release in units of 100 ns.
+const int MaxEdges = 16;
+static uint8_t edgeCount;
+static uint8_t levelAtRelease;
+static uint16_t edges[MaxEdges];
+
+static void __not_in_flash_func(traceEntry)() {
+  uint32_t saved = save_and_disable_interrupts();
+  sendEntryPulses();
+  uint32_t released = now();
+  bool level = lineHigh();
+  levelAtRelease = level ? 1 : 0;
+  edgeCount = 0;
+  uint32_t window = cycles(300000);
+  while (since(released) < window && edgeCount < MaxEdges) {
+    if (lineHigh() != level) {
+      level = !level;
+      edges[edgeCount++] = (uint16_t)((uint64_t)since(released) * 10000000ull / cpuHz);
+    }
+  }
+  restore_interrupts(saved);
+}
+
+static uint16_t __not_in_flash_func(measureRise)() {
+  uint32_t saved = save_and_disable_interrupts();
+  uint32_t t = now();
+  driveLow();
+  waitUntil(t, cycles(5000));
+  letGo();
+  uint32_t released = now();
+  bool rose = waitRise(cycles(60000));
+  uint32_t taken = since(released);
+  restore_interrupts(saved);
+  if (!rose) return 0xFFFF;
+  uint32_t ns = (uint32_t)((uint64_t)taken * 1000000000ull / cpuHz);
+  return ns > 0xFFFE ? 0xFFFE : (uint16_t)ns;
+}
+
+static void lineCheck() {
+  sio_hw->gpio_oe_clr = SwimMask | ResetMask;
+  delay(20);
+  uint8_t swimIdle = lineHigh() ? 1 : 0;
+  sio_hw->gpio_oe_set = ResetMask;
+  delay(5);
+  uint8_t resetHeld = (sio_hw->gpio_in & ResetMask) ? 1 : 0;
+  uint16_t rise = measureRise();
+  traceEntry();
+  sio_hw->gpio_oe_clr = ResetMask;
+  delay(20);
+  uint8_t resetFree = (sio_hw->gpio_in & ResetMask) ? 1 : 0;
+  Serial.write(swimIdle);
+  Serial.write(resetHeld);
+  Serial.write(resetFree);
+  Serial.write((uint8_t)(rise >> 8));
+  Serial.write((uint8_t)rise);
+  Serial.write(levelAtRelease);
+  Serial.write(edgeCount);
+  for (int i = 0; i < edgeCount; i++) {
+    Serial.write((uint8_t)(edges[i] >> 8));
+    Serial.write((uint8_t)edges[i]);
+  }
 }
 
 // The reply's head; after an error status, the failed frame and how long the line was
@@ -316,6 +403,9 @@ void loop() {
     } else {
       reply(command, writeMemory(count, address, data));
     }
+  } else if (command == 'D') {
+    reply(command, StatusOk);
+    lineCheck();
   } else if (command == 'X') {
     sio_hw->gpio_oe_clr = SwimMask | ResetMask;
     reply(command, StatusOk);

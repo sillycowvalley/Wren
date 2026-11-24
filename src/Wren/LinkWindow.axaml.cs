@@ -94,6 +94,19 @@ public partial class LinkWindow : Window
                 ShowStatus(opened);
                 link = opened;
             }
+            catch (Exception ex) when (opened.Link is PicoLink pico)
+            {
+                Log($"Failed: {ex.Message}");
+                try
+                {
+                    foreach (string line in pico.CheckLine()) Log(line);
+                }
+                catch (Exception check) when (check is LinkException or IOException or TimeoutException)
+                {
+                    Log($"The line check failed too: {check.Message}");
+                }
+                opened.Dispose();
+            }
             catch
             {
                 opened.Dispose();

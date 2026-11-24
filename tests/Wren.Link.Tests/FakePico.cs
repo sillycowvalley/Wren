@@ -67,11 +67,14 @@ public sealed class FakePico : Stream
         switch (r[0])
         {
             case PicoLink.Hello:
-                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 2);
+                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 3);
                 return;
             case PicoLink.Reset:
                 ResetHeld = r[1] != 0;
                 Reply(r[0], PicoLink.StatusOk);
+                return;
+            case PicoLink.LineCheck: // a healthy line: idle high, NRST works, 90 ns rise, the sync pulse
+                Reply(r[0], PicoLink.StatusOk, 1, 0, 1, 0x00, 0x5A, 0, 3, 0x00, 0x00, 0x00, 0x14, 0x00, 0xB4);
                 return;
             case PicoLink.Release:
                 ResetHeld = false;

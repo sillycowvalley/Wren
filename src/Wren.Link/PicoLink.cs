@@ -18,12 +18,13 @@ namespace Wren.Link;
 /// <item><c>r</c> n a2 a1 a0: read n (1 to 64) bytes at address a. Data: the bytes.</item>
 /// <item><c>w</c> n a2 a1 a0 data: write n (1 to 64) bytes at address a.</item>
 /// <item><c>X</c>: let go of SWIM and NRST.</item>
+/// <item><c>D</c> (sketch version 3 on): the line check; see <see cref="CheckLine"/>.</item>
 /// </list>
 /// </summary>
 public sealed class PicoLink : ITargetLink
 {
     public const byte Hello = (byte)'H', Reset = (byte)'R', Entry = (byte)'E', Srst = (byte)'S',
-        Read = (byte)'r', Write = (byte)'w', Release = (byte)'X';
+        Read = (byte)'r', Write = (byte)'w', Release = (byte)'X', LineCheck = (byte)'D';
 
     public const byte StatusOk = 0, StatusNoAnswer = 1, StatusNack = 2, StatusParity = 3,
         StatusBadFrame = 4, StatusNoSync = 5, StatusBadCommand = 6;
@@ -146,6 +147,59 @@ public sealed class PicoLink : ITargetLink
         return result;
     }
 
+    /// <summary>
+    /// The line check: SWIM's level at rest, NRST held and let go, how fast SWIM rises, and
+    /// every edge after an entry sequence. Returns lines for the log, each saying what it
+    /// means. Leaves NRST let go.
+    /// </summary>
+    public IReadOnlyList<string> CheckLine()
+    {
+        if (Version < 3) return new[] { $"The Pico's sketch is version {Version}; the line check needs version 3. Upload the sketch again." };
+        byte[] d = Request(new[] { LineCheck }, 7);
+        bool swimIdle = d[0] != 0, resetHeld = d[1] != 0, resetFree = d[2] != 0;
+        int rise = (d[3] << 8) | d[4];
+        int level = d[5], count = d[6];
+        byte[] e = ReadExactly(2 * count);
+        var edges = Enumerable.Range(0, count).Select(i => ((e[2 * i] << 8) | e[2 * i + 1]) / 10.0).ToList();
+
+        var lines = new List<string> { "--- Line check" };
+        lines.Add(swimIdle
+            ? "SWIM at rest: high (good)."
+            : "SWIM at rest: LOW. Something holds it down: is GP2 on J2 pin 2 (not pin 1, GND)? Is the Thing powered?");
+        lines.Add(rise == 0xFFFF
+            ? "SWIM rise after letting go: it never rose. The pull-up is missing, or the line is shorted to GND."
+            : rise > 1500
+                ? $"SWIM rise after letting go: {rise} ns, too slow. Is the 1 kΩ pull-up from GP2 to 3V3(OUT) in place?"
+                : $"SWIM rise after letting go: {rise} ns (good; under a few hundred is right).");
+        lines.Add(resetHeld
+            ? "NRST held low by GP3: it still reads HIGH. Is GP3 wired to J2 pin 3?"
+            : "NRST held low by GP3: low (good).");
+        lines.Add(resetFree
+            ? "NRST let go: high (good)."
+            : "NRST let go: it stays LOW. Is the Thing powered at 3.3 V?");
+        string trace = count == 0
+            ? $"no edges (the line stayed {(level != 0 ? "high" : "low")})"
+            : $"starts {(level != 0 ? "high" : "low")}, edges at {string.Join(", ", edges.Select(t => $"{t:F1}"))} µs";
+        lines.Add($"After the entry sequence: {trace}.");
+        // Pulses are a fall then a rise; a line that starts low is still rising from the
+        // Pico letting go, so its first rise is not a pulse.
+        var pulses = new List<double>();
+        bool high = level != 0;
+        double? fell = null;
+        foreach (double t in edges)
+        {
+            high = !high;
+            if (!high) fell = t;
+            else if (fell is double f) { pulses.Add(t - f); fell = null; }
+        }
+        lines.Add(pulses.Count == 0
+            ? "The Thing did not answer: no pulse came back. Check SWIM goes to J2 pin 2 and the Thing has 3.3 V on VCC."
+            : pulses.Any(p => p is > 12 and < 20)
+                ? "The Thing answered with its 16 µs sync pulse (good)."
+                : $"A pulse came back but not 16 µs: {string.Join(", ", pulses.Select(p => $"{p:F1}"))} µs.");
+        return lines;
+    }
+
     /// <summary>Sends a request and reads its reply: the echoed command, the status, then dataLength bytes.</summary>
     private byte[] Request(byte[] request, int dataLength)
     {
@@ -161,7 +215,14 @@ public sealed class PicoLink : ITargetLink
             {
                 byte[] d = ReadExactly(3);
                 double low = ((d[1] << 8) | d[2]) / 10.0;
-                detail = d[0] == 0 ? $" [line low {low:F1} µs]" : $" [frame {d[0]}, line low {low:F1} µs]";
+                detail = d[0] switch
+                {
+                    0xF1 => $" [the line stayed low {low:F1} µs after the Pico let go]",
+                    0xF2 => " [no pulse came back]",
+                    0xF3 => $" [a pulse of {low:F1} µs came back, not 16]",
+                    0 => $" [line low {low:F1} µs]",
+                    _ => $" [frame {d[0]}, line low {low:F1} µs]",
+                };
             }
             throw new LinkException(Describe(head[1]) + detail);
         }
