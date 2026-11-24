@@ -24,7 +24,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 5;
+const uint8_t SketchVersion = 6;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -41,7 +41,7 @@ static uint32_t lowCycles;
 
 // Times in CPU cycles, worked out from the clock in setup().
 static uint32_t bitPeriod, shortLow, longLow, sampleAt;
-static uint32_t answerTimeout, bitTimeout, riseTimeout, edgeWindow;
+static uint32_t answerTimeout, bitTimeout, riseTimeout, edgeWindow, interFrameGap;
 static uint32_t entryLow, entrySlow, entryFast, syncTimeout, afterSync, syncShortest, syncLongest, stuckTimeout, settleTimeout;
 static uint32_t cpuHz;
 
@@ -113,8 +113,14 @@ static int __not_in_flash_func(readBit)(uint32_t timeout, uint32_t *at) {
 
 // Sends a frame (its bits, most significant first, starting with the 0 start bit) and its
 // parity, then reads the target's ACK; a NACK sends the frame again.
+// The target may start its next frame the moment an ACK bit ends, so after an ACK the
+// host goes straight back to listening, and only a frame the host sends waits for the
+// ACK bit's period to finish (lineBusyFrom + lineBusyFor).
+static uint32_t lineBusyFrom, lineBusyFor;
+
 static uint8_t __not_in_flash_func(sendFrame)(uint32_t value, int bits) {
   for (int attempt = 0; attempt < 16; attempt++) {
+    waitUntil(lineBusyFrom, lineBusyFor);
     uint32_t t = now();
     int parity = 0;
     for (int i = bits - 1; i >= 0; i--) {
@@ -127,13 +133,15 @@ static uint8_t __not_in_flash_func(sendFrame)(uint32_t value, int bits) {
     uint32_t at;
     int ack = readBit(answerTimeout, &at);
     if (ack < 0) return StatusNoAnswer;
+    lineBusyFrom = at;
+    lineBusyFor = bitPeriod + interFrameGap;
+    if (ack) return StatusOk; // the ACK's low is over (it was sampled high): listen at once
     waitUntil(at, bitPeriod);
     if (!waitRise(riseTimeout)) {
       waitRise(stuckTimeout); // measure how long the target held the line
       lowCycles = since(at);
       return StatusBadFrame;
     }
-    if (ack) return StatusOk;
   }
   return StatusNack;
 }
@@ -168,8 +176,16 @@ static uint8_t __not_in_flash_func(receiveFrame)(uint8_t *out) {
     int parity = 0;
     for (int i = 1; i <= 8; i++) parity ^= (value >> i) & 1;
     bool good = parity == (int)(value & 1);
+    // The host's ACK (or NACK) bit, one period after the parity bit began. After an ACK,
+    // return as soon as the line is let go: the next frame may follow the bit at once.
     waitUntil(at, bitPeriod);
-    sendBit(now(), good ? 1 : 0);
+    uint32_t t = now();
+    driveLow();
+    waitUntil(t, good ? shortLow : longLow);
+    letGoSharply();
+    lineBusyFrom = t;
+    lineBusyFor = bitPeriod + interFrameGap;
+    if (!good) waitUntil(t, bitPeriod);
     if (good) {
       *out = (uint8_t)(value >> 1);
       return StatusOk;
@@ -224,7 +240,10 @@ static uint8_t __not_in_flash_func(softReset)() {
 // (a pulse of the wrong length; lowCycles is its length).
 const uint8_t EntryNoRise = 0xF1, EntryNoPulse = 0xF2, EntryBadPulse = 0xF3;
 
-// The entry pulses, ending with the line let go. Interrupts must be off.
+// The entry pulses, ending with the line let go. Interrupts must be off. Records how long
+// the line took to rise after the second 500 us low: a long low resets SWIM, so the target
+// is silent then and the rise is the pull-up's alone.
+static uint32_t entryRiseCycles;
 static void __not_in_flash_func(sendEntryPulses)() {
   uint32_t t = now();
   driveLow();
@@ -233,6 +252,9 @@ static void __not_in_flash_func(sendEntryPulses)() {
     uint32_t half = i < 4 ? entrySlow : entryFast;
     t = now();
     letGo();
+    if (i == 2) {
+      entryRiseCycles = waitRise(half / 2) ? since(t) : 0xFFFFFF;
+    }
     waitUntil(t, half);
     t = now();
     driveLow();
@@ -283,7 +305,7 @@ static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
 
 // The line check ('D'): measures the wiring without trusting any of it.
 // Data: SWIM's level at rest, NRST's level when held low and when let go, the time SWIM
-// takes to rise once let go (ns, 0xFFFF for never), then the entry sequence with NRST low
+// takes to rise once let go during the entry (ns, 0xFFFF for never), then the entry sequence with NRST low
 // and every edge for 300 us after it: the level at release, the count of edges (16 at most)
 // and each edge's time after release in units of 100 ns.
 const int MaxEdges = 16;
@@ -308,21 +330,6 @@ static void __not_in_flash_func(traceEntry)() {
   restore_interrupts(saved);
 }
 
-static uint16_t __not_in_flash_func(measureRise)() {
-  uint32_t saved = save_and_disable_interrupts();
-  uint32_t t = now();
-  driveLow();
-  waitUntil(t, cycles(5000));
-  letGo();
-  uint32_t released = now();
-  bool rose = waitRise(cycles(60000));
-  uint32_t taken = since(released);
-  restore_interrupts(saved);
-  if (!rose) return 0xFFFF;
-  uint32_t ns = (uint32_t)((uint64_t)taken * 1000000000ull / cpuHz);
-  return ns > 0xFFFE ? 0xFFFE : (uint16_t)ns;
-}
-
 static void lineCheck() {
   sio_hw->gpio_oe_clr = SwimMask | ResetMask;
   delay(20);
@@ -330,8 +337,12 @@ static void lineCheck() {
   sio_hw->gpio_oe_set = ResetMask;
   delay(5);
   uint8_t resetHeld = (sio_hw->gpio_in & ResetMask) ? 1 : 0;
-  uint16_t rise = measureRise();
   traceEntry();
+  uint16_t rise = 0xFFFF;
+  if (entryRiseCycles != 0xFFFFFF) {
+    uint64_t ns = (uint64_t)entryRiseCycles * 1000000000ull / cpuHz;
+    rise = ns > 0xFFFE ? 0xFFFE : (uint16_t)ns;
+  }
   sio_hw->gpio_oe_clr = ResetMask;
   delay(20);
   uint8_t resetFree = (sio_hw->gpio_in & ResetMask) ? 1 : 0;
@@ -389,6 +400,7 @@ void setup() {
   sampleAt = cycles(1700);  // late in the bit, so a slow rise after a 1 still reads as 1
   boostHigh = cycles(100);
   edgeWindow = cycles(600);
+  interFrameGap = cycles(250);
   answerTimeout = cycles(2000000); // 2 ms
   bitTimeout = cycles(10000);
   riseTimeout = cycles(5000);
