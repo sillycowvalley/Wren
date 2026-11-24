@@ -59,8 +59,10 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    S103 board first, then a Thing. A Raspberry Pi Pico does the same job at low SWIM
    speed and has programmed a Thing ([PicoLink.md](PicoLink.md)).
 3. **The firmware (done).** The kernel (VM, graphics, events, FAT loader) fits in 8 KB
-   flash and 1 KB RAM beside a 3,008-byte program store. It runs on a real OLED Thing,
-   with its display the right way up and in place. Programs reach a Thing over SWIM
+   flash and 1 KB RAM beside a 3,008-byte program store. It runs on a real OLED Thing.
+   Like Digicool's firmware, it sets the OLED up with segment remap and reversed COM
+   scan, because the Thing's module is mounted rotated 180°. It also turns on pull-ups on
+   b0–b7, so inputs left open read 1. Programs reach a Thing over SWIM
    (Wren.Link) or from a host over its own pins (the kernel's loader).
 4. **Wren BASIC (done).** The Thing's own behaviour is about 310 bytes of BASIC.
 5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug

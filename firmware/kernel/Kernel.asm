@@ -146,8 +146,8 @@ oled_init_table:
         dc.b $40                    ; start line 0
         dc.b $8D,$14                ; charge pump on
         dc.b $20,$00                ; horizontal addressing
-        dc.b $A0                    ; columns not mirrored
-        dc.b $C0                    ; rows not mirrored
+        dc.b $A1                    ; segment remap and reversed COM scan: the Thing's module
+        dc.b $C8                    ; is mounted rotated, so these give an upright picture
         dc.b $DA,$12                ; COM pins
         dc.b $81,$CF                ; contrast
         dc.b $D9,$F1                ; pre-charge
@@ -193,13 +193,17 @@ clear_ram:
         cpw x,#CSTACK_TOP+QUEUE_SIZE*2
         jrne clear_ram
 
-        ; pull-ups on the mode and spare pins: PA1-PA3, PD2, PD3
-        ld a,PA_CR1
-        or a,#$0E
-        ld PA_CR1,a
-        ld a,PD_CR1
-        or a,#$0C
-        ld PD_CR1,a
+        ; pull-ups on b0-b7 (PC3-PC7, PD4-PD6), as Digicool's firmware has them, so inputs
+        ; left open read 1; on the mode and spare pins (PA1-PA3, PD2, PD3); and on PD1 (SWIM,
+        ; its reset state). Padded to the 16 bytes this code always took, so that the code
+        ; after it does not move and a kernel update rewrites only this flash block.
+        mov PA_CR1,#$0E
+        mov PC_CR1,#$F8
+        mov PD_CR1,#$7E
+        nop
+        nop
+        nop
+        nop
 
         ldw x,#$ACE1
         ldw rnd,x

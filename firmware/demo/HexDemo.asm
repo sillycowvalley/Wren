@@ -202,8 +202,8 @@ oled_init_table:
         dc.b $40            ; start line 0
         dc.b $8D,$14        ; charge pump on
         dc.b $20,$00        ; horizontal addressing
-        dc.b $A0            ; segment remap off
-        dc.b $C0            ; COM scan normal
+        dc.b $A1            ; segment remap: the module is mounted rotated
+        dc.b $C8            ; COM scan reversed (upright on the Thing)
         dc.b $DA,$12        ; COM pins
         dc.b $81,$CF        ; contrast
         dc.b $D9,$F1        ; pre-charge

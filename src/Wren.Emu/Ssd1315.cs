@@ -37,6 +37,13 @@ public sealed class Ssd1315 : II2cDevice
     /// <summary>First RAM column the panel shows (before segment remap).</summary>
     public int ColumnOffset { get; set; } = 32;
 
+    /// <summary>
+    /// The module is mounted rotated by 180° against the controller's own orientation, as on
+    /// the OLED Thing: there, segment remap ($A1) and reversed COM scan ($C8) give an
+    /// upright picture, as Digicool's firmware and Wren's kernel set it up.
+    /// </summary>
+    public bool MountedRotated { get; set; } = true;
+
     public bool DisplayOn { get; private set; }
     public bool ChargePump { get; private set; }
     public bool Inverse { get; private set; }
@@ -239,6 +246,11 @@ public sealed class Ssd1315 : II2cDevice
         if (!Lit) return false;
         if (EntireOn) return true;
 
+        if (MountedRotated)
+        {
+            x = PanelWidth - 1 - x;
+            y = PanelHeight - 1 - y;
+        }
         int segment = ColumnOffset + x;
         int column = SegmentRemap ? 127 - segment : segment;
         int com = ComReverse ? MuxRatio - 1 - y : y;
