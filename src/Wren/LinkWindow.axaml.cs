@@ -6,12 +6,12 @@ using Wren.Script;
 
 namespace Wren;
 
-/// <summary>Programs a real Thing through an ST-LINK: find, connect, install the kernel, upload, run.</summary>
+/// <summary>Programs a real Thing through an ST-LINK or a Pico: find, connect, install the kernel, upload, run.</summary>
 public partial class LinkWindow : Window
 {
     private readonly Kernel? kernel;
     private readonly Func<CompiledProgram?> currentProgram;
-    private IReadOnlyList<UsbDeviceInfo> devices = Array.Empty<UsbDeviceInfo>();
+    private IReadOnlyList<ProgrammerInfo> devices = Array.Empty<ProgrammerInfo>();
     private ThingLink? link;
     private bool kernelConfirmed;
 
@@ -71,23 +71,21 @@ public partial class LinkWindow : Window
         DeviceBox.ItemsSource = devices;
         DeviceBox.SelectedIndex = devices.Count > 0 ? 0 : -1;
         if (why != null) Log(why);
-        else Log(devices.Count == 0
-            ? "No ST-LINK found. Is it plugged in, and does Device Manager show it under \"Universal Serial Bus devices\"?"
-            : $"Found {devices.Count} ST-LINK{(devices.Count == 1 ? "" : "s")}: {string.Join(", ", devices)}");
+        Log(devices.Count == 0
+            ? "No programmer found. An ST-LINK shows in Device Manager under \"Universal Serial Bus devices\"; a Pico under \"Ports (COM & LPT)\"."
+            : $"Found: {string.Join(", ", devices)}");
         UpdateButtons();
     }
 
     private async void OnConnect(object? sender, RoutedEventArgs e)
     {
-        if (DeviceBox.SelectedItem is not UsbDeviceInfo device) return;
+        if (DeviceBox.SelectedItem is not ProgrammerInfo device) return;
         await Work("Connect", () =>
         {
             var opened = ThingLink.Open(device);
             try
             {
-                Log(opened.Version.ToString());
-                double? volts = opened.StLink.ReadTargetVoltage(opened.Version);
-                Log(volts is double v ? $"Target voltage: {v:F2} V" : "Target voltage: this ST-LINK cannot measure it");
+                foreach (string line in opened.About) Log(line);
                 opened.Target.Connect();
                 Log("SWIM connected; the Thing's CPU is stalled.");
                 ShowStatus(opened);

@@ -43,7 +43,7 @@
         <MenuItem Name="DevBoardMenu" Header="_Development board (STM8S103F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
       </MenuItem>
       <MenuItem Header="_Tools">
-        <MenuItem Header="_ST-LINK…" Click="OnOpenLink" />
+        <MenuItem Header="_Programmer…" Click="OnOpenLink" />
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="Wren BASIC _quick reference" Click="OnQuickReference" />

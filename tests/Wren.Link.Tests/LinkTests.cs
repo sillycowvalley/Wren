@@ -17,7 +17,7 @@ public class LinkTests
         var thing = new OledThing();
         var fake = new FakeStLink(thing.Mcu) { BusyPolls = busyPolls };
         var link = new ThingLink(fake);
-        link.StLink.Sleep = _ => { };
+        link.Link.Sleep = _ => { };
         link.Target.Connect();
         return (thing, fake, link);
     }
@@ -33,7 +33,7 @@ public class LinkTests
     public void ConnectsOverSwimAtHighSpeed()
     {
         var (_, fake, link) = Connect(busyPolls: 2);
-        Assert.Equal(2, link.Version.StLink);
+        Assert.Equal(2, link.Version!.StLink);
         Assert.Equal(StLink.ModeSwim, fake.Mode);
         Assert.True(fake.Connected);
         Assert.True(fake.HighSpeed);
@@ -122,7 +122,7 @@ public class LinkTests
         var thing = new OledThing();
         var fake = new FakeStLink(thing.Mcu) { StatusError = StLink.StatusNoResponse };
         var link = new ThingLink(fake);
-        link.StLink.Sleep = _ => { };
+        link.Link.Sleep = _ => { };
         var ex = Assert.Throws<LinkException>(() => link.Target.Connect());
         Assert.Contains("did not answer", ex.Message);
     }
@@ -132,7 +132,7 @@ public class LinkTests
     {
         var (thing, _, link) = Connect();
         var data = Enumerable.Range(0, 64).Select(i => (byte)(i + 1)).ToArray();
-        link.StLink.WriteMemory(0x0200, data);              // 8 bytes in the packet, 56 after it
+        link.Link.WriteMemory(0x0200, data);              // 8 bytes in the packet, 56 after it
         Assert.Equal(data, Enumerable.Range(0x200, 64).Select(a => thing.Mcu.Read(a)));
     }
 }

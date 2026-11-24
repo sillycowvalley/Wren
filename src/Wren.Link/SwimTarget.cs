@@ -4,7 +4,7 @@ namespace Wren.Link;
 public enum TargetMemory { Flash, Eeprom }
 
 /// <summary>
-/// An STM8S over SWIM, through an ST-LINK: connect (the CPU stalled), read and write memory,
+/// An STM8S over SWIM, through an ST-LINK or a Pico: connect (the CPU stalled), read and write memory,
 /// program 64-byte blocks of flash or EEPROM, option bytes, and reset.
 /// Register addresses are the STM8S003/S103's (RM0016, UM0470).
 /// </summary>
@@ -17,14 +17,14 @@ public sealed class SwimTarget
 
     private const byte IapsrWrPgDis = 0x01, IapsrEop = 0x04;
 
-    public SwimTarget(StLink link) => Link = link;
+    public SwimTarget(ITargetLink link) => Link = link;
 
-    public StLink Link { get; }
+    public ITargetLink Link { get; }
 
     /// <summary>
     /// Enters SWIM: NRST held low, the entry sequence, SWIM_CSR set (interrupts masked, all of
     /// memory reachable, SWIM first, CPU stalled), NRST released, then high-speed SWIM if
-    /// the target offers it. The CPU stays stalled until Run.
+    /// the target offers it and the programmer can. The CPU stays stalled until Run.
     /// </summary>
     public void Connect()
     {
@@ -43,7 +43,7 @@ public sealed class SwimTarget
             Link.Sleep(1);
         }
         Link.ResetSwim();
-        if ((csr & 0x02) != 0)
+        if ((csr & 0x02) != 0 && Link.OffersHighSpeed)
         {
             WriteByte(SwimCsr, (byte)(csr | 0x10)); // HS
             Link.SetHighSpeed(true);

@@ -1,16 +1,16 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Wren.LinkWindow"
-        Title="Wren — ST-LINK"
+        Title="Wren — Programmer"
         Width="720" Height="560" MinWidth="560" MinHeight="420">
   <DockPanel Margin="12">
     <StackPanel DockPanel.Dock="Top" Spacing="8">
       <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                 Text="Programs a Thing (or the development board) through an ST-LINK V2 on its SWIM header: RST to NRST, SWIM to SWIM, GND to GND, and 3.3 V or 5 V to the Thing's VCC." />
+                 Text="Programs a Thing (or the development board) on its SWIM header. ST-LINK V2: RST to NRST, SWIM to SWIM, GND to GND, 3.3 V or 5 V to VCC. Pico: GP2 to SWIM (1 kΩ pull-up to 3V3), GP3 to NRST, GND to GND, 3V3(OUT) to VCC; the Thing at 3.3 V only." />
       <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB" />
+        <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB and Picos on serial ports" />
         <ComboBox Name="DeviceBox" MinWidth="260" />
-        <Button Name="ConnectButton" Content="Connect" Click="OnConnect" ToolTip.Tip="Open the ST-LINK, enter SWIM and read the Thing" />
+        <Button Name="ConnectButton" Content="Connect" Click="OnConnect" ToolTip.Tip="Open the programmer, enter SWIM and read the Thing" />
         <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="6">

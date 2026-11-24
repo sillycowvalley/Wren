@@ -31,9 +31,10 @@ SWIM are ST's names, used here to describe compatibility.
   and `wren-oled.svg` (1-bit, as the 64 x 32 OLED would show it). The PNGs and the `.ico`
   the app uses are in `src/Wren/Assets`.
 
-- **Wren.Link**: programming a real Thing through an ST-LINK V2 (Windows, WinUSB):
-  install the kernel, upload programs through the FAT, read the wear history. Only
-  blocks that change are written. In Wren: **Tools → ST-LINK…**.
+- **Wren.Link**: programming a real Thing through an ST-LINK V2 (Windows, WinUSB) or a
+  Raspberry Pi Pico running Wren's sketch ([docs/PicoLink.md](docs/PicoLink.md)): install
+  the kernel, upload programs through the FAT, read the wear history. Only blocks that
+  change are written. In Wren: **Tools → Programmer…**.
 
 See [docs/ProjectPlan.md](docs/ProjectPlan.md).
 
