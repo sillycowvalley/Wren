@@ -19,6 +19,7 @@ public partial class LinkWindow : Window
     private bool unprotectConfirmed;
     private bool factoryConfirmed;
     private bool hasWrenKernel;
+    private WearWindow? wearWindow;
     private string? imageToWrite;
     private readonly WindowLayout layout;
 
@@ -41,7 +42,11 @@ public partial class LinkWindow : Window
     }
 
     /// <summary>Puts this window's placement in the settings (saved when a window closes).</summary>
-    public void KeepLayout() => SavedSettings.Current.ProgrammerWindow = layout.Placement;
+    public void KeepLayout()
+    {
+        SavedSettings.Current.ProgrammerWindow = layout.Placement;
+        wearWindow?.KeepLayout();
+    }
 
     private void Log(string message) =>
         Dispatcher.UIThread.Post(() =>
@@ -255,7 +260,18 @@ public partial class LinkWindow : Window
         var l = link;
         StoreWear? wear = null;
         await Work("Wear report", () => wear = l.Programmer.ReadWear());
-        if (wear != null) new WearWindow(wear).Show(this);
+        if (wear == null) return;
+        if (wearWindow == null)
+        {
+            wearWindow = new WearWindow(wear);
+            wearWindow.Closed += (_, _) => wearWindow = null;
+            wearWindow.Show(this);
+        }
+        else
+        {
+            wearWindow.Fill(wear);
+            wearWindow.Activate();
+        }
     }
 
     private async void OnRestoreFactory(object? sender, RoutedEventArgs e)

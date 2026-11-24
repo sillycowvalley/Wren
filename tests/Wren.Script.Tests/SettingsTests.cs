@@ -11,6 +11,7 @@ public class SettingsTests
         {
             MainWindow = new WindowPlacement { X = 100, Y = 50, Width = 1300, Height = 800, Maximized = true },
             ProgrammerWindow = new WindowPlacement { X = -1500, Y = 200, Width = 700, Height = 500 },
+            WearWindow = new WindowPlacement { X = 900, Y = 120, Width = 640, Height = 600 },
             SidePanelWidth = 412.5,
             Board = BoardChoice.DevelopmentBoard,
             LastFile = @"C:\Programs\Blink.bas",
@@ -24,6 +25,8 @@ public class SettingsTests
         Assert.True(back.MainWindow.Maximized);
         Assert.Equal(-1500, back.ProgrammerWindow!.X);
         Assert.False(back.ProgrammerWindow.Maximized);
+        Assert.Equal(900, back.WearWindow!.X);
+        Assert.Equal(600, back.WearWindow.Height);
         Assert.Equal(412.5, back.SidePanelWidth);
         Assert.Equal(BoardChoice.DevelopmentBoard, back.Board);
         Assert.Equal(@"C:\Programs\Blink.bas", back.LastFile);

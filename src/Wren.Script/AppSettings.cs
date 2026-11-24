@@ -47,6 +47,8 @@ public sealed class AppSettings
 
     public WindowPlacement? ProgrammerWindow { get; set; }
 
+    public WindowPlacement? WearWindow { get; set; }
+
     /// <summary>Width of the main window's right-hand column (Now, Variables, Messages); null for the default.</summary>
     public double? SidePanelWidth { get; set; }
 
