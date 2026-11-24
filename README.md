@@ -106,4 +106,6 @@ target is in reach), `END`. Placing two things at the same address is an error.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Two folders are others' work under their own terms:
+- `firmware/pico-swimlib`: Richard Hulme's pico-swimlib, BSD 3-Clause.
+- `firmware/digicool`: Digicool Things' factory firmware, included with Digicool's permission.

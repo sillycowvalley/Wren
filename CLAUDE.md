@@ -18,7 +18,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - Keep answers simple and direct.
 
 ## Public-repo rules
-- Never commit Digicool's .s19 firmware or artwork.
+- Digicool's factory firmware is in `firmware/digicool` with Greg's (Digicool's owner)
+  permission; it is not MIT. Never commit Digicool's artwork.
 - Keep ST's names (STM8, ST-LINK, SWIM) out of the project's own names. Using them to
   describe compatibility is fine.
 

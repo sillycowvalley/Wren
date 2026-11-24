@@ -37,7 +37,9 @@ Digicool Things' board, from its schematic (Rev 1.0). Wren's model is `Wren.Emu.
 
 Unused b inputs need an external pull-up or pull-down, or a tie to GND.
 
-## Digicool's firmware (for reference; not part of this repository)
+## Digicool's firmware
+
+The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT).
 
 - Shows the byte on b0-b7 as two hex digits and a bar.
 - HEX or BAR pulled low turns that part off; INV low inverts; HEX and BAR both low give
