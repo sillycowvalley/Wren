@@ -242,7 +242,7 @@ public partial class MainWindow : Window
         Process.Start(new ProcessStartInfo(found) { UseShellExecute = true });
     }
 
-    private void OnAbout(object? sender, RoutedEventArgs e) => new SplashWindow { IsAbout = true }.ShowDialog(this);
+    private void OnAbout(object? sender, RoutedEventArgs e) => new SplashWindow { IsAbout = true, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(this);
 
     /// <summary>A file in the repository (looking upward from Wren) or beside Wren.</summary>
     private static string? FindBeside(string relative)
