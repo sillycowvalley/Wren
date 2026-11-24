@@ -1,14 +1,16 @@
 # The Pico programmer
 
 A Raspberry Pi Pico, or a Pico-compatible board such as the Waveshare RP2040 Plus, stands in
-for an ST-LINK V2. Wren finds it as a serial port, and **Tools → Programmer…** does the same
-jobs through it: install the kernel, upload programs, read the wear history, write images,
-restore factory settings, run. Two firmwares are available. Both use the same wiring, and
+for an ST-LINK V2. Wren finds it as a serial port. **Tools → Programmer…** sets a Thing up
+through it (install the kernel, write images, restore factory settings, read the wear
+history, the checks), and on **Debug → Target → Thing on the programmer** the main window
+uploads, runs and debugs programs through it. Two firmwares are available. Both use the same wiring, and
 Wren recognises either.
 
 - **Wren's PicoLink** (`firmware/PicoLink`): Wren's own sketch, sketch version 16. Its
   SWIM is pico-swimlib's own code (BSD 3-Clause), unchanged but for its interrupt
-  defaults; the sketch adds Wren's protocol and NRST.
+  defaults; the sketch adds Wren's protocol and NRST. Proven on a real Thing: it installed
+  the whole kernel (74 blocks) and the program table, and ran the debug module checks.
   - **To install:** drag `PicoLink.uf2` onto the board, or upload `PicoLink.ino` from the
     Arduino IDE.
 - **pico-swimlib** (`firmware/pico-swimlib/pico-espstlink.uf2`): Richard Hulme's
@@ -62,16 +64,20 @@ must not be powered from anything else while the board is connected. The OLED is
    **Pico on COMn**.
 3. Choose it and click **Connect**.
    - The log names the firmware and the sync pulse (16 µs is right).
-   - It then says what the Thing holds: empty, Wren's kernel (this build), or other
-     firmware.
-   - The **Connect** button greys out, and the other buttons become clickable.
-4. **Restore factory settings** writes Digicool's firmware (`firmware/digicool`) back, two
+   - It then names the board (an OLED Thing or an LED Thing) and says what the Thing holds:
+     empty, Wren's kernel (this build, another build or an older one), or other firmware.
+   - While connected, the Thing's program is stopped. **Disconnect**, or closing the
+     window, lets it run again.
+4. **Install kernel** checks the board and the EEPROM, then writes only the kernel blocks
+   that differ, keeping the program.
+5. **Restore factory settings** writes Digicool's firmware (`firmware/digicool`) back, two
    clicks. If read-out protection is on, it is removed first, which erases the chip. The
-   EEPROM is cleared, and the Thing is left unprotected. Click **Run** to start it.
-5. **Wear report…**, under Wren's kernel, shows the 54 program-store blocks. It reads the
+   EEPROM is cleared, and the Thing is left unprotected.
+6. **Wear report…**, under Wren's kernel, shows the 54 program-store blocks. It reads the
    writes the Thing itself has recorded for each block and marks the current program's
    blocks. It reads only.
-6. **Install kernel**, **Upload program** and **Run** work as they do with an ST-LINK.
+7. Then close the window: programs are uploaded, run and debugged from the main window with
+   **Debug → Target → Thing on the programmer** (F5, Ctrl+F5 and the stepping keys).
 
 If Connect says the target did not answer in time, check:
 - the 470 Ω pull-up;
@@ -106,9 +112,3 @@ If Connect says the target did not answer in time, check:
   chip half in reset.
 - **Transfers:** reads and writes go in pieces of up to 64 bytes with Wren's sketch, and
   up to 255 (reads) or 64 (writes) bytes with pico-swimlib.
-
-## Open issues
-
-1. **Wren's PicoLink is not yet proven on a Thing.** It runs SWIM exactly as
-   pico-swimlib's own firmware does (PIO, DMA and interrupt), but has not yet installed a
-   kernel on hardware. Until it has, pico-swimlib's firmware is the one to trust.

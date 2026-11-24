@@ -1,6 +1,6 @@
 # Wren project plan
 
-**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer.**
+**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer, and programs are debugged on it from the main window.**
 
 Wren is a C# / .NET 8 development environment for STM8S003F3-class microcontrollers.
 It is driven through an ST-LINK V2 over SWIM. The first target is the Digicool
@@ -67,8 +67,17 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    SWIM (Wren.Link). Install kernel first tells the board from its firmware or by asking
    for the OLED on I2C, and refuses anything but an OLED Thing.
 4. **Wren BASIC (done).** The Thing's own behaviour is 502 bytes of BASIC.
-5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug
-   module, as OpenOCD's STM8 support does).
+5. **Debugging on the Thing (built).** On **Debug → Target → Thing on the programmer** the
+   main window runs and debugs a program on a real Thing with the same keys as the
+   emulator, through the chip's debug module and no kernel code (`ThingDebugger`):
+   - a line breakpoint is a data-read breakpoint on the line's first bytecode in flash,
+     checked to be the VM fetching it; the chip has two, so two lines at a time;
+   - stepping and Break All use an instruction breakpoint on the kernel's `vm_next`;
+   - the variables are read with the CPU stalled briefly, a few times a second, since SWIM
+     cannot read RAM while the kernel idles in WFI; TIM4 is frozen meanwhile, so `MILLIS`
+     and `EVERY` pause with it.
+   The bench checks on a real Thing found all of this as UM0470 describes, and the
+   emulator models the debug module the same way.
 
 ## The firmware in outline
 
@@ -123,27 +132,18 @@ The detailed design, for approval, is in [Design.md](Design.md).
    anywhere.
 2. **ST-LINK clones.** Do the clones behave like a genuine V2 (firmware version, SWIM
    speed)?
-3. **Extra EEPROM.** Do Michael's Things have the S103's 640 B of EEPROM ($4000-$427F)
-   rather than the 128 B the S003's datasheet promises? Install kernel writes and reads
+3. **Extra EEPROM.** Do all of Michael's Things have the S103's 640 B of EEPROM
+   ($4000-$427F) rather than the 128 B the S003's datasheet promises? The first OLED Thing
+   checked does, and keeps it through a power cycle. Install kernel writes and reads
    back one block at $4080 and, if it holds, gives the program 512 setting bytes there
    instead of 12 (the kernel's info block records which). That quick check does not prove
    the extra EEPROM keeps its contents: the Programmer window's **EEPROM size check** does,
    with a power cycle between writing a pattern to $4080-$427F and reading it back, and
-   puts the original bytes back. Run it on every Thing on hand and copy the logs back.
+   puts the original bytes back. Run it on the other Things and copy the logs back.
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.
-5. **Debugging on the Thing.** The chip's debug module (UM0470 chapter 4) can stop the
-   CPU, read and write memory and registers, and break on a data read in an address
-   range, all over SWIM, with no kernel code. The plan is a BASIC line breakpoint as a
-   data-read breakpoint on the line's first bytecode. UM0470 leaves three things open,
-   which **Tools → Debug module checks…** tests on a Thing running Wren's kernel and a
-   program (it writes no flash or EEPROM):
-   1. Does a data-read breakpoint fire when the kernel reads the program from flash?
-   2. Can SWIM read RAM while the kernel idles in WFI (NO_ACCESS is documented as set in WFI)?
-   3. Does DM_ENFCTR freeze TIM4 (the 1 ms tick) while the CPU is stopped?
-   Connect, click **Debug module checks**, and copy the log back.
-6. **The LED Thing.** Digicool's second board (`docs/LedThing.md`) has the same chip, with
+5. **The LED Thing.** Digicool's second board (`docs/LedThing.md`) has the same chip, with
    b0-b7 on other pins and eight charlieplexed LEDs on PD3-PD6 instead of the OLED. The
    plan: kernel board profiles (a shared core with an OLED layer or an LED
    layer; the LED kernel drops the graphics, OLED driver and fonts, about 1.8 KB, which
