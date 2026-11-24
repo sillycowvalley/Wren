@@ -32,8 +32,9 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - Wren.Link's protocol comes from the open-source stm8flash and OpenOCD (both GPL): read
   them for the protocol, never copy their code into this MIT repository.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
-  `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink/PicoLink.ino`
-  (the Pico programmer's sketch, Arduino IDE with the arduino-pico core; `docs/PicoLink.md`).
+  `firmware/demo/HexDemo.asm` (an early test program), `firmware/pico-swimlib` (the Pico
+  programmer's firmware, pico-swimlib built unchanged; `docs/PicoLink.md`), and
+  `firmware/PicoLink/PicoLink.ino` (Wren's older Pico sketch, superseded).
 - `programs/` holds Wren BASIC programs; `OledThing.bas` is the Thing's own behaviour.
 - `art/` holds the SVG sources for the wren; `src/Wren/Assets` holds what the app uses
   (`wren.ico`, `wren.png`, `wren-oled.png`).
