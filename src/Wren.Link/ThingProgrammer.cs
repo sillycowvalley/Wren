@@ -132,6 +132,27 @@ public sealed class ThingProgrammer
         return written;
     }
 
+    /// <summary>
+    /// Puts a Thing back to its factory behaviour, without read-out protection: removes the
+    /// protection first if the chip refuses memory access (which erases it), writes the
+    /// factory firmware, clears the EEPROM (where Wren keeps its program table) and leaves
+    /// ST's default option bytes. Only blocks that differ are written.
+    /// </summary>
+    public void RestoreFactory(MemoryImage factory)
+    {
+        if (target.NoAccess) RemoveReadOutProtection();
+        WriteImage(factory, "factory firmware");
+        var eeprom = Enumerable.Range(EepromStart, EepromSize).Select(a => new KeyValuePair<int, byte>(a, 0)).ToList();
+        int cleared = WriteChangedBlocks(eeprom, TargetMemory.Eeprom, "EEPROM");
+        if (cleared > 0) Say($"EEPROM cleared: {cleared} blocks");
+        for (int i = 0; i < DefaultOptions.Length; i++)
+        {
+            if (target.ReadByte(OptionUbc + i) != DefaultOptions[i]) target.WriteOptionByte(OptionUbc + i, DefaultOptions[i]);
+        }
+        Verify(eeprom, "EEPROM");
+        Say("Factory firmware restored, without read-out protection. Click Run to start it.");
+    }
+
     /// <summary>ST's default option bytes from $4801 on: everything off, each with its complement.</summary>
     public static readonly byte[] DefaultOptions = { 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF };
 

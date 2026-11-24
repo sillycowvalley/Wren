@@ -56,9 +56,9 @@ must not be powered from anything else while the board is connected. The OLED is
    - It then says what the Thing holds: empty, Wren's kernel (this build), or other
      firmware.
    - The **Connect** button greys out, and the other buttons become clickable.
-4. **Back up…** saves the whole chip (flash, EEPROM, option bytes) as an `.s19` file.
-   Connect and Back up only read. Keep the backup of Digicool's firmware on your own
-   machine: it must never go into the repository.
+4. **Restore factory settings** writes Digicool's firmware (`firmware/digicool`) back, two
+   clicks. If read-out protection is on, it is removed first, which erases the chip. The
+   EEPROM is cleared, and the Thing is left unprotected. Click **Run** to start it.
 5. **Install kernel**, **Upload program** and **Run** work as they do with an ST-LINK.
 
 If Connect says the target did not answer in time, check:

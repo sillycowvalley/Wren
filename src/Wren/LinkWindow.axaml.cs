@@ -17,6 +17,7 @@ public partial class LinkWindow : Window
     private ThingLink? link;
     private bool kernelConfirmed;
     private bool unprotectConfirmed;
+    private bool factoryConfirmed;
     private string? imageToWrite;
     private readonly WindowLayout layout;
 
@@ -56,11 +57,12 @@ public partial class LinkWindow : Window
         DisconnectButton.IsEnabled = connected;
         KernelButton.IsEnabled = open && kernel != null;
         UploadButton.IsEnabled = open;
-        BackupButton.IsEnabled = open;
+        FactoryButton.IsEnabled = connected;
         ImageButton.IsEnabled = open;
         RunButton.IsEnabled = connected;
         UnprotectButton.IsEnabled = connected && link!.Target.NoAccess;
         KernelButton.Content = kernelConfirmed ? "Click again to install" : "Install kernel";
+        FactoryButton.Content = factoryConfirmed ? "Click again to restore" : "Restore factory settings";
         UnprotectButton.Content = unprotectConfirmed ? "Click again to erase and unprotect" : "Remove protection";
         ImageButton.Content = imageToWrite != null ? $"Click again to write {Path.GetFileName(imageToWrite)}" : "Write image…";
     }
@@ -191,6 +193,7 @@ public partial class LinkWindow : Window
         link = null;
         kernelConfirmed = false;
         unprotectConfirmed = false;
+        factoryConfirmed = false;
         imageToWrite = null;
         Log("Disconnected.");
         UpdateButtons();
@@ -267,27 +270,42 @@ public partial class LinkWindow : Window
         });
     }
 
-    private async void OnBackup(object? sender, RoutedEventArgs e)
+    /// <summary>Digicool's factory firmware, copied beside Wren with the firmware folder.</summary>
+    private static string? FactoryFirmwarePath()
+    {
+        string? folder = Kernel.FindFirmwareFolder(AppContext.BaseDirectory);
+        string? path = folder == null ? null : Path.Combine(folder, "digicool", "8-bit_oled_thing_v1.1.s19");
+        return path != null && File.Exists(path) ? path : null;
+    }
+
+    private async void OnRestoreFactory(object? sender, RoutedEventArgs e)
     {
         if (link == null) return;
-        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        string? path = FactoryFirmwarePath();
+        if (path == null)
         {
-            Title = "Save a copy of the Thing's flash, EEPROM and option bytes",
-            SuggestedFileName = $"Thing backup {DateTime.Now:yyyy-MM-dd HHmm}.s19",
-            DefaultExtension = "s19",
-            FileTypeChoices = new[] { new FilePickerFileType("S-records") { Patterns = new[] { "*.s19" } } },
-        });
-        string? path = file?.TryGetLocalPath();
-        if (path == null) return;
+            Log("Digicool's factory firmware (firmware/digicool/8-bit_oled_thing_v1.1.s19) was not found beside Wren.");
+            return;
+        }
+        if (!factoryConfirmed)
+        {
+            factoryConfirmed = true;
+            Log(link.Target.NoAccess
+                ? "Restoring factory settings first removes read-out protection, which erases all the chip's flash and EEPROM, then writes Digicool's firmware back, unprotected. Click again to go ahead."
+                : "Restoring factory settings writes Digicool's firmware over what the Thing holds (only blocks that differ), clears the EEPROM and leaves it unprotected. Click again to go ahead.");
+            UpdateButtons();
+            return;
+        }
+        factoryConfirmed = false;
         var l = link;
-        await Work("Back up", () =>
+        await Work("Restore factory settings", () =>
         {
+            var image = MemoryImage.Parse(File.ReadAllText(path));
             l.Programmer.Progress += Log;
             try
             {
-                var image = l.Programmer.ReadEverything();
-                File.WriteAllText(path, image.ToSRecords());
-                Log($"Saved {image.Count} bytes to {path}");
+                l.Programmer.RestoreFactory(image);
+                ShowStatus(l);
             }
             finally
             {

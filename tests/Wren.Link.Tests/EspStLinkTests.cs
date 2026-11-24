@@ -124,6 +124,44 @@ public class EspStLinkTests
         Assert.Equal(FlashContents.OtherFirmware, link.Programmer.ReadStatus(Kernel.Image).Flash);
     }
 
+    private static MemoryImage Factory => MemoryImage.Parse(File.ReadAllText(
+        Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", "8-bit_oled_thing_v1.1.s19")));
+
+    [Fact]
+    public void RestoresTheFactoryFirmwareOnAProtectedThing()
+    {
+        var thing = new OledThing();
+        thing.Mcu.Load(new[] { new KeyValuePair<int, byte>(0x8000, 0x82), new(0x4800, 0xAA) });
+        var fake = new FakeEspStLink(thing.Mcu) { ReadOutProtected = true };
+        var link = new ThingLink(new EspStLink(fake), "COM7");
+        link.Link.Sleep = _ => { };
+        link.Target.Connect();
+
+        link.Programmer.RestoreFactory(Factory);
+        Assert.All(Factory.Bytes, kv => Assert.Equal(kv.Value, thing.Mcu.Read(kv.Key)));
+        Assert.Equal(0x00, thing.Mcu.Read(0x4800));
+        Assert.Equal(ThingProgrammer.DefaultOptions, link.Target.Read(0x4801, 10));
+    }
+
+    [Fact]
+    public void RestoresTheFactoryFirmwareOverWrensKernel()
+    {
+        var (thing, _, link) = Connect();
+        link.Programmer.InstallKernel(Kernel.Image);
+        link.Programmer.UploadProgram(Compiler.Compile("DIM a\nON START\n a = 1\nEND ON\n").Image);
+
+        link.Programmer.RestoreFactory(Factory);
+        Assert.All(Factory.Bytes, kv => Assert.Equal(kv.Value, thing.Mcu.Read(kv.Key)));
+        Assert.Equal(0, thing.Mcu.ProtectedBlocks);
+        Assert.All(Enumerable.Range(0x4000, 128), a => Assert.Equal(0, thing.Mcu.Read(a)));
+        Assert.Equal(FlashContents.OtherFirmware, link.Programmer.ReadStatus(Kernel.Image).Flash);
+
+        // And it runs: Digicool's firmware starts and drives the OLED without faulting.
+        link.Programmer.Run();
+        thing.Mcu.Run(0.5);
+        Assert.Null(thing.Mcu.Cpu.Fault);
+    }
+
     [Fact]
     public void ADeviceThatDoesNotAnswerIsNotAProgrammer()
     {
