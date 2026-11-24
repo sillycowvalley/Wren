@@ -6,7 +6,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 
 ## About Michael
 - He has written C++ and C# for decades. Everything that lands on his machine is C#,
-  plus STM8 assembly for firmware and one Arduino C++ sketch for the Pico programmer.
+  plus STM8 assembly for firmware. The Pico programmer runs pico-swimlib (BSD 3-Clause,
+  `firmware/pico-swimlib`, a prebuilt .uf2); Wren's own older sketch is `firmware/PicoLink`.
   No Python, no JavaScript, no leading underscore in names.
 - He works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps written for
   him are GUI steps, never command lines.
@@ -25,8 +26,9 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - `src/Wren` (Avalonia app), `src/Wren.Asm`, `src/Wren.Emu`, `src/Wren.Script` (BASIC
   compiler, FAT, debugging session), `src/Wren.Link` (ST-LINK V2 over WinUSB or a Pico
   over serial, SWIM, kernel install and program upload); tests in `tests/`.
-  `tests/Wren.Link.Tests` has a simulated ST-LINK (`FakeStLink`) and Pico (`FakePico`) that
-  answer from the emulator.
+  `tests/Wren.Link.Tests` has a simulated ST-LINK (`FakeStLink`), esp-stlink programmer
+  (`FakeEspStLink`, as pico-swimlib answers) and PicoLink sketch (`FakePico`) that answer
+  from the emulator.
 - Wren.Link's protocol comes from the open-source stm8flash and OpenOCD (both GPL): read
   them for the protocol, never copy their code into this MIT repository.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,

@@ -6,7 +6,7 @@
   <DockPanel Margin="12">
     <StackPanel DockPanel.Dock="Top" Spacing="8">
       <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                 Text="Programs a Thing (or the development board) on its SWIM header. ST-LINK V2: RST to NRST, SWIM to SWIM, GND to GND, 3.3 V or 5 V to VCC. Pico: GP2 to SWIM (1 kΩ pull-up to 3V3), GP3 to NRST, GND to GND, 3V3(OUT) to VCC; the Thing at 3.3 V only." />
+                 Text="Programs a Thing (or the development board) on its SWIM header. ST-LINK V2: RST to NRST, SWIM to SWIM, GND to GND, 3.3 V or 5 V to VCC. Pico or RP2040 Plus with pico-swimlib: GP16 to SWIM (470 Ω pull-up to 3V3), GP17 to NRST, GND to GND, 3V3(OUT) to VCC; the Thing at 3.3 V only." />
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB and Picos on serial ports" />
         <ComboBox Name="DeviceBox" MinWidth="260" />

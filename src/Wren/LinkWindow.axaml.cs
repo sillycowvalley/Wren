@@ -99,6 +99,8 @@ public partial class LinkWindow : Window
             {
                 foreach (string line in opened.About) Log(line);
                 opened.Target.Connect();
+                if (opened.Link is EspStLink esp)
+                    Log($"Sync pulse: {esp.SyncMicroseconds:F1} µs (16 is right).");
                 if (opened.Link is PicoLink pico)
                     Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs at entry, {pico.ResetSyncMicroseconds:F1} µs after the reset " +
                         $"(16 is right){(pico.Calibrated ? "; calibrated to it" : "")}.");

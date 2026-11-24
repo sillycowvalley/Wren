@@ -66,25 +66,11 @@ public sealed class PicoLink : ITargetLink
     public bool OffersHighSpeed => false;
 
     /// <summary>Opens a Pico on a serial port and checks that it runs Wren's sketch.</summary>
-    public static PicoLink Open(string portName)
+    public static PicoLink Open(string portName) => Open(SerialPorts.Open(portName), portName);
+
+    /// <summary>Takes over an open serial port and checks that it runs Wren's sketch.</summary>
+    public static PicoLink Open(SerialPort port, string portName)
     {
-        var port = new SerialPort(portName, 115200)
-        {
-            DtrEnable = true, // the Pico's USB serial sends nothing until the port is opened with DTR
-            RtsEnable = true,
-            ReadTimeout = 2000,
-            WriteTimeout = 2000,
-        };
-        try
-        {
-            port.Open();
-            port.DiscardInBuffer();
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            port.Dispose();
-            throw new LinkException($"Cannot open {portName}: {ex.Message} (is the Arduino IDE's Serial Monitor using it?)", ex);
-        }
         var link = new PicoLink(port.BaseStream, port);
         try
         {
@@ -94,7 +80,7 @@ public sealed class PicoLink : ITargetLink
         catch (Exception ex) when (ex is TimeoutException or IOException or LinkException)
         {
             link.Dispose();
-            throw new LinkException($"{portName} did not answer as a Wren Pico programmer. Is the PicoLink sketch on it?", ex);
+            throw new LinkException($"{portName} did not answer as a programmer: neither pico-swimlib's firmware (firmware/pico-swimlib) nor Wren's PicoLink sketch.", ex);
         }
     }
 
