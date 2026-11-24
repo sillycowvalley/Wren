@@ -72,6 +72,7 @@ public sealed class FakePico : Stream
                 Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', (byte)PicoLink.SketchVersion);
                 return;
             case PicoLink.Reset:
+                if (ResetHeld && r[1] != PicoLink.ResetLow) Device.Reset(); // NRST released: the chip restarts
                 ResetHeld = r[1] == PicoLink.ResetLow;
                 ResetLetGo = r[1] == PicoLink.ResetLetGo;
                 Reply(r[0], PicoLink.StatusOk);

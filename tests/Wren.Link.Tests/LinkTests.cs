@@ -55,6 +55,7 @@ public class LinkTests
         var (thing, _, link) = Connect();
         int written = link.Programmer.InstallKernel(Kernel.Image);
         Assert.True(written > 60);
+        link.Target.Connect(); // the chip loads its option bytes at reset: the lock counts from here
         int kernelBlocks = (ProgramStore.StoreAddress - 0x8000) / 64;
         Assert.Equal(kernelBlocks, thing.Mcu.ProtectedBlocks);
 
@@ -113,8 +114,26 @@ public class LinkTests
     {
         var (_, _, link) = Connect();
         link.Programmer.InstallKernel(Kernel.Image);
+        link.Target.Connect(); // reset: the lock takes effect
         var ex = Assert.Throws<LinkException>(() => link.Target.WriteBlocks(0x8100, new byte[64], TargetMemory.Flash));
         Assert.Contains("write-protected", ex.Message);
+    }
+
+    [Fact]
+    public void AChangedKernelInstallsOverALockedOne()
+    {
+        // As on a real Thing: the lock is lifted, the chip reset so it counts, then only the
+        // changed block is written.
+        var (thing, _, link) = Connect();
+        link.Programmer.InstallKernel(Kernel.Image);
+        link.Target.Connect();
+        Assert.True(thing.Mcu.ProtectedBlocks > 0);
+
+        var changed = new Wren.Asm.MemoryImage();
+        foreach (var (address, value) in Kernel.Image.Bytes) changed[address] = value;
+        changed[0x8100] = (byte)(Kernel.Image[0x8100] ^ 0xFF);
+        Assert.Equal(1, link.Programmer.InstallKernel(changed));
+        Assert.Equal((byte)(Kernel.Image[0x8100] ^ 0xFF), thing.Mcu.Read(0x8100));
     }
 
     [Fact]

@@ -113,9 +113,13 @@ public sealed class ThingProgrammer
 
         if (target.ReadByte(OptionUbc) != 0)
         {
-            Say("Lifting the UBC lock so the kernel's blocks can be written");
+            // The chip loads its option bytes at reset, so the lifted lock counts only after one.
+            Say("Lifting the UBC lock so the blocks can be written, then resetting the chip so it takes effect");
             target.WriteOptionByte(OptionUbc, 0x00);
             target.WriteOptionByte(OptionNubc, 0xFF);
+            target.Run();
+            target.Link.Sleep(50);
+            target.Connect();
         }
 
         int written = WriteChangedBlocks(flash, TargetMemory.Flash, what);

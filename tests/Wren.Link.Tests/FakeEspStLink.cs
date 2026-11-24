@@ -77,6 +77,7 @@ public sealed class FakeEspStLink : Stream
                 Reply(r[0], EspStLink.Success, 0, 1);
                 return;
             case EspStLink.Reset:
+                if (ResetHeld && r[1] != EspStLink.ResetLow) Device.Reset(); // NRST released: the chip restarts
                 ResetHeld = r[1] == EspStLink.ResetLow;
                 ResetLetGo = r[1] == EspStLink.ResetLetGo;
                 Reply(r[0], EspStLink.Success);
