@@ -4,7 +4,7 @@ namespace Wren.Link;
 public enum TargetMemory { Flash, Eeprom }
 
 /// <summary>
-/// An STM8S over SWIM, through an ST-LINK: connect (the CPU stalled), read and write memory,
+/// An STM8S over SWIM, through an ST-LINK or a Pico: connect (the CPU stalled), read and write memory,
 /// program 64-byte blocks of flash or EEPROM, option bytes, and reset.
 /// Register addresses are the STM8S003/S103's (RM0016, UM0470).
 /// </summary>
@@ -17,23 +17,38 @@ public sealed class SwimTarget
 
     private const byte IapsrWrPgDis = 0x01, IapsrEop = 0x04;
 
-    public SwimTarget(StLink link) => Link = link;
+    public SwimTarget(ITargetLink link) => Link = link;
 
-    public StLink Link { get; }
+    /// <summary>How long Connect waited, in milliseconds, for NO_ACCESS to clear.</summary>
+    public int WaitedForAccess { get; private set; }
+
+    /// <summary>SWIM_CSR as read at the end of Connect.</summary>
+    public byte ConnectedCsr { get; private set; }
+
+    /// <summary>
+    /// SWIM_CSR's NO_ACCESS bit at Connect: the chip refuses memory access, because read-out
+    /// protection is on (or it is halted). SWIM_CSR itself can still be read and written.
+    /// </summary>
+    public bool NoAccess => (ConnectedCsr & 0x40) != 0;
+
+    public ITargetLink Link { get; }
 
     /// <summary>
     /// Enters SWIM: NRST held low, the entry sequence, SWIM_CSR set (interrupts masked, all of
-    /// memory reachable, SWIM first, CPU stalled), NRST released, then high-speed SWIM if
-    /// the target offers it. The CPU stays stalled until Run.
+    /// memory reachable, SWIM first, CPU stalled), NRST released, a communication reset so
+    /// SWIM runs on the trimmed clock, then high-speed SWIM if
+    /// the target offers it and the programmer can. The CPU stays stalled until Run.
     /// </summary>
     public void Connect()
     {
+        WaitedForAccess = 0;
         Link.EnterSwimMode();
         Link.AssertReset();
         Link.EnterSequence();
         WriteByte(SwimCsr, 0xA1);
         Link.DeassertReset();
         Link.Sleep(1);
+        Link.ResetSwim(); // the target's clock is trimmed now: resynchronise (UM0470 3.2 step 9)
 
         byte csr = 0;
         for (int i = 0; i < 10; i++)
@@ -42,8 +57,18 @@ public sealed class SwimTarget
             if ((csr & 0x02) != 0) break; // HSIT: high speed is possible
             Link.Sleep(1);
         }
+        // NO_ACCESS while the chip is still starting up (NRST rising slowly through its
+        // capacitor, option bytes not loaded, HSIT clear) is not yet read-out protection:
+        // give it up to half a second to clear.
+        for (int i = 0; i < 50 && (csr & 0x40) != 0; i++)
+        {
+            Link.Sleep(10);
+            csr = ReadByte(SwimCsr);
+            WaitedForAccess += 10;
+        }
+        ConnectedCsr = csr;
         Link.ResetSwim();
-        if ((csr & 0x02) != 0)
+        if ((csr & 0x02) != 0 && Link.OffersHighSpeed)
         {
             WriteByte(SwimCsr, (byte)(csr | 0x10)); // HS
             Link.SetHighSpeed(true);

@@ -31,9 +31,10 @@ SWIM are ST's names, used here to describe compatibility.
   and `wren-oled.svg` (1-bit, as the 64 x 32 OLED would show it). The PNGs and the `.ico`
   the app uses are in `src/Wren/Assets`.
 
-- **Wren.Link**: programming a real Thing through an ST-LINK V2 (Windows, WinUSB):
-  install the kernel, upload programs through the FAT, read the wear history. Only
-  blocks that change are written. In Wren: **Tools → ST-LINK…**.
+- **Wren.Link**: programming a real Thing through an ST-LINK V2 (Windows, WinUSB) or a
+  Raspberry Pi Pico or RP2040 Plus running pico-swimlib ([docs/PicoLink.md](docs/PicoLink.md)): install
+  the kernel, upload programs through the FAT, read the wear history. Only blocks that
+  change are written. In Wren: **Tools → Programmer…**.
 
 See [docs/ProjectPlan.md](docs/ProjectPlan.md).
 
@@ -41,6 +42,10 @@ See [docs/ProjectPlan.md](docs/ProjectPlan.md).
 
 Open `Wren.sln` in Visual Studio 2022 (with the .NET 8 SDK), set **Wren** as the startup
 project and run it. The tests are in Test Explorer.
+
+Wren remembers its window positions and sizes, the width of the column beside the program,
+the Board choice, the last programmer connected to and the last program opened in
+`%AppData%\Wren\Settings.json`. Delete that file to go back to the defaults.
 
 ## A taste of Wren BASIC
 
@@ -101,4 +106,6 @@ target is in reach), `END`. Placing two things at the same address is an error.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Two folders are others' work under their own terms:
+- `firmware/pico-swimlib`: Richard Hulme's pico-swimlib, BSD 3-Clause.
+- `firmware/digicool`: Digicool Things' factory firmware, included with Digicool's permission.

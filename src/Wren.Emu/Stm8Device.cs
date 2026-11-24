@@ -122,8 +122,13 @@ public sealed class Stm8Device : IBus
     /// <summary>Program/erase cycles per 64-byte flash block caused by firmware since loading.</summary>
     public int[] FlashBlockCycles { get; }
 
-    /// <summary>Flash blocks protected by the UBC option byte (OPT1 at $4801), from $8000.</summary>
-    public int ProtectedBlocks => options[1];
+    /// <summary>
+    /// Flash blocks protected by the UBC option byte (OPT1 at $4801), from $8000, as loaded at
+    /// the last reset: like the real chip, a change to the option byte counts only after a reset.
+    /// </summary>
+    public int ProtectedBlocks => ubcAtReset;
+
+    private int ubcAtReset;
 
     private int blockStart = -1;
     private int blockBytes;
@@ -173,6 +178,7 @@ public sealed class Stm8Device : IBus
         Array.Clear(EepromWrites);
         Array.Clear(FlashWrites);
         Array.Clear(FlashBlockCycles);
+        ubcAtReset = options[1]; // a programmer's load is followed by a reset
     }
 
     /// <summary>Clears flash, EEPROM and RAM, as a programmer's erase would.</summary>
@@ -200,6 +206,7 @@ public sealed class Stm8Device : IBus
         cfgGcr = 0;
         Cpu.Reset();
         HsiTicks = 0;
+        ubcAtReset = options[1]; // option bytes are loaded at reset
     }
 
     /// <summary>Power on: RAM is cleared, then a reset.</summary>

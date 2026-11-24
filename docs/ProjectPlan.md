@@ -1,6 +1,6 @@
 # Wren project plan
 
-**Status: approved. Step 1 (assembler, emulator, app) and the firmware in emulation (kernel, Wren BASIC, debugger) are built and tested; the hardware is on its way.**
+**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer.**
 
 Wren is a C# / .NET 8 development environment for STM8S003F3-class microcontrollers.
 It is driven through an ST-LINK V2 over SWIM. The first target is the Digicool
@@ -37,7 +37,7 @@ A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 | **Wren** | The Avalonia app (Windows, Mac, Linux). | Runs and debugs Wren BASIC on the emulated Thing. |
 | **Wren.Asm** | An STM8 assembler, ST's syntax (PM0044). | Done. Every instruction form checked against sdasstm8. |
 | **Wren.Emu** | An STM8 emulator, the SSD1315 model and the OLED Thing board. | Done for the Thing's needs. CPU checked against ucsim. |
-| **Wren.Link** | USB and SWIM to the ST-LINK V2, replacing STVP. | Built and tested against a simulated ST-LINK; the real USB is still to be tried on Windows. |
+| **Wren.Link** | SWIM through an ST-LINK V2 (USB) or a Pico (serial), replacing STVP. | With pico-swimlib's firmware on the Pico it has installed the kernel, uploaded a program and restored Digicool's firmware on a real Thing. Wren's own Pico sketch fails part way through long transfers; the ST-LINK is not yet tried. See [PicoLink.md](PicoLink.md). |
 | **Wren.Script** | The Wren BASIC compiler, the FAT planner and the debugging session. | Done. Tested against the kernel on the emulator. |
 
 Each library has its own test project (`Wren.Asm.Tests` and so on) and stays UI-free.
@@ -56,16 +56,17 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
 2. **Wren.Link.** Program a Thing from C# without STVP, and write the EEPROM (rated
    ~100k writes) without touching the flash (rated ~100). Own code, with the open-source
    stm8flash and OpenOCD as protocol references. Michael tests it on Windows against an
-   S103 board first, then a Thing.
-3. **The firmware (done in emulation).** The kernel (VM, graphics, events, FAT loader)
-   fits in 8 KB flash and 1 KB RAM beside a 3,008-byte program store. Next: run it on the
-   development board with a real OLED, then flash it once to each Thing. After that,
-   programs reach a Thing over SWIM (Wren.Link) or from a host over its own pins
-   (the kernel's loader).
+   S103 board first, then a Thing. A Raspberry Pi Pico does the same job at low SWIM
+   speed and has programmed a Thing ([PicoLink.md](PicoLink.md)).
+3. **The firmware (done).** The kernel (VM, graphics, events, FAT loader) fits in 8 KB
+   flash and 1 KB RAM beside a 3,008-byte program store. It runs on a real OLED Thing.
+   Like Digicool's firmware, it sets the OLED up with segment remap and reversed COM
+   scan, because the Thing's module is mounted rotated 180°. It also turns on pull-ups on
+   b0–b7, so inputs left open read 1. Programs reach a Thing over SWIM
+   (Wren.Link) or from a host over its own pins (the kernel's loader).
 4. **Wren BASIC (done).** The Thing's own behaviour is about 310 bytes of BASIC.
 5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug
-   module, as OpenOCD's STM8 support does), and a home-made SWIM programmer on a Teensy
-   4.1 or an RP2040 (whose PIO suits SWIM's timing; run the Thing at 3.3 V with it).
+   module, as OpenOCD's STM8 support does).
 
 ## The firmware in outline
 
@@ -111,20 +112,18 @@ The detailed design, for approval, is in [Design.md](Design.md).
 1. **The USB driver (first).** Wren.Link opens the ST-LINK through WinUSB, which ST's
    own ST-LINK driver (STSW-LINK009) uses, so it should work beside STVP without Zadig.
    To check, with the ST-LINK plugged in and nothing else using it:
-   1. In Visual Studio, run **Wren** and choose **Tools → ST-LINK…**.
-   2. The log should say "Found 1 ST-LINK". If it says "No ST-LINK found", open Device
+   1. In Visual Studio, run **Wren** and choose **Tools → Programmer…**.
+   2. The log should list the ST-LINK. If it says "No ST-LINK found", open Device
       Manager and note where the ST-LINK appears and what driver it shows.
    3. Wire the ST-LINK to the S103 board (RST, SWIM, GND, and 3.3 V to the board), click
       **Connect**, and copy the log back: version, target voltage, and what the board holds.
-   Mac and Linux need libusb, which is not written yet.
+   Mac and Linux need libusb, which is not written yet. The Pico programmer works
+   anywhere.
 2. **ST-LINK clones.** Do the clones behave like a genuine V2 (firmware version, SWIM
    speed)?
-3. **The OLED module's wiring.** The model shows RAM columns 32-95 and rows 0-31, and
-   assumes no flip. The real module may be mirrored or offset; check on the development
-   board and adjust `Ssd1315.ColumnOffset` and the remap handling to match.
-4. **Extra EEPROM.** Is the 640 B EEPROM real on Michael's Things? A one-Thing test in
+3. **Extra EEPROM.** Is the 640 B EEPROM real on Michael's Things? A one-Thing test in
    STVP: set the device to STM8S103F3, then write, power-cycle and read back
    0x4080-0x427F.
-5. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
+4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.

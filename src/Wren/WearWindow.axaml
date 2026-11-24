@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Wren.WearWindow"
+        Title="Wren — Program store wear"
+        Width="640" Height="600" MinWidth="520" MinHeight="420">
+  <DockPanel Margin="12">
+    <TextBlock Name="Summary" DockPanel.Dock="Top" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,8" />
+    <TextBlock DockPanel.Dock="Bottom" TextWrapping="Wrap" Opacity="0.8" Margin="0,8,0,0"
+               Text="Read from the Thing's own program table: each of the 47 store blocks ($9440-$9FFF) with the times it has been written. An OLED Thing's flash is rated for about 100 writes a block; uploads go to the least-written free blocks. Blocks with a heavy border hold the current program." />
+    <HeaderedContentControl Classes="group" Header="Store blocks">
+      <ScrollViewer>
+        <UniformGrid Name="Cells" Columns="8" Margin="4" />
+      </ScrollViewer>
+    </HeaderedContentControl>
+  </DockPanel>
+</Window>

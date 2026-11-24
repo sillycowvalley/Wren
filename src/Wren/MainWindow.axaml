@@ -43,7 +43,7 @@
         <MenuItem Name="DevBoardMenu" Header="_Development board (STM8S103F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
       </MenuItem>
       <MenuItem Header="_Tools">
-        <MenuItem Header="_ST-LINK…" Click="OnOpenLink" />
+        <MenuItem Header="_Programmer…" Click="OnOpenLink" />
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="Wren BASIC _quick reference" Click="OnQuickReference" />
@@ -125,8 +125,14 @@
     </Border>
 
     <!-- Right: program, variables, messages -->
-    <Grid ColumnDefinitions="*,320" Margin="0,8,10,8">
-      <HeaderedContentControl Grid.Column="0" Classes="group" Header="Program (click a line for a breakpoint)" Margin="0,0,8,0">
+    <!-- Drag the splitter to share the width between the program and the right-hand column -->
+    <Grid Name="RightGrid" Margin="0,8,10,8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" MinWidth="200" />
+        <ColumnDefinition Width="8" />
+        <ColumnDefinition Width="320" MinWidth="220" MaxWidth="700" />
+      </Grid.ColumnDefinitions>
+      <HeaderedContentControl Grid.Column="0" Classes="group" Header="Program (click a line for a breakpoint)">
         <Border Classes="view">
           <ScrollViewer Name="SourceScroll" HorizontalScrollBarVisibility="Auto">
             <ItemsControl Name="SourceList">
@@ -146,7 +152,10 @@
         </Border>
       </HeaderedContentControl>
 
-      <DockPanel Grid.Column="1">
+      <GridSplitter Name="Splitter" Grid.Column="1" ResizeDirection="Columns" Background="Transparent"
+                    ToolTip.Tip="Drag to resize" />
+
+      <DockPanel Grid.Column="2">
         <StackPanel DockPanel.Dock="Top">
           <HeaderedContentControl Classes="group" Header="Now">
             <TextBlock Name="NowText" TextWrapping="Wrap" />

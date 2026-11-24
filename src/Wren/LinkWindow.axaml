@@ -1,24 +1,34 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Wren.LinkWindow"
-        Title="Wren — ST-LINK"
+        Title="Wren — Programmer"
         Width="720" Height="560" MinWidth="560" MinHeight="420">
   <DockPanel Margin="12">
     <StackPanel DockPanel.Dock="Top" Spacing="8">
       <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                 Text="Programs a Thing (or the development board) through an ST-LINK V2 on its SWIM header: RST to NRST, SWIM to SWIM, GND to GND, and 3.3 V or 5 V to the Thing's VCC." />
+                 Text="Programs a Thing (or the development board) on its SWIM header. ST-LINK V2: RST to NRST, SWIM to SWIM, GND to GND, 3.3 V or 5 V to VCC. Pico or RP2040 Plus with pico-swimlib: GP16 to SWIM (470 Ω pull-up to 3V3), GP17 to NRST, GND to GND, 3V3(OUT) to VCC; the Thing at 3.3 V only." />
       <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB" />
+        <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB and Picos on serial ports" />
         <ComboBox Name="DeviceBox" MinWidth="260" />
-        <Button Name="ConnectButton" Content="Connect" Click="OnConnect" ToolTip.Tip="Open the ST-LINK, enter SWIM and read the Thing" />
+        <Button Name="ConnectButton" Content="Connect" Click="OnConnect" ToolTip.Tip="Open the programmer, enter SWIM and read the Thing" />
         <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Name="FactoryButton" Content="Restore factory settings" Click="OnRestoreFactory"
+                ToolTip.Tip="Writes Digicool's factory firmware back (removing read-out protection first if it is on, which erases the chip), clears the EEPROM and leaves the Thing unprotected" />
         <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
                 ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
         <Button Name="UploadButton" Content="Upload program" Click="OnUpload"
                 ToolTip.Tip="Uploads the program open in Wren through the FAT (least-written blocks first)" />
         <Button Name="RunButton" Content="Run" Click="OnRun" ToolTip.Tip="Reset the Thing and let it run" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"
+                ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as the Thing's factory firmware) like Install kernel: only blocks that differ, then checked. Leaves read-out protection off." />
+        <Button Name="WearButton" Content="Wear report…" Click="OnWearReport"
+                ToolTip.Tip="Shows the writes the Thing has recorded for each of its 47 program-store blocks; reads only" />
+        <Button Name="UnprotectButton" Content="Remove protection" Click="OnRemoveProtection"
+                ToolTip.Tip="Turns read-out protection off. The chip erases all its flash and EEPROM as it does so." />
       </StackPanel>
       <TextBlock Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold" />
     </StackPanel>

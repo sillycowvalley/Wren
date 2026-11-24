@@ -6,7 +6,7 @@ using Microsoft.Win32.SafeHandles;
 namespace Wren.Link;
 
 /// <summary>An ST-LINK found on USB.</summary>
-public sealed record UsbDeviceInfo(string Path, int ProductId)
+public sealed record UsbDeviceInfo(string Path, int ProductId) : ProgrammerInfo
 {
     public StLinkModel Model => ProductId switch
     {

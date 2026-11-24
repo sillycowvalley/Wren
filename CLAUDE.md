@@ -6,7 +6,10 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 
 ## About Michael
 - He has written C++ and C# for decades. Everything that lands on his machine is C#,
-  plus STM8 assembly for firmware. No Python, no JavaScript, no leading underscore in names.
+  plus STM8 assembly for firmware, and one Arduino sketch for the Pico programmer
+  (`firmware/PicoLink`, using pico-swimlib's BSD PIO program; also shipped as a .uf2).
+  pico-swimlib's own firmware is `firmware/pico-swimlib`, a prebuilt .uf2.
+  No Python, no JavaScript, no leading underscore in names.
 - He works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps written for
   him are GUI steps, never command lines.
 - He reviews and merges everything into main. Never push to main.
@@ -16,19 +19,24 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - Keep answers simple and direct.
 
 ## Public-repo rules
-- Never commit Digicool's .s19 firmware or artwork.
+- Digicool's factory firmware is in `firmware/digicool` with Greg's (Digicool's owner)
+  permission; it is not MIT. Never commit Digicool's artwork.
 - Keep ST's names (STM8, ST-LINK, SWIM) out of the project's own names. Using them to
   describe compatibility is fine.
 
 ## Layout
 - `src/Wren` (Avalonia app), `src/Wren.Asm`, `src/Wren.Emu`, `src/Wren.Script` (BASIC
-  compiler, FAT, debugging session), `src/Wren.Link` (ST-LINK V2 over WinUSB, SWIM,
-  kernel install and program upload); tests in `tests/`. `tests/Wren.Link.Tests` has a
-  simulated ST-LINK (`FakeStLink`) that answers the USB commands from the emulator.
+  compiler, FAT, debugging session), `src/Wren.Link` (ST-LINK V2 over WinUSB or a Pico
+  over serial, SWIM, kernel install and program upload); tests in `tests/`.
+  `tests/Wren.Link.Tests` has a simulated ST-LINK (`FakeStLink`), esp-stlink programmer
+  (`FakeEspStLink`, as pico-swimlib answers) and PicoLink sketch (`FakePico`) that answer
+  from the emulator.
 - Wren.Link's protocol comes from the open-source stm8flash and OpenOCD (both GPL): read
   them for the protocol, never copy their code into this MIT repository.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
-  `firmware/demo/HexDemo.asm` (an early test program).
+  `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink` (Wren's Pico
+  programmer sketch and its .uf2) and `firmware/pico-swimlib` (pico-swimlib built
+  unchanged); both use the same wiring, `docs/PicoLink.md`.
 - `programs/` holds Wren BASIC programs; `OledThing.bas` is the Thing's own behaviour.
 - `art/` holds the SVG sources for the wren; `src/Wren/Assets` holds what the app uses
   (`wren.ico`, `wren.png`, `wren-oled.png`).
@@ -49,7 +57,7 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 
 ## Code rules
 - Avalonia UI for the app, in a Windows 7 look: the Simple theme with `src/Wren/Styles/Win7.axaml`
-  (Segoe UI 9 pt, #F0F0F0, gradient buttons and menu bar, captioned group boxes). Commands
+  (Segoe UI 9 pt, Aero light blues, glossy buttons, gradient menu bar, captioned group boxes). Commands
   live in a standard menu bar with the usual shortcuts, not in toolbars. Each library is
   UI-free and has its own test project, so it can be tested headless.
 - Firmware is STM8 assembly. There is no C compiler.
@@ -59,3 +67,6 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   and overlapping output is an error. Kernel opcodes $30 up are one contiguous table:
   add new opcodes at the end and keep `Op.cs`, `Vm.inc` and `docs/Bytecode.md` in step.
 - A cloud session cannot reach USB. Michael tests Wren.Link on Windows.
+- The Pico sketch is compile-checked in a session with the Pico SDK and
+  `firmware/PicoLink/sdk` (which also builds its .uf2); the SDK and the ARM toolchain are
+  installed outside the clone. SWIM itself can only be tested on Michael's hardware.

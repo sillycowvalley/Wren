@@ -1,3 +1,4 @@
+using Wren.Asm;
 using Wren.Emu;
 using Wren.Script;
 using Xunit;
@@ -17,7 +18,7 @@ public class LinkTests
         var thing = new OledThing();
         var fake = new FakeStLink(thing.Mcu) { BusyPolls = busyPolls };
         var link = new ThingLink(fake);
-        link.StLink.Sleep = _ => { };
+        link.Link.Sleep = _ => { };
         link.Target.Connect();
         return (thing, fake, link);
     }
@@ -33,7 +34,7 @@ public class LinkTests
     public void ConnectsOverSwimAtHighSpeed()
     {
         var (_, fake, link) = Connect(busyPolls: 2);
-        Assert.Equal(2, link.Version.StLink);
+        Assert.Equal(2, link.Version!.StLink);
         Assert.Equal(StLink.ModeSwim, fake.Mode);
         Assert.True(fake.Connected);
         Assert.True(fake.HighSpeed);
@@ -54,10 +55,11 @@ public class LinkTests
         var (thing, _, link) = Connect();
         int written = link.Programmer.InstallKernel(Kernel.Image);
         Assert.True(written > 60);
+        link.Target.Connect(); // the chip loads its option bytes at reset: the lock counts from here
         int kernelBlocks = (ProgramStore.StoreAddress - 0x8000) / 64;
         Assert.Equal(kernelBlocks, thing.Mcu.ProtectedBlocks);
 
-        var status = link.Programmer.ReadStatus();
+        var status = link.Programmer.ReadStatus(Kernel.Image);
         Assert.True(status.HasKernel);
         Assert.False(status.ReadOutProtected);
         Assert.Equal(0, status.ProgramLength);
@@ -112,8 +114,26 @@ public class LinkTests
     {
         var (_, _, link) = Connect();
         link.Programmer.InstallKernel(Kernel.Image);
+        link.Target.Connect(); // reset: the lock takes effect
         var ex = Assert.Throws<LinkException>(() => link.Target.WriteBlocks(0x8100, new byte[64], TargetMemory.Flash));
         Assert.Contains("write-protected", ex.Message);
+    }
+
+    [Fact]
+    public void AChangedKernelInstallsOverALockedOne()
+    {
+        // As on a real Thing: the lock is lifted, the chip reset so it counts, then only the
+        // changed block is written.
+        var (thing, _, link) = Connect();
+        link.Programmer.InstallKernel(Kernel.Image);
+        link.Target.Connect();
+        Assert.True(thing.Mcu.ProtectedBlocks > 0);
+
+        var changed = new Wren.Asm.MemoryImage();
+        foreach (var (address, value) in Kernel.Image.Bytes) changed[address] = value;
+        changed[0x8100] = (byte)(Kernel.Image[0x8100] ^ 0xFF);
+        Assert.Equal(1, link.Programmer.InstallKernel(changed));
+        Assert.Equal((byte)(Kernel.Image[0x8100] ^ 0xFF), thing.Mcu.Read(0x8100));
     }
 
     [Fact]
@@ -122,7 +142,7 @@ public class LinkTests
         var thing = new OledThing();
         var fake = new FakeStLink(thing.Mcu) { StatusError = StLink.StatusNoResponse };
         var link = new ThingLink(fake);
-        link.StLink.Sleep = _ => { };
+        link.Link.Sleep = _ => { };
         var ex = Assert.Throws<LinkException>(() => link.Target.Connect());
         Assert.Contains("did not answer", ex.Message);
     }
@@ -132,7 +152,41 @@ public class LinkTests
     {
         var (thing, _, link) = Connect();
         var data = Enumerable.Range(0, 64).Select(i => (byte)(i + 1)).ToArray();
-        link.StLink.WriteMemory(0x0200, data);              // 8 bytes in the packet, 56 after it
+        link.Link.WriteMemory(0x0200, data);              // 8 bytes in the packet, 56 after it
         Assert.Equal(data, Enumerable.Range(0x200, 64).Select(a => thing.Mcu.Read(a)));
+    }
+
+    [Fact]
+    public void OtherFirmwareIsRecognisedAndBackedUpWithoutWriting()
+    {
+        var thing = new OledThing();
+        var other = Enumerable.Range(0, 0x2000).Select(i => new KeyValuePair<int, byte>(0x8000 + i, (byte)(i * 13))).ToList();
+        other[0] = new(0x8000, 0x82);
+        thing.Mcu.Load(other);
+        thing.Mcu.Load(new[] { new KeyValuePair<int, byte>(0x4000, 0x01), new(0x4001, 0x07) }); // looks like a FAT
+        var fake = new FakeStLink(thing.Mcu);
+        var link = new ThingLink(fake);
+        link.Link.Sleep = _ => { };
+        link.Target.Connect();
+        byte[] flashBefore = Enumerable.Range(0x8000, 0x2000).Select(a => thing.Mcu.Read(a)).ToArray();
+
+        var status = link.Programmer.ReadStatus(Kernel.Image);
+        Assert.Equal(FlashContents.OtherFirmware, status.Flash);
+        Assert.Equal(0, status.ProgramLength);
+        Assert.Equal(0, status.WriteCounts.Sum());
+
+        var image = link.Programmer.ReadEverything();
+        Assert.Equal(0x2000 + 128 + 11, image.Count);
+        Assert.Equal(flashBefore, Enumerable.Range(0x8000, 0x2000).Select(a => image[a]));
+        Assert.Equal(0x07, image[0x4001]);
+        Assert.Equal(flashBefore, Enumerable.Range(0x8000, 0x2000).Select(a => thing.Mcu.Read(a)));
+        Assert.Equal(image.Bytes, MemoryImage.Parse(image.ToSRecords()).Bytes);
+    }
+
+    [Fact]
+    public void AnEmptyChipIsReportedAsEmpty()
+    {
+        var (_, _, link) = Connect();
+        Assert.Equal(FlashContents.Empty, link.Programmer.ReadStatus(Kernel.Image).Flash);
     }
 }

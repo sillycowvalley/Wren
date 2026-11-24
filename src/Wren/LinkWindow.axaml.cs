@@ -1,19 +1,26 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Wren.Asm;
 using Wren.Link;
 using Wren.Script;
 
 namespace Wren;
 
-/// <summary>Programs a real Thing through an ST-LINK: find, connect, install the kernel, upload, run.</summary>
+/// <summary>Programs a real Thing through an ST-LINK or a Pico: find, connect, install the kernel, upload, run.</summary>
 public partial class LinkWindow : Window
 {
     private readonly Kernel? kernel;
     private readonly Func<CompiledProgram?> currentProgram;
-    private IReadOnlyList<UsbDeviceInfo> devices = Array.Empty<UsbDeviceInfo>();
+    private IReadOnlyList<ProgrammerInfo> devices = Array.Empty<ProgrammerInfo>();
     private ThingLink? link;
     private bool kernelConfirmed;
+    private bool unprotectConfirmed;
+    private bool factoryConfirmed;
+    private bool hasWrenKernel;
+    private string? imageToWrite;
+    private readonly WindowLayout layout;
 
     public LinkWindow() : this(null, () => null) { }
 
@@ -22,10 +29,19 @@ public partial class LinkWindow : Window
         InitializeComponent();
         this.kernel = kernel;
         this.currentProgram = currentProgram;
+        layout = new WindowLayout(this, SavedSettings.Current.ProgrammerWindow);
+        Closing += (_, _) =>
+        {
+            KeepLayout();
+            SavedSettings.Save();
+        };
         Closed += (_, _) => link?.Dispose();
         UpdateButtons();
         OnFind(null, new RoutedEventArgs());
     }
+
+    /// <summary>Puts this window's placement in the settings (saved when a window closes).</summary>
+    public void KeepLayout() => SavedSettings.Current.ProgrammerWindow = layout.Placement;
 
     private void Log(string message) =>
         Dispatcher.UIThread.Post(() =>
@@ -37,12 +53,20 @@ public partial class LinkWindow : Window
     private void UpdateButtons()
     {
         bool connected = link != null;
+        bool open = connected && !link!.Target.NoAccess;
         ConnectButton.IsEnabled = !connected && devices.Count > 0;
         DisconnectButton.IsEnabled = connected;
-        KernelButton.IsEnabled = connected && kernel != null;
-        UploadButton.IsEnabled = connected;
+        KernelButton.IsEnabled = open && kernel != null;
+        UploadButton.IsEnabled = open;
+        FactoryButton.IsEnabled = connected;
+        ImageButton.IsEnabled = open;
+        WearButton.IsEnabled = open && hasWrenKernel;
         RunButton.IsEnabled = connected;
+        UnprotectButton.IsEnabled = connected && link!.Target.NoAccess;
         KernelButton.Content = kernelConfirmed ? "Click again to install" : "Install kernel";
+        FactoryButton.Content = factoryConfirmed ? "Click again to restore" : "Restore factory settings";
+        UnprotectButton.Content = unprotectConfirmed ? "Click again to erase and unprotect" : "Remove protection";
+        ImageButton.Content = imageToWrite != null ? $"Click again to write {Path.GetFileName(imageToWrite)}" : "Write image…";
     }
 
     /// <summary>Runs work off the UI thread, logging what it says and any failure.</summary>
@@ -69,29 +93,43 @@ public partial class LinkWindow : Window
     {
         devices = ThingLink.Find(out string? why);
         DeviceBox.ItemsSource = devices;
-        DeviceBox.SelectedIndex = devices.Count > 0 ? 0 : -1;
+        DeviceBox.SelectedIndex = ThingLink.Preferred(devices, SavedSettings.Current.LastProgrammer);
         if (why != null) Log(why);
-        else Log(devices.Count == 0
-            ? "No ST-LINK found. Is it plugged in, and does Device Manager show it under \"Universal Serial Bus devices\"?"
-            : $"Found {devices.Count} ST-LINK{(devices.Count == 1 ? "" : "s")}: {string.Join(", ", devices)}");
+        Log(devices.Count == 0
+            ? "No programmer found. An ST-LINK shows in Device Manager under \"Universal Serial Bus devices\"; a Pico under \"Ports (COM & LPT)\"."
+            : $"Found: {string.Join(", ", devices)}");
         UpdateButtons();
     }
 
     private async void OnConnect(object? sender, RoutedEventArgs e)
     {
-        if (DeviceBox.SelectedItem is not UsbDeviceInfo device) return;
+        if (DeviceBox.SelectedItem is not ProgrammerInfo device) return;
         await Work("Connect", () =>
         {
             var opened = ThingLink.Open(device);
             try
             {
-                Log(opened.Version.ToString());
-                double? volts = opened.StLink.ReadTargetVoltage(opened.Version);
-                Log(volts is double v ? $"Target voltage: {v:F2} V" : "Target voltage: this ST-LINK cannot measure it");
+                foreach (string line in opened.About) Log(line);
                 opened.Target.Connect();
-                Log("SWIM connected; the Thing's CPU is stalled.");
+                if (opened.Link is EspStLink esp)
+                    Log($"Sync pulse: {esp.SyncMicroseconds:F1} µs (16 is right).");
+                if (opened.Link is PicoLink pico)
+                    Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs (16 is right).");
+                Log($"SWIM connected; the Thing's CPU is stalled. SWIM_CSR = ${opened.Target.ConnectedCsr:X2}" +
+                    (opened.Target.WaitedForAccess > 0 ? $", after waiting {opened.Target.WaitedForAccess} ms for the chip to allow memory access." : "."));
+                if (opened.Target.NoAccess)
+                {
+                    const string text = "The Thing still refuses memory access after half a second (SWIM_CSR's NO_ACCESS bit stays set): " +
+                        "most likely its read-out protection is on. Then its memory cannot be read or backed up, and installing the kernel " +
+                        "needs the protection removed, which erases the chip.";
+                    Log(text);
+                    Dispatcher.UIThread.Post(() => StatusText.Text = text);
+                    link = opened;
+                    return;
+                }
                 ShowStatus(opened);
                 link = opened;
+                SavedSettings.Current.LastProgrammer = device.ToString();
             }
             catch
             {
@@ -103,12 +141,18 @@ public partial class LinkWindow : Window
 
     private void ShowStatus(ThingLink l)
     {
-        var s = l.Programmer.ReadStatus();
+        var s = l.Programmer.ReadStatus(kernel?.Image);
+        hasWrenKernel = s.HasKernel;
         string text = s.ReadOutProtected
             ? "Read-out protection is on: the Thing's contents cannot be read. Installing the kernel needs it removed, which erases the chip."
-            : $"Kernel: {(s.HasKernel ? "present" : "none")}.  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
-              $"Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  Uploads: {s.Uploads}.  " +
-              $"Most writes to one store block: {s.WriteCounts.Max()}.";
+            : s.Flash switch
+            {
+                FlashContents.Empty => $"The flash is empty.  Locked blocks (UBC): {s.ProtectedBlocks}.",
+                FlashContents.OtherFirmware => $"The flash holds other firmware, not this build of Wren's kernel.  Locked blocks (UBC): {s.ProtectedBlocks}.",
+                _ => $"Wren's kernel (this build).  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
+                    $"Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  Uploads: {s.Uploads}.  " +
+                    $"Most writes to one store block: {s.WriteCounts.Max()}.",
+            };
         Log(text);
         Dispatcher.UIThread.Post(() => StatusText.Text = text);
     }
@@ -118,8 +162,136 @@ public partial class LinkWindow : Window
         link?.Dispose();
         link = null;
         kernelConfirmed = false;
+        unprotectConfirmed = false;
+        factoryConfirmed = false;
+        hasWrenKernel = false;
+        imageToWrite = null;
         Log("Disconnected.");
         UpdateButtons();
+    }
+
+    private async void OnRemoveProtection(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        if (!unprotectConfirmed)
+        {
+            unprotectConfirmed = true;
+            Log("Removing read-out protection makes the chip erase all its flash and EEPROM: the firmware on it is gone for good. " +
+                "Afterwards it is blank and unprotected, ready for Install kernel or Write image. Click again to go ahead.");
+            UpdateButtons();
+            return;
+        }
+        unprotectConfirmed = false;
+        var l = link;
+        await Work("Remove protection", () =>
+        {
+            l.Programmer.Progress += Log;
+            try
+            {
+                l.Programmer.RemoveReadOutProtection();
+                ShowStatus(l);
+            }
+            finally
+            {
+                l.Programmer.Progress -= Log;
+            }
+        });
+    }
+
+    private async void OnWriteImage(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        if (imageToWrite == null)
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Choose a firmware image to write to the Thing",
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("Firmware images") { Patterns = new[] { "*.s19", "*.hex", "*.ihx" } },
+                    new FilePickerFileType("All files") { Patterns = new[] { "*" } },
+                },
+            });
+            string? chosen = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+            if (chosen == null) return;
+            imageToWrite = chosen;
+            Log($"{Path.GetFileName(chosen)} will be written to the Thing's flash: only the blocks that differ, each costing one of an OLED Thing's ~100 flash writes. " +
+                "Read-out protection stays off. Click again to go ahead.");
+            UpdateButtons();
+            return;
+        }
+        string path = imageToWrite;
+        imageToWrite = null;
+        var l = link;
+        await Work("Write image", () =>
+        {
+            var image = MemoryImage.Parse(File.ReadAllText(path));
+            if (image.Count == 0) throw new InvalidOperationException($"{Path.GetFileName(path)} holds no S-records or Intel HEX data");
+            l.Programmer.Progress += Log;
+            try
+            {
+                l.Programmer.WriteImage(image, Path.GetFileName(path));
+                ShowStatus(l);
+            }
+            finally
+            {
+                l.Programmer.Progress -= Log;
+            }
+        });
+    }
+
+    /// <summary>Digicool's factory firmware, copied beside Wren with the firmware folder.</summary>
+    private static string? FactoryFirmwarePath()
+    {
+        string? folder = Kernel.FindFirmwareFolder(AppContext.BaseDirectory);
+        string? path = folder == null ? null : Path.Combine(folder, "digicool", "8-bit_oled_thing_v1.1.s19");
+        return path != null && File.Exists(path) ? path : null;
+    }
+
+    private async void OnWearReport(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        var l = link;
+        StoreWear? wear = null;
+        await Work("Wear report", () => wear = l.Programmer.ReadWear());
+        if (wear != null) new WearWindow(wear).Show(this);
+    }
+
+    private async void OnRestoreFactory(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        string? path = FactoryFirmwarePath();
+        if (path == null)
+        {
+            Log("Digicool's factory firmware (firmware/digicool/8-bit_oled_thing_v1.1.s19) was not found beside Wren.");
+            return;
+        }
+        if (!factoryConfirmed)
+        {
+            factoryConfirmed = true;
+            Log(link.Target.NoAccess
+                ? "Restoring factory settings first removes read-out protection, which erases all the chip's flash and EEPROM, then writes Digicool's firmware back, unprotected. Click again to go ahead."
+                : "Restoring factory settings writes Digicool's firmware over what the Thing holds (only blocks that differ), clears the EEPROM and leaves it unprotected. Click again to go ahead.");
+            UpdateButtons();
+            return;
+        }
+        factoryConfirmed = false;
+        var l = link;
+        await Work("Restore factory settings", () =>
+        {
+            var image = MemoryImage.Parse(File.ReadAllText(path));
+            l.Programmer.Progress += Log;
+            try
+            {
+                l.Programmer.RestoreFactory(image);
+                ShowStatus(l);
+            }
+            finally
+            {
+                l.Programmer.Progress -= Log;
+            }
+        });
     }
 
     private async void OnInstallKernel(object? sender, RoutedEventArgs e)

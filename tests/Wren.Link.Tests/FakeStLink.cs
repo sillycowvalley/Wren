@@ -32,6 +32,7 @@ public sealed class FakeStLink : IUsbPipe
     public List<string> Log { get; } = new();
 
     private int busyLeft;
+    private bool resetHeld;
 
     public void Write(ReadOnlySpan<byte> data)
     {
@@ -72,6 +73,9 @@ public sealed class FakeStLink : IUsbPipe
                 Reply((byte)(v >> 8), (byte)v, 0x83, 0x04, 0x48, 0x37);
                 return;
             }
+            case StLink.GetVdd: // 3.3 V: 2 x 1.2 V x 1375 / 1000
+                Reply(BitConverter.GetBytes(1000u).Concat(BitConverter.GetBytes(1375u)).ToArray());
+                return;
             case StLink.GetCurrentMode:
                 Reply(Mode, 0);
                 return;
@@ -110,7 +114,12 @@ public sealed class FakeStLink : IUsbPipe
                 else Reply(StLink.StatusOk, 0, 0, 0);
                 return;
             case StLink.SwimAssertReset:
+                resetHeld = true;
+                break;
             case StLink.SwimDeassertReset:
+                if (resetHeld) Device.Reset(); // NRST released: the chip restarts
+                resetHeld = false;
+                break;
             case StLink.SwimReset:
                 break;
             case StLink.SwimEnterSeq:

@@ -30,7 +30,7 @@ public sealed record StLinkVersion(int StLink, int Jtag, int Swim, int VendorId,
 /// result is fetched with READSTATUS until it is no longer busy. Protocol as used by the
 /// open-source stm8flash and OpenOCD (Wren's own code, written from them).
 /// </summary>
-public sealed class StLink : IDisposable
+public sealed class StLink : ITargetLink
 {
     // Command classes
     public const byte GetVersion = 0xF1, Debug = 0xF2, Dfu = 0xF3, Swim = 0xF4, GetCurrentMode = 0xF5, GetVdd = 0xF7;
@@ -53,6 +53,8 @@ public sealed class StLink : IDisposable
 
     /// <summary>Waits between status polls; tests set it to zero.</summary>
     public Action<int> Sleep { get; set; } = ms => Thread.Sleep(ms);
+
+    public bool OffersHighSpeed => true;
 
     /// <summary>The ST-LINK's buffer for SWIM reads, from READBUFSIZE.</summary>
     public int ReadBufferSize { get; private set; } = 6144;
