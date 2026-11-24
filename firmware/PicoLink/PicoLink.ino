@@ -211,7 +211,8 @@ void setup() {
   Serial.begin(115200);
   Serial.setTimeout(1000);
 
-  for (uint pin : { SwimPin, ResetPin }) {
+  const uint pins[] = { SwimPin, ResetPin };
+  for (uint pin : pins) {
     gpio_init(pin);
     gpio_put(pin, 0);
     gpio_set_dir(pin, GPIO_IN);
