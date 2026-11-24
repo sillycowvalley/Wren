@@ -70,7 +70,7 @@ public sealed class Stm8Device : IBus
             for (int i = 0; i < p.Size; i++) registerMap[p.BaseAddress - RegisterStart + i] = p;
         }
 
-        Cpu = new Cpu(this, info.RamSize - 1) { Interrupts = Itc };
+        Cpu = new Cpu(this, info.RamSize - 1) { Interrupts = Itc, DataRead = Debug.DataRead };
         ResetOptionBytes();
     }
 
@@ -89,6 +89,9 @@ public sealed class Stm8Device : IBus
     public I2cPeripheral I2c { get; }
     public FlashController FlashControl { get; }
     public Adc Adc { get; }
+
+    /// <summary>The debug module a programmer drives over SWIM: breakpoints, STALL, freezing peripherals.</summary>
+    public DebugModule Debug { get; } = new();
 
     /// <summary>
     /// Analog levels (0-1023) on the ADC channels, by channel number. A channel with no
@@ -205,6 +208,7 @@ public sealed class Stm8Device : IBus
         Array.Clear(plainRegisters);
         cfgGcr = 0;
         Cpu.Reset();
+        Debug.Reset(Debug.SwimActive);
         HsiTicks = 0;
         ubcAtReset = options[1]; // option bytes are loaded at reset
     }
@@ -222,9 +226,15 @@ public sealed class Stm8Device : IBus
     public void Step()
     {
         int cpuCycles;
-        if (Cpu.State == CpuState.Running || Itc.Next(Cpu.Level) >= 0)
+        if (Debug.Stalled)
+        {
+            // Stalled by the debug module: time passes, the CPU does nothing.
+            cpuCycles = 16;
+        }
+        else if (Cpu.State == CpuState.Running || Itc.Next(Cpu.Level) >= 0)
         {
             cpuCycles = Cpu.Step();
+            Debug.EndOfInstruction();
         }
         else
         {
@@ -233,7 +243,11 @@ public sealed class Stm8Device : IBus
             Cpu.Step();
         }
         int master = cpuCycles * Clock.CpuDivider;
-        foreach (var p in peripherals) p.Tick(master);
+        foreach (var p in peripherals)
+        {
+            if ((p == Tim4 && Debug.FreezesTim4) || (p == I2c && Debug.FreezesI2c)) continue;
+            p.Tick(master);
+        }
         HsiTicks += (long)master * (ClockController.HsiFrequency / Clock.MasterFrequency);
     }
 
@@ -276,6 +290,8 @@ public sealed class Stm8Device : IBus
         if (address >= InterruptController.SprBase && address < InterruptController.SprBase + 8)
             return Itc.Read(address - InterruptController.SprBase);
         if (address == CfgGcr) return cfgGcr;
+        if (address >= DebugModule.Base && address < DebugModule.Base + DebugModule.Size) return Debug.Read(address - DebugModule.Base);
+        if (address >= CpuRegisterStart && address <= CpuRegisterStart + 0x0A) return CpuRegister(address - CpuRegisterStart);
         return 0;
     }
 
@@ -316,6 +332,16 @@ public sealed class Stm8Device : IBus
         if (address >= InterruptController.SprBase && address < InterruptController.SprBase + 8)
         {
             Itc.Write(address - InterruptController.SprBase, value);
+            return;
+        }
+        if (address >= DebugModule.Base && address < DebugModule.Base + DebugModule.Size)
+        {
+            Debug.Write(address - DebugModule.Base, value);
+            return;
+        }
+        if (address >= CpuRegisterStart && address <= CpuRegisterStart + 0x0A)
+        {
+            if (Debug.Stalled) SetCpuRegister(address - CpuRegisterStart, value); // committed only while stalled (UM0470 3.7)
             return;
         }
         if (address == CfgGcr) cfgGcr = (byte)(value & 3);
@@ -419,5 +445,39 @@ public sealed class Stm8Device : IBus
             _ => $"register ${address:X4}",
         };
         UnmodelledPeripherals.Add(name);
+    }
+
+    /// <summary>The CPU registers as SWIM sees them at $7F00-$7F0A (UM0470 table 2).</summary>
+    private byte CpuRegister(int offset) => offset switch
+    {
+        0 => Cpu.A,
+        1 => (byte)(Cpu.PC >> 16),
+        2 => (byte)(Cpu.PC >> 8),
+        3 => (byte)Cpu.PC,
+        4 => (byte)(Cpu.X >> 8),
+        5 => (byte)Cpu.X,
+        6 => (byte)(Cpu.Y >> 8),
+        7 => (byte)Cpu.Y,
+        8 => (byte)(Cpu.SP >> 8),
+        9 => (byte)Cpu.SP,
+        _ => Cpu.CC,
+    };
+
+    private void SetCpuRegister(int offset, byte value)
+    {
+        switch (offset)
+        {
+            case 0: Cpu.A = value; break;
+            case 1: Cpu.PC = (Cpu.PC & 0x00FFFF) | (value << 16); break;
+            case 2: Cpu.PC = (Cpu.PC & 0xFF00FF) | (value << 8); break;
+            case 3: Cpu.PC = (Cpu.PC & 0xFFFF00) | value; break;
+            case 4: Cpu.X = (ushort)((Cpu.X & 0x00FF) | (value << 8)); break;
+            case 5: Cpu.X = (ushort)((Cpu.X & 0xFF00) | value); break;
+            case 6: Cpu.Y = (ushort)((Cpu.Y & 0x00FF) | (value << 8)); break;
+            case 7: Cpu.Y = (ushort)((Cpu.Y & 0xFF00) | value); break;
+            case 8: Cpu.SP = (ushort)((Cpu.SP & 0x00FF) | (value << 8)); break;
+            case 9: Cpu.SP = (ushort)((Cpu.SP & 0xFF00) | value); break;
+            default: Cpu.CC = value; break;
+        }
     }
 }

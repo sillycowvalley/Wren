@@ -129,7 +129,14 @@ public sealed class Cpu
 
     // ---- Memory helpers ----
 
-    private byte Read(int address) => bus.Read(address & 0xFFFFFF);
+    private byte Read(int address)
+    {
+        DataRead?.Invoke(address & 0xFFFFFF);
+        return bus.Read(address & 0xFFFFFF);
+    }
+
+    /// <summary>Called for every data read (not instruction fetches), for the debug module's breakpoints.</summary>
+    public Action<int>? DataRead { get; set; }
     private void Write(int address, byte value) => bus.Write(address & 0xFFFFFF, value);
     private ushort Read16(int address) => (ushort)((Read(address) << 8) | Read(address + 1));
 
@@ -141,7 +148,7 @@ public sealed class Cpu
 
     private byte Fetch()
     {
-        byte b = Read(PC);
+        byte b = bus.Read(PC);
         PC = (PC + 1) & 0xFFFFFF;
         Cycles++;
         return b;
