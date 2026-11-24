@@ -43,6 +43,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
   `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` and `docs/LedThing.md`
   (the two Digicool boards' pins).
+- `docs/How_We_Make_Videos.md` is how the project's YouTube videos are made: read it before
+  writing a video's script, slides or thumbnail.
 - Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
   rendered from, and the render steps are in that file's opening comment.
 - Michael works in Wren BASIC; the app never shows assembly or CPU registers.

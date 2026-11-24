@@ -1,0 +1,4387 @@
+; Disassembly of Digicool Things' 8-bit_oled_thing_v1.1.s19 ($8000-$9E7D), the factory firmware.
+; Digicool's work, here with Greg's permission; not covered by Wren's MIT licence.
+; Made with ucsim 0.6.4 (sstm8 -t STM8S103, the "dc" command), a straight sweep from $8000:
+; tables and other data in the image are shown decoded as instructions too. Register
+; names in braces are from firmware/include/stm8s003.inc; ucsim adds its own in <angle brackets>.
+;
+0x08000    82 00 8c cb    int    #0x008ccb <.reset>
+0x08004    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08008    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x0800c    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08010    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08014    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08018    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x0801c    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08020    82 00 8f 3d    int    #0x008f3d <.EXTI3>
+0x08024    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08028    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x0802c    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08030    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08034    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08038    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x0803c    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08040    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08044    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08048    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x0804c    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08050    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08054    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08058    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x0805c    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08060    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08064    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08068    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x0806c    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08070    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08074    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08078    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x0807c    82 00 9e 7d    int    #0x009e7d <.isr_unused>
+0x08080  ? 00 03          neg    (0x03,SP)
+0x08082  ? 0d 40          tnz    (0x40,SP)
+0x08084  ? 00 78          neg    (0x78,SP)
+0x08086  ? 10 20          sub    A,(0x20,SP)
+0x08088  ? 10 20          sub    A,(0x20,SP)
+0x0808a  ? 40             neg    A
+0x0808b  ? 08 10          sla    (0x10,SP)
+0x0808d  ? 20 40          jra    0x80cf
+0x0808f  ? 80             iret
+0x08090  ? 02             rlwa   X
+0x08091  ? 04 08          srl    (0x08,SP)
+0x08093  ? 04 08          srl    (0x08,SP)
+0x08095  ? f0             sub    A,(X)
+0x08096  ? ff             ldw    (X),Y
+0x08097  ? ff             ldw    (X),Y
+0x08098  ? 0f 10          clr    (0x10,SP)
+0x0809a  ? 00 00          neg    (0x00,SP)
+0x0809c  ? 08 10          sla    (0x10,SP)
+0x0809e  ? 00 00          neg    (0x00,SP)
+0x080a0  ? 08 10          sla    (0x10,SP)
+0x080a2  ? 00 00          neg    (0x00,SP)
+0x080a4  ? 08 10          sla    (0x10,SP)
+0x080a6  ? 00 00          neg    (0x00,SP)
+0x080a8  ? 08 10          sla    (0x10,SP)
+0x080aa  ? 00 00          neg    (0x00,SP)
+0x080ac  ? 08 f0          sla    (0xf0,SP)
+0x080ae  ? ff             ldw    (X),Y
+0x080af  ? ff             ldw    (X),Y
+0x080b0  ? 0f f0          clr    (0xf0,SP)
+0x080b2  ? ff             ldw    (X),Y
+0x080b3  ? ff             ldw    (X),Y
+0x080b4  ? 0f f0          clr    (0xf0,SP)
+0x080b6  ? ff             ldw    (X),Y
+0x080b7  ? ff             ldw    (X),Y
+0x080b8  ? 0f f0          clr    (0xf0,SP)
+0x080ba  ? ff             ldw    (X),Y
+0x080bb  ? ff             ldw    (X),Y
+0x080bc  ? 0f f0          clr    (0xf0,SP)
+0x080be  ? ff             ldw    (X),Y
+0x080bf  ? ff             ldw    (X),Y
+0x080c0  ? 0f f0          clr    (0xf0,SP)
+0x080c2  ? ff             ldw    (X),Y
+0x080c3  ? ff             ldw    (X),Y
+0x080c4  ? 0f f0          clr    (0xf0,SP)
+0x080c6  ? ff             ldw    (X),Y
+0x080c7  ? ff             ldw    (X),Y
+0x080c8  ? 0f f0          clr    (0xf0,SP)
+0x080ca  ? ff             ldw    (X),Y
+0x080cb  ? ff             ldw    (X),Y
+0x080cc  ? 0f ff          clr    (0xff,SP)
+0x080ce  ? 81             ret
+0x080cf  ? 81             ret
+0x080d0  ? 81             ret
+0x080d1  ? 81             ret
+0x080d2  ? 81             ret
+0x080d3  ? ff             ldw    (X),Y
+0x080d4  ? ff             ldw    (X),Y
+0x080d5  ? ff             ldw    (X),Y
+0x080d6  ? ff             ldw    (X),Y
+0x080d7  ? ff             ldw    (X),Y
+0x080d8  ? ff             ldw    (X),Y
+0x080d9  ? ff             ldw    (X),Y
+0x080da  ? ff             ldw    (X),Y
+0x080db  ? 00 00          neg    (0x00,SP)
+0x080dd  ? 00 00          neg    (0x00,SP)
+0x080df  ? 7f             clr    (X)
+0x080e0  ? e0 01          sub    A,(0x01,X)
+0x080e2  ? ff             ldw    (X),Y
+0x080e3  ? f8             xor    A,(X)
+0x080e4  ? 03 ff          cpl    (0xff,SP)
+0x080e6  ? fc             jp     (X)
+0x080e7  ? 07 80          sra    (0x80,SP)
+0x080e9  ? 1e 07          ldw    X,(0x07,SP)
+0x080eb  ? 00 0e          neg    (0x0e,SP)
+0x080ed  ? 07 00          sra    (0x00,SP)
+0x080ef  ? 0e 07          swap   (0x07,SP)
+0x080f1  ? 00 0e          neg    (0x0e,SP)
+0x080f3  ? 07 00          sra    (0x00,SP)
+0x080f5  ? 0e 07          swap   (0x07,SP)
+0x080f7  ? 80             iret
+0x080f8  ? 1e 03          ldw    X,(0x03,SP)
+0x080fa  ? ff             ldw    (X),Y
+0x080fb  ? fc             jp     (X)
+0x080fc  ? 01             rrwa   X
+0x080fd  ? ff             ldw    (X),Y
+0x080fe  ? f8             xor    A,(X)
+0x080ff  ? 00 7f          neg    (0x7f,SP)
+0x08101  ? e0 00          sub    A,(0x00,X)
+0x08103  ? 00 00          neg    (0x00,SP)
+0x08105  ? 00 00          neg    (0x00,SP)
+0x08107  ? 00 00          neg    (0x00,SP)
+0x08109  ? 00 00          neg    (0x00,SP)
+0x0810b  ? 00 01          neg    (0x01,SP)
+0x0810d  ? c0 00 01       sub    A,0x0001
+0x08110  ? c0 00 00       sub    A,0x0000
+0x08113  ? e0 00          sub    A,(0x00,X)
+0x08115  ? 00 70          neg    (0x70,SP)
+0x08117  ? 00 00          neg    (0x00,SP)
+0x08119  ? 78             sla    (X)
+0x0811a  ? 07 ff          sra    (0xff,SP)
+0x0811c  ? fc             jp     (X)
+0x0811d  ? 07 ff          sra    (0xff,SP)
+0x0811f  ? fe             ldw    X,(X)
+0x08120  ? 07 ff          sra    (0xff,SP)
+0x08122  ? fe             ldw    X,(X)
+0x08123  ? 00 00          neg    (0x00,SP)
+0x08125  ? 00 00          neg    (0x00,SP)
+0x08127  ? 00 00          neg    (0x00,SP)
+0x08129  ? 00 00          neg    (0x00,SP)
+0x0812b  ? 00 00          neg    (0x00,SP)
+0x0812d  ? 00 00          neg    (0x00,SP)
+0x0812f  ? 00 00          neg    (0x00,SP)
+0x08131  ? 00 07          neg    (0x07,SP)
+0x08133  ? 80             iret
+0x08134  ? 70             neg    (X)
+0x08135  ? 07 c0          sra    (0xc0,SP)
+0x08137  ? 7c             inc    (X)
+0x08138  ? 07 e0          sra    (0xe0,SP)
+0x0813a  ? 7c             inc    (X)
+0x0813b  ? 07 f0          sra    (0xf0,SP)
+0x0813d  ? 1e 07          ldw    X,(0x07,SP)
+0x0813f  ? 78             sla    (X)
+0x08140  ? 0e 07          swap   (0x07,SP)
+0x08142  ? 38 0e          sla    0x0e
+0x08144  ? 07 1c          sra    (0x1c,SP)
+0x08146  ? 0e 07          swap   (0x07,SP)
+0x08148  ? 0e 0e          swap   (0x0e,SP)
+0x0814a  ? 07 0f          sra    (0x0f,SP)
+0x0814c  ? 1e 07          ldw    X,(0x07,SP)
+0x0814e  ? 07 fc          sra    (0xfc,SP)
+0x08150  ? 07 03          sra    (0x03,SP)
+0x08152  ? fc             jp     (X)
+0x08153  ? 06 00          rrc    (0x00,SP)
+0x08155  ? f0             sub    A,(X)
+0x08156  ? 00 00          neg    (0x00,SP)
+0x08158  ? 00 00          neg    (0x00,SP)
+0x0815a  ? 00 00          neg    (0x00,SP)
+0x0815c  ? 00 f0          neg    (0xf0,SP)
+0x0815e  ? 30 01          neg    0x01
+0x08160  ? f0             sub    A,(X)
+0x08161  ? 38 03          sla    0x03
+0x08163  ? e0 3c          sub    A,(0x3c,X)
+0x08165  ? 07 80          sra    (0x80,SP)
+0x08167  ? 1e 07          ldw    X,(0x07,SP)
+0x08169  ? 00 0e          neg    (0x0e,SP)
+0x0816b  ? 07 03          sra    (0x03,SP)
+0x0816d  ? 0e 07          swap   (0x07,SP)
+0x0816f  ? 07 0e          sra    (0x0e,SP)
+0x08171  ? 07 87          sra    (0x87,SP)
+0x08173  ? 9e             ld     A,XH
+0x08174  ? 07 cf          sra    (0xcf,SP)
+0x08176  ? fe             ldw    X,(X)
+0x08177  ? 03 ff          cpl    (0xff,SP)
+0x08179  ? fc             jp     (X)
+0x0817a  ? 01             rrwa   X
+0x0817b  ? fc             jp     (X)
+0x0817c  ? f8             xor    A,(X)
+0x0817d  ? 00 78          neg    (0x78,SP)
+0x0817f  ? 00 00          neg    (0x00,SP)
+0x08181  ? 00 00          neg    (0x00,SP)
+0x08183  ? 00 00          neg    (0x00,SP)
+0x08185  ? 00 00          neg    (0x00,SP)
+0x08187  ? 78             sla    (X)
+0x08188  ? 00 00          neg    (0x00,SP)
+0x0818a  ? 7c             inc    (X)
+0x0818b  ? 00 00          neg    (0x00,SP)
+0x0818d  ? 7f             clr    (X)
+0x0818e  ? 00 00          neg    (0x00,SP)
+0x08190  ? 67 80          sra    (0x80,X)
+0x08192  ? 00 61          neg    (0x61,SP)
+0x08194  ? e0 00          sub    A,(0x00,X)
+0x08196  ? 60 f0          neg    (0xf0,X)
+0x08198  ? 00 60          neg    (0x60,SP)
+0x0819a  ? 3c 07          inc    0x07
+0x0819c  ? ff             ldw    (X),Y
+0x0819d  ? fe             ldw    X,(X)
+0x0819e  ? 07 ff          sra    (0xff,SP)
+0x081a0  ? fe             ldw    X,(X)
+0x081a1  ? 07 ff          sra    (0xff,SP)
+0x081a3  ? fc             jp     (X)
+0x081a4  ? 00 60          neg    (0x60,SP)
+0x081a6  ? 00 00          neg    (0x00,SP)
+0x081a8  ? 60 00          neg    (0x00,X)
+0x081aa  ? 00 00          neg    (0x00,SP)
+0x081ac  ? 00 00          neg    (0x00,SP)
+0x081ae  ? 00 00          neg    (0x00,SP)
+0x081b0  ? 01             rrwa   X
+0x081b1  ? c0 00 03       sub    A,0x0003
+0x081b4  ? c7 fe 03       ld     0xfe03,A
+0x081b7  ? c7 fe 07       ld     0xfe07,A
+0x081ba  ? 87             retf
+0x081bb  ? fe             ldw    X,(X)
+0x081bc  ? 07 03          sra    (0x03,SP)
+0x081be  ? 8e             halt
+0x081bf  ? 07 03          sra    (0x03,SP)
+0x081c1  ? 8e             halt
+0x081c2  ? 07 03          sra    (0x03,SP)
+0x081c4  ? 8e             halt
+0x081c5  ? 07 03          sra    (0x03,SP)
+0x081c7  ? 8e             halt
+0x081c8  ? 07 87          sra    (0x87,SP)
+0x081ca  ? 8e             halt
+0x081cb  ? 03 ff          cpl    (0xff,SP)
+0x081cd  ? 0e 01          swap   (0x01,SP)
+0x081cf  ? fe             ldw    X,(X)
+0x081d0  ? 0e 00          swap   (0x00,SP)
+0x081d2  ? 7c             inc    (X)
+0x081d3  ? 06 00          rrc    (0x00,SP)
+0x081d5  ? 00 00          neg    (0x00,SP)
+0x081d7  ? 00 00          neg    (0x00,SP)
+0x081d9  ? 00 00          neg    (0x00,SP)
+0x081db  ? 7f             clr    (X)
+0x081dc  ? e0 01          sub    A,(0x01,X)
+0x081de  ? ff             ldw    (X),Y
+0x081df  ? f8             xor    A,(X)
+0x081e0  ? 03 ff          cpl    (0xff,SP)
+0x081e2  ? fc             jp     (X)
+0x081e3  ? 03 8e          cpl    (0x8e,SP)
+0x081e5  ? 3c 07          inc    0x07
+0x081e7  ? 07 0e          sra    (0x0e,SP)
+0x081e9  ? 07 07          sra    (0x07,SP)
+0x081eb  ? 0e 07          swap   (0x07,SP)
+0x081ed  ? 07 0e          sra    (0x0e,SP)
+0x081ef  ? 07 07          sra    (0x07,SP)
+0x081f1  ? 0e 07          swap   (0x07,SP)
+0x081f3  ? 8f             wfi
+0x081f4  ? 1e 03          ldw    X,(0x03,SP)
+0x081f6  ? fe             ldw    X,(X)
+0x081f7  ? 3c 01          inc    0x01
+0x081f9  ? fc             jp     (X)
+0x081fa  ? 38 00          sla    0x00
+0x081fc  ? f8             xor    A,(X)
+0x081fd  ? 00 00          neg    (0x00,SP)
+0x081ff  ? 00 00          neg    (0x00,SP)
+0x08201  ? 00 00          neg    (0x00,SP)
+0x08203  ? 00 00          neg    (0x00,SP)
+0x08205  ? 00 06          neg    (0x06,SP)
+0x08207  ? 00 00          neg    (0x00,SP)
+0x08209  ? 0e 00          swap   (0x00,SP)
+0x0820b  ? 00 0e          neg    (0x0e,SP)
+0x0820d  ? 07 e0          sra    (0xe0,SP)
+0x0820f  ? 0e 07          swap   (0x07,SP)
+0x08211  ? fc             jp     (X)
+0x08212  ? 0e 03          swap   (0x03,SP)
+0x08214  ? ff             ldw    (X),Y
+0x08215  ? 0e 00          swap   (0x00,SP)
+0x08217  ? 3f 8e          clr    0x8e
+0x08219  ? 00 03          neg    (0x03,SP)
+0x0821b  ? ee 00          ldw    X,(0x00,X)
+0x0821d  ? 00 fe          neg    (0xfe,SP)
+0x0821f  ? 00 00          neg    (0x00,SP)
+0x08221  ? 7e             swap   (X)
+0x08222  ? 00 00          neg    (0x00,SP)
+0x08224  ? 1e 00          ldw    X,(0x00,SP)
+0x08226  ? 00 0e          neg    (0x0e,SP)
+0x08228  ? 00 00          neg    (0x00,SP)
+0x0822a  ? 00 00          neg    (0x00,SP)
+0x0822c  ? 00 00          neg    (0x00,SP)
+0x0822e  ? 00 f8          neg    (0xf8,SP)
+0x08230  ? 00 01          neg    (0x01,SP)
+0x08232  ? fc             jp     (X)
+0x08233  ? f8             xor    A,(X)
+0x08234  ? 03 ff          cpl    (0xff,SP)
+0x08236  ? fc             jp     (X)
+0x08237  ? 07 87          sra    (0x87,SP)
+0x08239  ? fe             ldw    X,(X)
+0x0823a  ? 07 03          sra    (0x03,SP)
+0x0823c  ? 9e             ld     A,XH
+0x0823d  ? 07 03          sra    (0x03,SP)
+0x0823f  ? 0e 07          swap   (0x07,SP)
+0x08241  ? 03 0e          cpl    (0x0e,SP)
+0x08243  ? 07 03          sra    (0x03,SP)
+0x08245  ? 9e             ld     A,XH
+0x08246  ? 07 87          sra    (0x87,SP)
+0x08248  ? fe             ldw    X,(X)
+0x08249  ? 03 ff          cpl    (0xff,SP)
+0x0824b  ? fc             jp     (X)
+0x0824c  ? 01             rrwa   X
+0x0824d  ? fc             jp     (X)
+0x0824e  ? f8             xor    A,(X)
+0x0824f  ? 00 f8          neg    (0xf8,SP)
+0x08251  ? 00 00          neg    (0x00,SP)
+0x08253  ? 00 00          neg    (0x00,SP)
+0x08255  ? 00 00          neg    (0x00,SP)
+0x08257  ? 00 00          neg    (0x00,SP)
+0x08259  ? 01             rrwa   X
+0x0825a  ? f0             sub    A,(X)
+0x0825b  ? 01             rrwa   X
+0x0825c  ? c3 f8 03       cpw    X,0xf803
+0x0825f  ? c7 fc 07       ld     0xfc07,A
+0x08262  ? 8f             wfi
+0x08263  ? 1e 07          ldw    X,(0x07,SP)
+0x08265  ? 0e 0e          swap   (0x0e,SP)
+0x08267  ? 07 0e          sra    (0x0e,SP)
+0x08269  ? 0e 07          swap   (0x07,SP)
+0x0826b  ? 0e 0e          swap   (0x0e,SP)
+0x0826d  ? 07 0e          sra    (0x0e,SP)
+0x0826f  ? 0e 03          swap   (0x03,SP)
+0x08271  ? c7 1c 03       ld     0x1c03,A
+0x08274  ? ff             ldw    (X),Y
+0x08275  ? fc             jp     (X)
+0x08276  ? 01             rrwa   X
+0x08277  ? ff             ldw    (X),Y
+0x08278  ? f8             xor    A,(X)
+0x08279  ? 00 7f          neg    (0x7f,SP)
+0x0827b  ? e0 00          sub    A,(0x00,X)
+0x0827d  ? 00 00          neg    (0x00,SP)
+0x0827f  ? 07 00          sra    (0x00,SP)
+0x08281  ? 00 07          neg    (0x07,SP)
+0x08283  ? e0 00          sub    A,(0x00,X)
+0x08285  ? 03 fc          cpl    (0xfc,SP)
+0x08287  ? 00 00          neg    (0x00,SP)
+0x08289  ? ff             ldw    (X),Y
+0x0828a  ? 80             iret
+0x0828b  ? 00 7f          neg    (0x7f,SP)
+0x0828d  ? e0 00          sub    A,(0x00,X)
+0x0828f  ? 63 f8          cpl    (0xf8,X)
+0x08291  ? 00 60          neg    (0x60,SP)
+0x08293  ? 7c             inc    (X)
+0x08294  ? 00 60          neg    (0x60,SP)
+0x08296  ? 7c             inc    (X)
+0x08297  ? 00 67          neg    (0x67,SP)
+0x08299  ? f8             xor    A,(X)
+0x0829a  ? 00 7f          neg    (0x7f,SP)
+0x0829c  ? e0 00          sub    A,(0x00,X)
+0x0829e  ? ff             ldw    (X),Y
+0x0829f  ? 00 07          neg    (0x07,SP)
+0x082a1  ? fc             jp     (X)
+0x082a2  ? 00 07          neg    (0x07,SP)
+0x082a4  ? e0 00          sub    A,(0x00,X)
+0x082a6  ? 07 00          sra    (0x00,SP)
+0x082a8  ? 00 00          neg    (0x00,SP)
+0x082aa  ? 00 00          neg    (0x00,SP)
+0x082ac  ? 07 ff          sra    (0xff,SP)
+0x082ae  ? fc             jp     (X)
+0x082af  ? 07 ff          sra    (0xff,SP)
+0x082b1  ? fc             jp     (X)
+0x082b2  ? 07 ff          sra    (0xff,SP)
+0x082b4  ? fc             jp     (X)
+0x082b5  ? 06 06          rrc    (0x06,SP)
+0x082b7  ? 0c 06          inc    (0x06,SP)
+0x082b9  ? 06 0c          rrc    (0x0c,SP)
+0x082bb  ? 06 06          rrc    (0x06,SP)
+0x082bd  ? 0c 06          inc    (0x06,SP)
+0x082bf  ? 06 0c          rrc    (0x0c,SP)
+0x082c1  ? 06 06          rrc    (0x06,SP)
+0x082c3  ? 1c 07 0f       addw   X,#0x070f
+0x082c6  ? fc             jp     (X)
+0x082c7  ? 07 ff          sra    (0xff,SP)
+0x082c9  ? f8             xor    A,(X)
+0x082ca  ? 03 f9          cpl    (0xf9,SP)
+0x082cc  ? f0             sub    A,(X)
+0x082cd  ? 01             rrwa   X
+0x082ce  ? f0             sub    A,(X)
+0x082cf  ? 00 00          neg    (0x00,SP)
+0x082d1  ? 00 00          neg    (0x00,SP)
+0x082d3  ? 00 3f          neg    (0x3f,SP)
+0x082d5  ? 80             iret
+0x082d6  ? 00 ff          neg    (0xff,SP)
+0x082d8  ? e0 01          sub    A,(0x01,X)
+0x082da  ? ff             ldw    (X),Y
+0x082db  ? f0             sub    A,(X)
+0x082dc  ? 03 c0          cpl    (0xc0,SP)
+0x082de  ? f8             xor    A,(X)
+0x082df  ? 07 80          sra    (0x80,SP)
+0x082e1  ? 3c 07          inc    0x07
+0x082e3  ? 00 1c          neg    (0x1c,SP)
+0x082e5  ? 06 00          rrc    (0x00,SP)
+0x082e7  ? 0c 06          inc    (0x06,SP)
+0x082e9  ? 00 0c          neg    (0x0c,SP)
+0x082eb  ? 07 00          sra    (0x00,SP)
+0x082ed  ? 1c 07 80       addw   X,#0x0780
+0x082f0  ? 3c 03          inc    0x03
+0x082f2  ? c0 78 01       sub    A,0x7801
+0x082f5  ? f0             sub    A,(X)
+0x082f6  ? f0             sub    A,(X)
+0x082f7  ? 00 f0          neg    (0xf0,SP)
+0x082f9  ? e0 00          sub    A,(0x00,X)
+0x082fb  ? 00 00          neg    (0x00,SP)
+0x082fd  ? 00 00          neg    (0x00,SP)
+0x082ff  ? 00 07          neg    (0x07,SP)
+0x08301  ? ff             ldw    (X),Y
+0x08302  ? fc             jp     (X)
+0x08303  ? 07 ff          sra    (0xff,SP)
+0x08305  ? fc             jp     (X)
+0x08306  ? 07 ff          sra    (0xff,SP)
+0x08308  ? fc             jp     (X)
+0x08309  ? 06 00          rrc    (0x00,SP)
+0x0830b  ? 0c 06          inc    (0x06,SP)
+0x0830d  ? 00 0c          neg    (0x0c,SP)
+0x0830f  ? 06 00          rrc    (0x00,SP)
+0x08311  ? 0c 07          inc    (0x07,SP)
+0x08313  ? 00 1c          neg    (0x1c,SP)
+0x08315  ? 07 80          sra    (0x80,SP)
+0x08317  ? 3c 03          inc    0x03
+0x08319  ? c0 78 03       sub    A,0x7803
+0x0831c  ? ff             ldw    (X),Y
+0x0831d  ? f8             xor    A,(X)
+0x0831e  ? 00 ff          neg    (0xff,SP)
+0x08320  ? e0 00          sub    A,(0x00,X)
+0x08322  ? 3f 80          clr    0x80
+0x08324  ? 00 00          neg    (0x00,SP)
+0x08326  ? 00 00          neg    (0x00,SP)
+0x08328  ? 00 00          neg    (0x00,SP)
+0x0832a  ? 00 00          neg    (0x00,SP)
+0x0832c  ? 00 07          neg    (0x07,SP)
+0x0832e  ? ff             ldw    (X),Y
+0x0832f  ? fc             jp     (X)
+0x08330  ? 07 ff          sra    (0xff,SP)
+0x08332  ? fc             jp     (X)
+0x08333  ? 07 ff          sra    (0xff,SP)
+0x08335  ? fc             jp     (X)
+0x08336  ? 06 06          rrc    (0x06,SP)
+0x08338  ? 0c 06          inc    (0x06,SP)
+0x0833a  ? 06 0c          rrc    (0x0c,SP)
+0x0833c  ? 06 06          rrc    (0x06,SP)
+0x0833e  ? 0c 06          inc    (0x06,SP)
+0x08340  ? 06 0c          rrc    (0x0c,SP)
+0x08342  ? 06 06          rrc    (0x06,SP)
+0x08344  ? 0c 06          inc    (0x06,SP)
+0x08346  ? 06 0c          rrc    (0x0c,SP)
+0x08348  ? 06 06          rrc    (0x06,SP)
+0x0834a  ? 0c 06          inc    (0x06,SP)
+0x0834c  ? 00 0c          neg    (0x0c,SP)
+0x0834e  ? 00 00          neg    (0x00,SP)
+0x08350  ? 00 00          neg    (0x00,SP)
+0x08352  ? 00 00          neg    (0x00,SP)
+0x08354  ? 00 00          neg    (0x00,SP)
+0x08356  ? 00 00          neg    (0x00,SP)
+0x08358  ? 00 00          neg    (0x00,SP)
+0x0835a  ? 07 ff          sra    (0xff,SP)
+0x0835c  ? fc             jp     (X)
+0x0835d  ? 07 ff          sra    (0xff,SP)
+0x0835f  ? fc             jp     (X)
+0x08360  ? 07 ff          sra    (0xff,SP)
+0x08362  ? fc             jp     (X)
+0x08363  ? 00 06          neg    (0x06,SP)
+0x08365  ? 0c 00          inc    (0x00,SP)
+0x08367  ? 06 0c          rrc    (0x0c,SP)
+0x08369  ? 00 06          neg    (0x06,SP)
+0x0836b  ? 0c 00          inc    (0x00,SP)
+0x0836d  ? 06 0c          rrc    (0x0c,SP)
+0x0836f  ? 00 06          neg    (0x06,SP)
+0x08371  ? 0c 00          inc    (0x00,SP)
+0x08373  ? 06 0c          rrc    (0x0c,SP)
+0x08375  ? 00 00          neg    (0x00,SP)
+0x08377  ? 0c 00          inc    (0x00,SP)
+0x08379  ? 00 00          neg    (0x00,SP)
+0x0837b  ? 00 00          neg    (0x00,SP)
+0x0837d  ? 00 00          neg    (0x00,SP)
+0x0837f  ? 00 00          neg    (0x00,SP)
+0x08381  ? 00 00          neg    (0x00,SP)
+0x08383  ? 00 00          neg    (0x00,SP)
+0x08385  ? 00 00          neg    (0x00,SP)
+0x08387  ? 00 07          neg    (0x07,SP)
+0x08389  ? fe             ldw    X,(X)
+0x0838a  ? 00 00          neg    (0x00,SP)
+0x0838c  ? 3f ff          clr    0xff
+0x0838e  ? c0 00 7f       sub    A,0x007f
+0x08391  ? ff             ldw    (X),Y
+0x08392  ? e0 00          sub    A,(0x00,X)
+0x08394  ? ff             ldw    (X),Y
+0x08395  ? ff             ldw    (X),Y
+0x08396  ? f0             sub    A,(X)
+0x08397  ? 01             rrwa   X
+0x08398  ? f8             xor    A,(X)
+0x08399  ? 01             rrwa   X
+0x0839a  ? f8             xor    A,(X)
+0x0839b  ? 03 e0          cpl    (0xe0,SP)
+0x0839d  ? 00 7c          neg    (0x7c,SP)
+0x0839f  ? 03 c0          cpl    (0xc0,SP)
+0x083a1  ? 00 3c          neg    (0x3c,SP)
+0x083a3  ? 03 c0          cpl    (0xc0,SP)
+0x083a5  ? 00 3c          neg    (0x3c,SP)
+0x083a7  ? 03 c0          cpl    (0xc0,SP)
+0x083a9  ? 00 3c          neg    (0x3c,SP)
+0x083ab  ? 03 c0          cpl    (0xc0,SP)
+0x083ad  ? 00 3c          neg    (0x3c,SP)
+0x083af  ? 03 e0          cpl    (0xe0,SP)
+0x083b1  ? 00 7c          neg    (0x7c,SP)
+0x083b3  ? 01             rrwa   X
+0x083b4  ? f8             xor    A,(X)
+0x083b5  ? 01             rrwa   X
+0x083b6  ? f8             xor    A,(X)
+0x083b7  ? 01             rrwa   X
+0x083b8  ? ff             ldw    (X),Y
+0x083b9  ? ff             ldw    (X),Y
+0x083ba  ? f8             xor    A,(X)
+0x083bb  ? 00 ff          neg    (0xff,SP)
+0x083bd  ? ff             ldw    (X),Y
+0x083be  ? f0             sub    A,(X)
+0x083bf  ? 00 7f          neg    (0x7f,SP)
+0x083c1  ? ff             ldw    (X),Y
+0x083c2  ? e0 00          sub    A,(0x00,X)
+0x083c4  ? 1f ff          ldw    (0xff,SP),X
+0x083c6  ? 80             iret
+0x083c7  ? 00 01          neg    (0x01,SP)
+0x083c9  ? f8             xor    A,(X)
+0x083ca  ? 00 00          neg    (0x00,SP)
+0x083cc  ? 00 00          neg    (0x00,SP)
+0x083ce  ? 00 00          neg    (0x00,SP)
+0x083d0  ? 00 00          neg    (0x00,SP)
+0x083d2  ? 00 00          neg    (0x00,SP)
+0x083d4  ? 00 00          neg    (0x00,SP)
+0x083d6  ? 00 00          neg    (0x00,SP)
+0x083d8  ? 00 00          neg    (0x00,SP)
+0x083da  ? 00 00          neg    (0x00,SP)
+0x083dc  ? 00 00          neg    (0x00,SP)
+0x083de  ? 00 00          neg    (0x00,SP)
+0x083e0  ? 00 00          neg    (0x00,SP)
+0x083e2  ? 00 00          neg    (0x00,SP)
+0x083e4  ? 00 00          neg    (0x00,SP)
+0x083e6  ? 00 00          neg    (0x00,SP)
+0x083e8  ? 00 00          neg    (0x00,SP)
+0x083ea  ? 00 00          neg    (0x00,SP)
+0x083ec  ? 00 00          neg    (0x00,SP)
+0x083ee  ? 80             iret
+0x083ef  ? 03 c0          cpl    (0xc0,SP)
+0x083f1  ? 07 c0          sra    (0xc0,SP)
+0x083f3  ? 03 c0          cpl    (0xc0,SP)
+0x083f5  ? 07 c0          sra    (0xc0,SP)
+0x083f7  ? 03 c0          cpl    (0xc0,SP)
+0x083f9  ? 03 e0          cpl    (0xe0,SP)
+0x083fb  ? 03 c0          cpl    (0xc0,SP)
+0x083fd  ? 03 e0          cpl    (0xe0,SP)
+0x083ff  ? 03 c0          cpl    (0xc0,SP)
+0x08401  ? 01             rrwa   X
+0x08402  ? f0             sub    A,(X)
+0x08403  ? 03 ff          cpl    (0xff,SP)
+0x08405  ? ff             ldw    (X),Y
+0x08406  ? f8             xor    A,(X)
+0x08407  ? 03 ff          cpl    (0xff,SP)
+0x08409  ? ff             ldw    (X),Y
+0x0840a  ? fc             jp     (X)
+0x0840b  ? 03 ff          cpl    (0xff,SP)
+0x0840d  ? ff             ldw    (X),Y
+0x0840e  ? fc             jp     (X)
+0x0840f  ? 03 ff          cpl    (0xff,SP)
+0x08411  ? ff             ldw    (X),Y
+0x08412  ? fc             jp     (X)
+0x08413  ? 03 ff          cpl    (0xff,SP)
+0x08415  ? ff             ldw    (X),Y
+0x08416  ? fc             jp     (X)
+0x08417  ? 03 c0          cpl    (0xc0,SP)
+0x08419  ? 00 00          neg    (0x00,SP)
+0x0841b  ? 03 c0          cpl    (0xc0,SP)
+0x0841d  ? 00 00          neg    (0x00,SP)
+0x0841f  ? 03 c0          cpl    (0xc0,SP)
+0x08421  ? 00 00          neg    (0x00,SP)
+0x08423  ? 03 c0          cpl    (0xc0,SP)
+0x08425  ? 00 00          neg    (0x00,SP)
+0x08427  ? 03 c0          cpl    (0xc0,SP)
+0x08429  ? 00 00          neg    (0x00,SP)
+0x0842b  ? 00 00          neg    (0x00,SP)
+0x0842d  ? 00 00          neg    (0x00,SP)
+0x0842f  ? 00 00          neg    (0x00,SP)
+0x08431  ? 00 00          neg    (0x00,SP)
+0x08433  ? 00 00          neg    (0x00,SP)
+0x08435  ? 00 00          neg    (0x00,SP)
+0x08437  ? 00 00          neg    (0x00,SP)
+0x08439  ? 00 00          neg    (0x00,SP)
+0x0843b  ? 00 00          neg    (0x00,SP)
+0x0843d  ? 00 00          neg    (0x00,SP)
+0x0843f  ? 00 00          neg    (0x00,SP)
+0x08441  ? 00 00          neg    (0x00,SP)
+0x08443  ? 00 00          neg    (0x00,SP)
+0x08445  ? 00 00          neg    (0x00,SP)
+0x08447  ? 00 00          neg    (0x00,SP)
+0x08449  ? 00 20          neg    (0x20,SP)
+0x0844b  ? 03 e0          cpl    (0xe0,SP)
+0x0844d  ? 00 70          neg    (0x70,SP)
+0x0844f  ? 03 f8          cpl    (0xf8,SP)
+0x08451  ? 00 f8          neg    (0xf8,SP)
+0x08453  ? 03 fc          cpl    (0xfc,SP)
+0x08455  ? 00 78          neg    (0x78,SP)
+0x08457  ? 03 fe          cpl    (0xfe,SP)
+0x08459  ? 00 78          neg    (0x78,SP)
+0x0845b  ? 03 ff          cpl    (0xff,SP)
+0x0845d  ? 00 3c          neg    (0x3c,SP)
+0x0845f  ? 03 df          cpl    (0xdf,SP)
+0x08461  ? 80             iret
+0x08462  ? 3c 03          inc    0x03
+0x08464  ? c7 c0 3c       ld     0xc03c,A
+0x08467  ? 03 c3          cpl    (0xc3,SP)
+0x08469  ? e0 3c          sub    A,(0x3c,X)
+0x0846b  ? 03 c3          cpl    (0xc3,SP)
+0x0846d  ? f0             sub    A,(X)
+0x0846e  ? 3c 03          inc    0x03
+0x08470  ? c1 f8 7c       cp     A,0xf87c
+0x08473  ? 03 c0          cpl    (0xc0,SP)
+0x08475  ? ff             ldw    (X),Y
+0x08476  ? f8             xor    A,(X)
+0x08477  ? 03 c0          cpl    (0xc0,SP)
+0x08479  ? 7f             clr    (X)
+0x0847a  ? f8             xor    A,(X)
+0x0847b  ? 03 c0          cpl    (0xc0,SP)
+0x0847d  ? 3f f0          clr    0xf0
+0x0847f  ? 03 c0          cpl    (0xc0,SP)
+0x08481  ? 1f e0          ldw    (0xe0,SP),X
+0x08483  ? 03 c0          cpl    (0xc0,SP)
+0x08485  ? 07 c0          sra    (0xc0,SP)
+0x08487  ? 03 c0          cpl    (0xc0,SP)
+0x08489  ? 00 00          neg    (0x00,SP)
+0x0848b  ? 00 00          neg    (0x00,SP)
+0x0848d  ? 00 00          neg    (0x00,SP)
+0x0848f  ? 00 00          neg    (0x00,SP)
+0x08491  ? 00 00          neg    (0x00,SP)
+0x08493  ? 00 00          neg    (0x00,SP)
+0x08495  ? 00 00          neg    (0x00,SP)
+0x08497  ? 00 00          neg    (0x00,SP)
+0x08499  ? 00 00          neg    (0x00,SP)
+0x0849b  ? 00 00          neg    (0x00,SP)
+0x0849d  ? 00 00          neg    (0x00,SP)
+0x0849f  ? 00 00          neg    (0x00,SP)
+0x084a1  ? 00 00          neg    (0x00,SP)
+0x084a3  ? 00 00          neg    (0x00,SP)
+0x084a5  ? 00 00          neg    (0x00,SP)
+0x084a7  ? 00 00          neg    (0x00,SP)
+0x084a9  ? 00 00          neg    (0x00,SP)
+0x084ab  ? 01             rrwa   X
+0x084ac  ? c0 00 10       sub    A,0x0010
+0x084af  ? 01             rrwa   X
+0x084b0  ? e0 00          sub    A,(0x00,X)
+0x084b2  ? 78             sla    (X)
+0x084b3  ? 01             rrwa   X
+0x084b4  ? e0 00          sub    A,(0x00,X)
+0x084b6  ? 78             sla    (X)
+0x084b7  ? 03 c0          cpl    (0xc0,SP)
+0x084b9  ? 78             sla    (X)
+0x084ba  ? 7c             inc    (X)
+0x084bb  ? 03 c0          cpl    (0xc0,SP)
+0x084bd  ? 78             sla    (X)
+0x084be  ? 3c 03          inc    0x03
+0x084c0  ? c0 78 3c       sub    A,0x783c
+0x084c3  ? 03 c0          cpl    (0xc0,SP)
+0x084c5  ? 78             sla    (X)
+0x084c6  ? 3c 03          inc    0x03
+0x084c8  ? c0 78 3c       sub    A,0x783c
+0x084cb  ? 03 e0          cpl    (0xe0,SP)
+0x084cd  ? fc             jp     (X)
+0x084ce  ? 7c             inc    (X)
+0x084cf  ? 03 f1          cpl    (0xf1,SP)
+0x084d1  ? ff             ldw    (X),Y
+0x084d2  ? fc             jp     (X)
+0x084d3  ? 01             rrwa   X
+0x084d4  ? ff             ldw    (X),Y
+0x084d5  ? ff             ldw    (X),Y
+0x084d6  ? f8             xor    A,(X)
+0x084d7  ? 01             rrwa   X
+0x084d8  ? ff             ldw    (X),Y
+0x084d9  ? ef f8          ldw    (0xf8,X),Y
+0x084db  ? 00 ff          neg    (0xff,SP)
+0x084dd  ? ef f0          ldw    (0xf0,X),Y
+0x084df  ? 00 7f          neg    (0x7f,SP)
+0x084e1  ? c3 c0 00       cpw    X,0xc000
+0x084e4  ? 1f 00          ldw    (0x00,SP),X
+0x084e6  ? 00 00          neg    (0x00,SP)
+0x084e8  ? 00 00          neg    (0x00,SP)
+0x084ea  ? 00 00          neg    (0x00,SP)
+0x084ec  ? 00 00          neg    (0x00,SP)
+0x084ee  ? 00 00          neg    (0x00,SP)
+0x084f0  ? 00 00          neg    (0x00,SP)
+0x084f2  ? 00 00          neg    (0x00,SP)
+0x084f4  ? 00 00          neg    (0x00,SP)
+0x084f6  ? 00 00          neg    (0x00,SP)
+0x084f8  ? 00 00          neg    (0x00,SP)
+0x084fa  ? 00 00          neg    (0x00,SP)
+0x084fc  ? 00 00          neg    (0x00,SP)
+0x084fe  ? 00 00          neg    (0x00,SP)
+0x08500  ? 00 00          neg    (0x00,SP)
+0x08502  ? 00 00          neg    (0x00,SP)
+0x08504  ? 00 00          neg    (0x00,SP)
+0x08506  ? 00 00          neg    (0x00,SP)
+0x08508  ? 0f 80          clr    (0x80,SP)
+0x0850a  ? 00 00          neg    (0x00,SP)
+0x0850c  ? 0f c0          clr    (0xc0,SP)
+0x0850e  ? 00 00          neg    (0x00,SP)
+0x08510  ? 0f f0          clr    (0xf0,SP)
+0x08512  ? 00 00          neg    (0x00,SP)
+0x08514  ? 0f f8          clr    (0xf8,SP)
+0x08516  ? 00 00          neg    (0x00,SP)
+0x08518  ? 0f fe          clr    (0xfe,SP)
+0x0851a  ? 00 00          neg    (0x00,SP)
+0x0851c  ? 0f 3f          clr    (0x3f,SP)
+0x0851e  ? 00 00          neg    (0x00,SP)
+0x08520  ? 0f 1f          clr    (0x1f,SP)
+0x08522  ? 80             iret
+0x08523  ? 00 0f          neg    (0x0f,SP)
+0x08525  ? 07 e0          sra    (0xe0,SP)
+0x08527  ? 00 0f          neg    (0x0f,SP)
+0x08529  ? 03 f0          cpl    (0xf0,SP)
+0x0852b  ? 00 0f          neg    (0x0f,SP)
+0x0852d  ? 00 f8          neg    (0xf8,SP)
+0x0852f  ? 03 ff          cpl    (0xff,SP)
+0x08531  ? ff             ldw    (X),Y
+0x08532  ? fc             jp     (X)
+0x08533  ? 03 ff          cpl    (0xff,SP)
+0x08535  ? ff             ldw    (X),Y
+0x08536  ? fc             jp     (X)
+0x08537  ? 03 ff          cpl    (0xff,SP)
+0x08539  ? ff             ldw    (X),Y
+0x0853a  ? fc             jp     (X)
+0x0853b  ? 03 ff          cpl    (0xff,SP)
+0x0853d  ? ff             ldw    (X),Y
+0x0853e  ? fc             jp     (X)
+0x0853f  ? 03 ff          cpl    (0xff,SP)
+0x08541  ? ff             ldw    (X),Y
+0x08542  ? fc             jp     (X)
+0x08543  ? 00 0f          neg    (0x0f,SP)
+0x08545  ? 00 00          neg    (0x00,SP)
+0x08547  ? 00 0f          neg    (0x0f,SP)
+0x08549  ? 00 00          neg    (0x00,SP)
+0x0854b  ? 00 0f          neg    (0x0f,SP)
+0x0854d  ? 00 00          neg    (0x00,SP)
+0x0854f  ? 00 00          neg    (0x00,SP)
+0x08551  ? 00 00          neg    (0x00,SP)
+0x08553  ? 00 00          neg    (0x00,SP)
+0x08555  ? 00 00          neg    (0x00,SP)
+0x08557  ? 00 00          neg    (0x00,SP)
+0x08559  ? 00 00          neg    (0x00,SP)
+0x0855b  ? 00 00          neg    (0x00,SP)
+0x0855d  ? 00 00          neg    (0x00,SP)
+0x0855f  ? 00 00          neg    (0x00,SP)
+0x08561  ? 00 00          neg    (0x00,SP)
+0x08563  ? 00 00          neg    (0x00,SP)
+0x08565  ? 00 00          neg    (0x00,SP)
+0x08567  ? 01             rrwa   X
+0x08568  ? 80             iret
+0x08569  ? 00 00          neg    (0x00,SP)
+0x0856b  ? 01             rrwa   X
+0x0856c  ? e0 00          sub    A,(0x00,X)
+0x0856e  ? 00 03          neg    (0x03,SP)
+0x08570  ? e0 3e          sub    A,(0x3e,X)
+0x08572  ? 00 03          neg    (0x03,SP)
+0x08574  ? c0 3f fc       sub    A,0x3ffc
+0x08577  ? 03 c0          cpl    (0xc0,SP)
+0x08579  ? 3f fc          clr    0xfc
+0x0857b  ? 03 c0          cpl    (0xc0,SP)
+0x0857d  ? 3f fc          clr    0xfc
+0x0857f  ? 03 c0          cpl    (0xc0,SP)
+0x08581  ? 3f fc          clr    0xfc
+0x08583  ? 03 c0          cpl    (0xc0,SP)
+0x08585  ? 7c             inc    (X)
+0x08586  ? 3c 03          inc    0x03
+0x08588  ? c0 7c 3c       sub    A,0x7c3c
+0x0858b  ? 03 e0          cpl    (0xe0,SP)
+0x0858d  ? 7c             inc    (X)
+0x0858e  ? 3c 01          inc    0x01
+0x08590  ? f0             sub    A,(X)
+0x08591  ? f8             xor    A,(X)
+0x08592  ? 3c 01          inc    0x01
+0x08594  ? ff             ldw    (X),Y
+0x08595  ? f8             xor    A,(X)
+0x08596  ? 3c 01          inc    0x01
+0x08598  ? ff             ldw    (X),Y
+0x08599  ? f0             sub    A,(X)
+0x0859a  ? 3c 00          inc    0x00
+0x0859c  ? ff             ldw    (X),Y
+0x0859d  ? f0             sub    A,(X)
+0x0859e  ? 3c 00          inc    0x00
+0x085a0  ? 7f             clr    (X)
+0x085a1  ? e0 3c          sub    A,(0x3c,X)
+0x085a3  ? 00 1f          neg    (0x1f,SP)
+0x085a5  ? 80             iret
+0x085a6  ? 00 00          neg    (0x00,SP)
+0x085a8  ? 00 00          neg    (0x00,SP)
+0x085aa  ? 00 00          neg    (0x00,SP)
+0x085ac  ? 00 00          neg    (0x00,SP)
+0x085ae  ? 00 00          neg    (0x00,SP)
+0x085b0  ? 00 00          neg    (0x00,SP)
+0x085b2  ? 00 00          neg    (0x00,SP)
+0x085b4  ? 00 00          neg    (0x00,SP)
+0x085b6  ? 00 00          neg    (0x00,SP)
+0x085b8  ? 00 00          neg    (0x00,SP)
+0x085ba  ? 00 00          neg    (0x00,SP)
+0x085bc  ? 00 00          neg    (0x00,SP)
+0x085be  ? 00 00          neg    (0x00,SP)
+0x085c0  ? 00 00          neg    (0x00,SP)
+0x085c2  ? 00 00          neg    (0x00,SP)
+0x085c4  ? 00 00          neg    (0x00,SP)
+0x085c6  ? 00 00          neg    (0x00,SP)
+0x085c8  ? 00 00          neg    (0x00,SP)
+0x085ca  ? 00 00          neg    (0x00,SP)
+0x085cc  ? 0f f0          clr    (0xf0,SP)
+0x085ce  ? 00 00          neg    (0x00,SP)
+0x085d0  ? 7f             clr    (X)
+0x085d1  ? fe             ldw    X,(X)
+0x085d2  ? 00 00          neg    (0x00,SP)
+0x085d4  ? ff             ldw    (X),Y
+0x085d5  ? ff             ldw    (X),Y
+0x085d6  ? 80             iret
+0x085d7  ? 01             rrwa   X
+0x085d8  ? ff             ldw    (X),Y
+0x085d9  ? ff             ldw    (X),Y
+0x085da  ? c0 01 ff       sub    A,0x01ff
+0x085dd  ? ff             ldw    (X),Y
+0x085de  ? e0 03          sub    A,(0x03,X)
+0x085e0  ? f0             sub    A,(X)
+0x085e1  ? 7b f0          ld     A,(0xf0,SP)
+0x085e3  ? 03 c0          cpl    (0xc0,SP)
+0x085e5  ? 79             rlc    (X)
+0x085e6  ? f0             sub    A,(X)
+0x085e7  ? 03 c0          cpl    (0xc0,SP)
+0x085e9  ? 78             sla    (X)
+0x085ea  ? f8             xor    A,(X)
+0x085eb  ? 03 c0          cpl    (0xc0,SP)
+0x085ed  ? 78             sla    (X)
+0x085ee  ? 78             sla    (X)
+0x085ef  ? 03 e0          cpl    (0xe0,SP)
+0x085f1  ? f8             xor    A,(X)
+0x085f2  ? 7c             inc    (X)
+0x085f3  ? 03 ff          cpl    (0xff,SP)
+0x085f5  ? f8             xor    A,(X)
+0x085f6  ? 3c 01          inc    0x01
+0x085f8  ? ff             ldw    (X),Y
+0x085f9  ? f8             xor    A,(X)
+0x085fa  ? 3c 00          inc    0x00
+0x085fc  ? ff             ldw    (X),Y
+0x085fd  ? f0             sub    A,(X)
+0x085fe  ? 3c 00          inc    0x00
+0x08600  ? 7f             clr    (X)
+0x08601  ? e0 3c          sub    A,(0x3c,X)
+0x08603  ? 00 1f          neg    (0x1f,SP)
+0x08605  ? 80             iret
+0x08606  ? 00 00          neg    (0x00,SP)
+0x08608  ? 00 00          neg    (0x00,SP)
+0x0860a  ? 00 00          neg    (0x00,SP)
+0x0860c  ? 00 00          neg    (0x00,SP)
+0x0860e  ? 00 00          neg    (0x00,SP)
+0x08610  ? 00 00          neg    (0x00,SP)
+0x08612  ? 00 00          neg    (0x00,SP)
+0x08614  ? 00 00          neg    (0x00,SP)
+0x08616  ? 00 00          neg    (0x00,SP)
+0x08618  ? 00 00          neg    (0x00,SP)
+0x0861a  ? 00 00          neg    (0x00,SP)
+0x0861c  ? 00 00          neg    (0x00,SP)
+0x0861e  ? 00 00          neg    (0x00,SP)
+0x08620  ? 00 00          neg    (0x00,SP)
+0x08622  ? 00 00          neg    (0x00,SP)
+0x08624  ? 00 00          neg    (0x00,SP)
+0x08626  ? 00 00          neg    (0x00,SP)
+0x08628  ? 00 00          neg    (0x00,SP)
+0x0862a  ? 00 00          neg    (0x00,SP)
+0x0862c  ? 00 00          neg    (0x00,SP)
+0x0862e  ? 3c 00          inc    0x00
+0x08630  ? 00 00          neg    (0x00,SP)
+0x08632  ? 3c 00          inc    0x00
+0x08634  ? 00 00          neg    (0x00,SP)
+0x08636  ? 3c 03          inc    0x03
+0x08638  ? c0 00 3c       sub    A,0x003c
+0x0863b  ? 03 fc          cpl    (0xfc,SP)
+0x0863d  ? 00 3c          neg    (0x3c,SP)
+0x0863f  ? 03 ff          cpl    (0xff,SP)
+0x08641  ? 80             iret
+0x08642  ? 3c 03          inc    0x03
+0x08644  ? ff             ldw    (X),Y
+0x08645  ? e0 3c          sub    A,(0x3c,X)
+0x08647  ? 03 ff          cpl    (0xff,SP)
+0x08649  ? f8             xor    A,(X)
+0x0864a  ? 3c 00          inc    0x00
+0x0864c  ? 3f fe          clr    0xfe
+0x0864e  ? 3c 00          inc    0x00
+0x08650  ? 03 ff          cpl    (0xff,SP)
+0x08652  ? bc 00 00 7f    ldf    A,0x00007f
+0x08656  ? fc             jp     (X)
+0x08657  ? 00 00          neg    (0x00,SP)
+0x08659  ? 0f fc          clr    (0xfc,SP)
+0x0865b  ? 00 00          neg    (0x00,SP)
+0x0865d  ? 03 fc          cpl    (0xfc,SP)
+0x0865f  ? 00 00          neg    (0x00,SP)
+0x08661  ? 00 fc          neg    (0xfc,SP)
+0x08663  ? 00 00          neg    (0x00,SP)
+0x08665  ? 00 7c          neg    (0x7c,SP)
+0x08667  ? 00 00          neg    (0x00,SP)
+0x08669  ? 00 00          neg    (0x00,SP)
+0x0866b  ? 00 00          neg    (0x00,SP)
+0x0866d  ? 00 00          neg    (0x00,SP)
+0x0866f  ? 00 00          neg    (0x00,SP)
+0x08671  ? 00 00          neg    (0x00,SP)
+0x08673  ? 00 00          neg    (0x00,SP)
+0x08675  ? 00 00          neg    (0x00,SP)
+0x08677  ? 00 00          neg    (0x00,SP)
+0x08679  ? 00 00          neg    (0x00,SP)
+0x0867b  ? 00 00          neg    (0x00,SP)
+0x0867d  ? 00 00          neg    (0x00,SP)
+0x0867f  ? 00 00          neg    (0x00,SP)
+0x08681  ? 00 00          neg    (0x00,SP)
+0x08683  ? 00 00          neg    (0x00,SP)
+0x08685  ? 00 00          neg    (0x00,SP)
+0x08687  ? 00 3e          neg    (0x3e,SP)
+0x08689  ? 00 00          neg    (0x00,SP)
+0x0868b  ? 00 ff          neg    (0xff,SP)
+0x0868d  ? 8f             wfi
+0x0868e  ? e0 00          sub    A,(0x00,X)
+0x08690  ? ff             ldw    (X),Y
+0x08691  ? df f0 01       ldw    (0xf001,X),Y
+0x08694  ? ff             ldw    (X),Y
+0x08695  ? df f8 01       ldw    (0xf801,X),Y
+0x08698  ? e1 ff          cp     A,(0xff,X)
+0x0869a  ? f8             xor    A,(X)
+0x0869b  ? 03 e0          cpl    (0xe0,SP)
+0x0869d  ? fc             jp     (X)
+0x0869e  ? 7c             inc    (X)
+0x0869f  ? 03 c0          cpl    (0xc0,SP)
+0x086a1  ? 78             sla    (X)
+0x086a2  ? 3c 03          inc    0x03
+0x086a4  ? c0 78 3c       sub    A,0x783c
+0x086a7  ? 03 c0          cpl    (0xc0,SP)
+0x086a9  ? f0             sub    A,(X)
+0x086aa  ? 3c 03          inc    0x03
+0x086ac  ? c0 f0 3c       sub    A,0xf03c
+0x086af  ? 03 c0          cpl    (0xc0,SP)
+0x086b1  ? f8             xor    A,(X)
+0x086b2  ? 3c 03          inc    0x03
+0x086b4  ? e1 fc          cp     A,(0xfc,X)
+0x086b6  ? 7c             inc    (X)
+0x086b7  ? 01             rrwa   X
+0x086b8  ? e3 ff          cpw    Y,(0xff,X)
+0x086ba  ? f8             xor    A,(X)
+0x086bb  ? 01             rrwa   X
+0x086bc  ? ff             ldw    (X),Y
+0x086bd  ? df f8 00       ldw    (0xf800,X),Y
+0x086c0  ? ff             ldw    (X),Y
+0x086c1  ? 8f             wfi
+0x086c2  ? f0             sub    A,(X)
+0x086c3  ? 00 7f          neg    (0x7f,SP)
+0x086c5  ? 03 c0          cpl    (0xc0,SP)
+0x086c7  ? 00 3e          neg    (0x3e,SP)
+0x086c9  ? 00 00          neg    (0x00,SP)
+0x086cb  ? 00 00          neg    (0x00,SP)
+0x086cd  ? 00 00          neg    (0x00,SP)
+0x086cf  ? 00 00          neg    (0x00,SP)
+0x086d1  ? 00 00          neg    (0x00,SP)
+0x086d3  ? 00 00          neg    (0x00,SP)
+0x086d5  ? 00 00          neg    (0x00,SP)
+0x086d7  ? 00 00          neg    (0x00,SP)
+0x086d9  ? 00 00          neg    (0x00,SP)
+0x086db  ? 00 00          neg    (0x00,SP)
+0x086dd  ? 00 00          neg    (0x00,SP)
+0x086df  ? 00 00          neg    (0x00,SP)
+0x086e1  ? 00 00          neg    (0x00,SP)
+0x086e3  ? 00 00          neg    (0x00,SP)
+0x086e5  ? 00 00          neg    (0x00,SP)
+0x086e7  ? 00 00          neg    (0x00,SP)
+0x086e9  ? 00 00          neg    (0x00,SP)
+0x086eb  ? 00 00          neg    (0x00,SP)
+0x086ed  ? 1f 80          ldw    (0x80,SP),X
+0x086ef  ? 03 c0          cpl    (0xc0,SP)
+0x086f1  ? 7f             clr    (X)
+0x086f2  ? e0 03          sub    A,(0x03,X)
+0x086f4  ? c0 ff f0       sub    A,0xfff0
+0x086f7  ? 03 c0          cpl    (0xc0,SP)
+0x086f9  ? ff             ldw    (X),Y
+0x086fa  ? f8             xor    A,(X)
+0x086fb  ? 03 c1          cpl    (0xc1,SP)
+0x086fd  ? ff             ldw    (X),Y
+0x086fe  ? f8             xor    A,(X)
+0x086ff  ? 03 e1          cpl    (0xe1,SP)
+0x08701  ? f0             sub    A,(X)
+0x08702  ? 7c             inc    (X)
+0x08703  ? 01             rrwa   X
+0x08704  ? e1 e0          cp     A,(0xe0,X)
+0x08706  ? 3c 01          inc    0x01
+0x08708  ? e1 e0          cp     A,(0xe0,X)
+0x0870a  ? 3c 00          inc    0x00
+0x0870c  ? f1             cp     A,(X)
+0x0870d  ? e0 3c          sub    A,(0x3c,X)
+0x0870f  ? 00 f9          neg    (0xf9,SP)
+0x08711  ? e0 7c          sub    A,(0x7c,X)
+0x08713  ? 00 7d          neg    (0x7d,SP)
+0x08715  ? e0 f8          sub    A,(0xf8,X)
+0x08717  ? 00 3f          neg    (0x3f,SP)
+0x08719  ? ff             ldw    (X),Y
+0x0871a  ? f8             xor    A,(X)
+0x0871b  ? 00 1f          neg    (0x1f,SP)
+0x0871d  ? ff             ldw    (X),Y
+0x0871e  ? f0             sub    A,(X)
+0x0871f  ? 00 0f          neg    (0x0f,SP)
+0x08721  ? ff             ldw    (X),Y
+0x08722  ? e0 00          sub    A,(0x00,X)
+0x08724  ? 03 ff          cpl    (0xff,SP)
+0x08726  ? 80             iret
+0x08727  ? 00 00          neg    (0x00,SP)
+0x08729  ? 00 00          neg    (0x00,SP)
+0x0872b  ? 00 00          neg    (0x00,SP)
+0x0872d  ? 00 00          neg    (0x00,SP)
+0x0872f  ? 00 00          neg    (0x00,SP)
+0x08731  ? 00 00          neg    (0x00,SP)
+0x08733  ? 00 00          neg    (0x00,SP)
+0x08735  ? 00 00          neg    (0x00,SP)
+0x08737  ? 00 00          neg    (0x00,SP)
+0x08739  ? 00 00          neg    (0x00,SP)
+0x0873b  ? 00 00          neg    (0x00,SP)
+0x0873d  ? 00 00          neg    (0x00,SP)
+0x0873f  ? 00 00          neg    (0x00,SP)
+0x08741  ? 00 00          neg    (0x00,SP)
+0x08743  ? 01             rrwa   X
+0x08744  ? 80             iret
+0x08745  ? 00 00          neg    (0x00,SP)
+0x08747  ? 01             rrwa   X
+0x08748  ? f8             xor    A,(X)
+0x08749  ? 00 00          neg    (0x00,SP)
+0x0874b  ? 01             rrwa   X
+0x0874c  ? ff             ldw    (X),Y
+0x0874d  ? 00 00          neg    (0x00,SP)
+0x0874f  ? 01             rrwa   X
+0x08750  ? ff             ldw    (X),Y
+0x08751  ? f0             sub    A,(X)
+0x08752  ? 00 01          neg    (0x01,SP)
+0x08754  ? ff             ldw    (X),Y
+0x08755  ? fe             ldw    X,(X)
+0x08756  ? 00 00          neg    (0x00,SP)
+0x08758  ? ff             ldw    (X),Y
+0x08759  ? ff             ldw    (X),Y
+0x0875a  ? c0 00 07       sub    A,0x0007
+0x0875d  ? ff             ldw    (X),Y
+0x0875e  ? f8             xor    A,(X)
+0x0875f  ? 00 07          neg    (0x07,SP)
+0x08761  ? bf fe          ldw    0xfe,X
+0x08763  ? 00 07          neg    (0x07,SP)
+0x08765  ? 83             trap
+0x08766  ? fe             ldw    X,(X)
+0x08767  ? 00 07          neg    (0x07,SP)
+0x08769  ? 80             iret
+0x0876a  ? 3e 00          swap   0x00
+0x0876c  ? 07 81          sra    (0x81,SP)
+0x0876e  ? fe             ldw    X,(X)
+0x0876f  ? 00 07          neg    (0x07,SP)
+0x08771  ? 9f             ld     A,XL
+0x08772  ? fe             ldw    X,(X)
+0x08773  ? 00 07          neg    (0x07,SP)
+0x08775  ? ff             ldw    (X),Y
+0x08776  ? fe             ldw    X,(X)
+0x08777  ? 00 7f          neg    (0x7f,SP)
+0x08779  ? ff             ldw    (X),Y
+0x0877a  ? e0 01          sub    A,(0x01,X)
+0x0877c  ? ff             ldw    (X),Y
+0x0877d  ? ff             ldw    (X),Y
+0x0877e  ? 00 01          neg    (0x01,SP)
+0x08780  ? ff             ldw    (X),Y
+0x08781  ? f8             xor    A,(X)
+0x08782  ? 00 01          neg    (0x01,SP)
+0x08784  ? ff             ldw    (X),Y
+0x08785  ? 80             iret
+0x08786  ? 00 01          neg    (0x01,SP)
+0x08788  ? f8             xor    A,(X)
+0x08789  ? 00 00          neg    (0x00,SP)
+0x0878b  ? 01             rrwa   X
+0x0878c  ? 80             iret
+0x0878d  ? 00 00          neg    (0x00,SP)
+0x0878f  ? 00 00          neg    (0x00,SP)
+0x08791  ? 00 00          neg    (0x00,SP)
+0x08793  ? 00 00          neg    (0x00,SP)
+0x08795  ? 00 00          neg    (0x00,SP)
+0x08797  ? 00 00          neg    (0x00,SP)
+0x08799  ? 00 00          neg    (0x00,SP)
+0x0879b  ? 00 00          neg    (0x00,SP)
+0x0879d  ? 00 00          neg    (0x00,SP)
+0x0879f  ? 00 00          neg    (0x00,SP)
+0x087a1  ? 00 00          neg    (0x00,SP)
+0x087a3  ? 00 00          neg    (0x00,SP)
+0x087a5  ? 00 00          neg    (0x00,SP)
+0x087a7  ? 00 00          neg    (0x00,SP)
+0x087a9  ? 00 00          neg    (0x00,SP)
+0x087ab  ? 01             rrwa   X
+0x087ac  ? ff             ldw    (X),Y
+0x087ad  ? ff             ldw    (X),Y
+0x087ae  ? fc             jp     (X)
+0x087af  ? 03 ff          cpl    (0xff,SP)
+0x087b1  ? ff             ldw    (X),Y
+0x087b2  ? fc             jp     (X)
+0x087b3  ? 03 ff          cpl    (0xff,SP)
+0x087b5  ? ff             ldw    (X),Y
+0x087b6  ? fc             jp     (X)
+0x087b7  ? 03 ff          cpl    (0xff,SP)
+0x087b9  ? ff             ldw    (X),Y
+0x087ba  ? fc             jp     (X)
+0x087bb  ? 03 ff          cpl    (0xff,SP)
+0x087bd  ? ff             ldw    (X),Y
+0x087be  ? fc             jp     (X)
+0x087bf  ? 03 c0          cpl    (0xc0,SP)
+0x087c1  ? f0             sub    A,(X)
+0x087c2  ? 3c 03          inc    0x03
+0x087c4  ? c0 f0 3c       sub    A,0xf03c
+0x087c7  ? 03 c0          cpl    (0xc0,SP)
+0x087c9  ? f0             sub    A,(X)
+0x087ca  ? 3c 03          inc    0x03
+0x087cc  ? c0 f0 3c       sub    A,0xf03c
+0x087cf  ? 03 c0          cpl    (0xc0,SP)
+0x087d1  ? f8             xor    A,(X)
+0x087d2  ? 7c             inc    (X)
+0x087d3  ? 03 e1          cpl    (0xe1,SP)
+0x087d5  ? ff             ldw    (X),Y
+0x087d6  ? f8             xor    A,(X)
+0x087d7  ? 01             rrwa   X
+0x087d8  ? ff             ldw    (X),Y
+0x087d9  ? ff             ldw    (X),Y
+0x087da  ? f8             xor    A,(X)
+0x087db  ? 01             rrwa   X
+0x087dc  ? ff             ldw    (X),Y
+0x087dd  ? df f8 00       ldw    (0xf800,X),Y
+0x087e0  ? ff             ldw    (X),Y
+0x087e1  ? cf f0 00       ldw    0xf000,X
+0x087e4  ? 7f             clr    (X)
+0x087e5  ? 87             retf
+0x087e6  ? c0 00 3f       sub    A,0x003f
+0x087e9  ? 00 00          neg    (0x00,SP)
+0x087eb  ? 00 00          neg    (0x00,SP)
+0x087ed  ? 00 00          neg    (0x00,SP)
+0x087ef  ? 00 00          neg    (0x00,SP)
+0x087f1  ? 00 00          neg    (0x00,SP)
+0x087f3  ? 00 00          neg    (0x00,SP)
+0x087f5  ? 00 00          neg    (0x00,SP)
+0x087f7  ? 00 00          neg    (0x00,SP)
+0x087f9  ? 00 00          neg    (0x00,SP)
+0x087fb  ? 00 00          neg    (0x00,SP)
+0x087fd  ? 00 00          neg    (0x00,SP)
+0x087ff  ? 00 00          neg    (0x00,SP)
+0x08801  ? 00 00          neg    (0x00,SP)
+0x08803  ? 00 00          neg    (0x00,SP)
+0x08805  ? 00 00          neg    (0x00,SP)
+0x08807  ? 00 03          neg    (0x03,SP)
+0x08809  ? fe             ldw    X,(X)
+0x0880a  ? 00 00          neg    (0x00,SP)
+0x0880c  ? 0f ff          clr    (0xff,SP)
+0x0880e  ? c0 00 3f       sub    A,0x003f
+0x08811  ? ff             ldw    (X),Y
+0x08812  ? e0 00          sub    A,(0x00,X)
+0x08814  ? 7f             clr    (X)
+0x08815  ? ff             ldw    (X),Y
+0x08816  ? f0             sub    A,(X)
+0x08817  ? 00 7f          neg    (0x7f,SP)
+0x08819  ? ff             ldw    (X),Y
+0x0881a  ? f8             xor    A,(X)
+0x0881b  ? 00 fe          neg    (0xfe,SP)
+0x0881d  ? 01             rrwa   X
+0x0881e  ? fc             jp     (X)
+0x0881f  ? 00 f8          neg    (0xf8,SP)
+0x08821  ? 00 7c          neg    (0x7c,SP)
+0x08823  ? 01             rrwa   X
+0x08824  ? f0             sub    A,(X)
+0x08825  ? 00 3e          neg    (0x3e,SP)
+0x08827  ? 01             rrwa   X
+0x08828  ? e0 00          sub    A,(0x00,X)
+0x0882a  ? 1e 01          ldw    X,(0x01,SP)
+0x0882c  ? e0 00          sub    A,(0x00,X)
+0x0882e  ? 1e 01          ldw    X,(0x01,SP)
+0x08830  ? e0 00          sub    A,(0x00,X)
+0x08832  ? 1e 01          ldw    X,(0x01,SP)
+0x08834  ? e0 00          sub    A,(0x00,X)
+0x08836  ? 1e 01          ldw    X,(0x01,SP)
+0x08838  ? e0 00          sub    A,(0x00,X)
+0x0883a  ? 1e 01          ldw    X,(0x01,SP)
+0x0883c  ? e0 00          sub    A,(0x00,X)
+0x0883e  ? 3e 00          swap   0x00
+0x08840  ? f0             sub    A,(X)
+0x08841  ? 00 3c          neg    (0x3c,SP)
+0x08843  ? 00 f8          neg    (0xf8,SP)
+0x08845  ? 00 7c          neg    (0x7c,SP)
+0x08847  ? 00 60          neg    (0x60,SP)
+0x08849  ? 00 18          neg    (0x18,SP)
+0x0884b  ? 00 00          neg    (0x00,SP)
+0x0884d  ? 00 00          neg    (0x00,SP)
+0x0884f  ? 00 00          neg    (0x00,SP)
+0x08851  ? 00 00          neg    (0x00,SP)
+0x08853  ? 00 00          neg    (0x00,SP)
+0x08855  ? 00 00          neg    (0x00,SP)
+0x08857  ? 00 00          neg    (0x00,SP)
+0x08859  ? 00 00          neg    (0x00,SP)
+0x0885b  ? 00 00          neg    (0x00,SP)
+0x0885d  ? 00 00          neg    (0x00,SP)
+0x0885f  ? 00 00          neg    (0x00,SP)
+0x08861  ? 00 00          neg    (0x00,SP)
+0x08863  ? 00 00          neg    (0x00,SP)
+0x08865  ? 00 00          neg    (0x00,SP)
+0x08867  ? 00 00          neg    (0x00,SP)
+0x08869  ? 00 00          neg    (0x00,SP)
+0x0886b  ? 01             rrwa   X
+0x0886c  ? ff             ldw    (X),Y
+0x0886d  ? ff             ldw    (X),Y
+0x0886e  ? fe             ldw    X,(X)
+0x0886f  ? 01             rrwa   X
+0x08870  ? ff             ldw    (X),Y
+0x08871  ? ff             ldw    (X),Y
+0x08872  ? fe             ldw    X,(X)
+0x08873  ? 01             rrwa   X
+0x08874  ? ff             ldw    (X),Y
+0x08875  ? ff             ldw    (X),Y
+0x08876  ? fe             ldw    X,(X)
+0x08877  ? 01             rrwa   X
+0x08878  ? ff             ldw    (X),Y
+0x08879  ? ff             ldw    (X),Y
+0x0887a  ? fe             ldw    X,(X)
+0x0887b  ? 01             rrwa   X
+0x0887c  ? ff             ldw    (X),Y
+0x0887d  ? ff             ldw    (X),Y
+0x0887e  ? fe             ldw    X,(X)
+0x0887f  ? 01             rrwa   X
+0x08880  ? e0 00          sub    A,(0x00,X)
+0x08882  ? 1e 01          ldw    X,(0x01,SP)
+0x08884  ? e0 00          sub    A,(0x00,X)
+0x08886  ? 1e 01          ldw    X,(0x01,SP)
+0x08888  ? e0 00          sub    A,(0x00,X)
+0x0888a  ? 1e 01          ldw    X,(0x01,SP)
+0x0888c  ? f0             sub    A,(X)
+0x0888d  ? 00 3e          neg    (0x3e,SP)
+0x0888f  ? 00 f8          neg    (0xf8,SP)
+0x08891  ? 00 7c          neg    (0x7c,SP)
+0x08893  ? 00 fe          neg    (0xfe,SP)
+0x08895  ? 01             rrwa   X
+0x08896  ? fc             jp     (X)
+0x08897  ? 00 7f          neg    (0x7f,SP)
+0x08899  ? ff             ldw    (X),Y
+0x0889a  ? fc             jp     (X)
+0x0889b  ? 00 7f          neg    (0x7f,SP)
+0x0889d  ? ff             ldw    (X),Y
+0x0889e  ? f8             xor    A,(X)
+0x0889f  ? 00 3f          neg    (0x3f,SP)
+0x088a1  ? ff             ldw    (X),Y
+0x088a2  ? f0             sub    A,(X)
+0x088a3  ? 00 0f          neg    (0x0f,SP)
+0x088a5  ? ff             ldw    (X),Y
+0x088a6  ? c0 00 01       sub    A,0x0001
+0x088a9  ? ff             ldw    (X),Y
+0x088aa  ? 00 00          neg    (0x00,SP)
+0x088ac  ? 00 00          neg    (0x00,SP)
+0x088ae  ? 00 00          neg    (0x00,SP)
+0x088b0  ? 00 00          neg    (0x00,SP)
+0x088b2  ? 00 00          neg    (0x00,SP)
+0x088b4  ? 00 00          neg    (0x00,SP)
+0x088b6  ? 00 00          neg    (0x00,SP)
+0x088b8  ? 00 00          neg    (0x00,SP)
+0x088ba  ? 00 00          neg    (0x00,SP)
+0x088bc  ? 00 00          neg    (0x00,SP)
+0x088be  ? 00 00          neg    (0x00,SP)
+0x088c0  ? 00 00          neg    (0x00,SP)
+0x088c2  ? 00 00          neg    (0x00,SP)
+0x088c4  ? 00 00          neg    (0x00,SP)
+0x088c6  ? 00 00          neg    (0x00,SP)
+0x088c8  ? 00 00          neg    (0x00,SP)
+0x088ca  ? 00 00          neg    (0x00,SP)
+0x088cc  ? 00 00          neg    (0x00,SP)
+0x088ce  ? 00 01          neg    (0x01,SP)
+0x088d0  ? ff             ldw    (X),Y
+0x088d1  ? ff             ldw    (X),Y
+0x088d2  ? fe             ldw    X,(X)
+0x088d3  ? 01             rrwa   X
+0x088d4  ? ff             ldw    (X),Y
+0x088d5  ? ff             ldw    (X),Y
+0x088d6  ? fe             ldw    X,(X)
+0x088d7  ? 01             rrwa   X
+0x088d8  ? ff             ldw    (X),Y
+0x088d9  ? ff             ldw    (X),Y
+0x088da  ? fe             ldw    X,(X)
+0x088db  ? 01             rrwa   X
+0x088dc  ? ff             ldw    (X),Y
+0x088dd  ? ff             ldw    (X),Y
+0x088de  ? fe             ldw    X,(X)
+0x088df  ? 01             rrwa   X
+0x088e0  ? ff             ldw    (X),Y
+0x088e1  ? ff             ldw    (X),Y
+0x088e2  ? fe             ldw    X,(X)
+0x088e3  ? 01             rrwa   X
+0x088e4  ? e0 3c          sub    A,(0x3c,X)
+0x088e6  ? 1e 01          ldw    X,(0x01,SP)
+0x088e8  ? e0 3c          sub    A,(0x3c,X)
+0x088ea  ? 1e 01          ldw    X,(0x01,SP)
+0x088ec  ? e0 3c          sub    A,(0x3c,X)
+0x088ee  ? 1e 01          ldw    X,(0x01,SP)
+0x088f0  ? e0 3c          sub    A,(0x3c,X)
+0x088f2  ? 1e 01          ldw    X,(0x01,SP)
+0x088f4  ? e0 3c          sub    A,(0x3c,X)
+0x088f6  ? 1e 01          ldw    X,(0x01,SP)
+0x088f8  ? e0 3c          sub    A,(0x3c,X)
+0x088fa  ? 1e 01          ldw    X,(0x01,SP)
+0x088fc  ? e0 3c          sub    A,(0x3c,X)
+0x088fe  ? 1e 01          ldw    X,(0x01,SP)
+0x08900  ? e0 3c          sub    A,(0x3c,X)
+0x08902  ? 1e 01          ldw    X,(0x01,SP)
+0x08904  ? e0 00          sub    A,(0x00,X)
+0x08906  ? 1e 01          ldw    X,(0x01,SP)
+0x08908  ? e0 00          sub    A,(0x00,X)
+0x0890a  ? 00 00          neg    (0x00,SP)
+0x0890c  ? 00 00          neg    (0x00,SP)
+0x0890e  ? 00 00          neg    (0x00,SP)
+0x08910  ? 00 00          neg    (0x00,SP)
+0x08912  ? 00 00          neg    (0x00,SP)
+0x08914  ? 00 00          neg    (0x00,SP)
+0x08916  ? 00 00          neg    (0x00,SP)
+0x08918  ? 00 00          neg    (0x00,SP)
+0x0891a  ? 00 00          neg    (0x00,SP)
+0x0891c  ? 00 00          neg    (0x00,SP)
+0x0891e  ? 00 00          neg    (0x00,SP)
+0x08920  ? 00 00          neg    (0x00,SP)
+0x08922  ? 00 00          neg    (0x00,SP)
+0x08924  ? 00 00          neg    (0x00,SP)
+0x08926  ? 00 00          neg    (0x00,SP)
+0x08928  ? 00 00          neg    (0x00,SP)
+0x0892a  ? 00 01          neg    (0x01,SP)
+0x0892c  ? ff             ldw    (X),Y
+0x0892d  ? ff             ldw    (X),Y
+0x0892e  ? fe             ldw    X,(X)
+0x0892f  ? 01             rrwa   X
+0x08930  ? ff             ldw    (X),Y
+0x08931  ? ff             ldw    (X),Y
+0x08932  ? fe             ldw    X,(X)
+0x08933  ? 01             rrwa   X
+0x08934  ? ff             ldw    (X),Y
+0x08935  ? ff             ldw    (X),Y
+0x08936  ? fe             ldw    X,(X)
+0x08937  ? 01             rrwa   X
+0x08938  ? ff             ldw    (X),Y
+0x08939  ? ff             ldw    (X),Y
+0x0893a  ? fe             ldw    X,(X)
+0x0893b  ? 01             rrwa   X
+0x0893c  ? ff             ldw    (X),Y
+0x0893d  ? ff             ldw    (X),Y
+0x0893e  ? fe             ldw    X,(X)
+0x0893f  ? 00 00          neg    (0x00,SP)
+0x08941  ? 78             sla    (X)
+0x08942  ? 1e 00          ldw    X,(0x00,SP)
+0x08944  ? 00 78          neg    (0x78,SP)
+0x08946  ? 1e 00          ldw    X,(0x00,SP)
+0x08948  ? 00 78          neg    (0x78,SP)
+0x0894a  ? 1e 00          ldw    X,(0x00,SP)
+0x0894c  ? 00 78          neg    (0x78,SP)
+0x0894e  ? 1e 00          ldw    X,(0x00,SP)
+0x08950  ? 00 78          neg    (0x78,SP)
+0x08952  ? 1e 00          ldw    X,(0x00,SP)
+0x08954  ? 00 78          neg    (0x78,SP)
+0x08956  ? 1e 00          ldw    X,(0x00,SP)
+0x08958  ? 00 78          neg    (0x78,SP)
+0x0895a  ? 1e 00          ldw    X,(0x00,SP)
+0x0895c  ? 00 78          neg    (0x78,SP)
+0x0895e  ? 1e 00          ldw    X,(0x00,SP)
+0x08960  ? 00 78          neg    (0x78,SP)
+0x08962  ? 1e 00          ldw    X,(0x00,SP)
+0x08964  ? 00 00          neg    (0x00,SP)
+0x08966  ? 1e 00          ldw    X,(0x00,SP)
+0x08968  ? 00 00          neg    (0x00,SP)
+0x0896a  ? 00 00          neg    (0x00,SP)
+0x0896c  ? 00 00          neg    (0x00,SP)
+0x0896e  ? 00 00          neg    (0x00,SP)
+0x08970  ? 00 00          neg    (0x00,SP)
+0x08972  ? 00 00          neg    (0x00,SP)
+0x08974  ? 00 00          neg    (0x00,SP)
+0x08976  ? 00 00          neg    (0x00,SP)
+0x08978  ? 00 00          neg    (0x00,SP)
+0x0897a  ? 00 f0          neg    (0xf0,SP)
+0x0897c  ? ff             ldw    (X),Y
+0x0897d  ? ff             ldw    (X),Y
+0x0897e  ? 0f 0c          clr    (0x0c,SP)
+0x08980  ? 00 00          neg    (0x00,SP)
+0x08982  ? 30 02          neg    0x02
+0x08984  ? 00 00          neg    (0x00,SP)
+0x08986  ? 40             neg    A
+0x08987  ? 02             rlwa   X
+0x08988  ? 00 00          neg    (0x00,SP)
+0x0898a  ? 40             neg    A
+0x0898b  ? 01             rrwa   X
+0x0898c  ? 00 00          neg    (0x00,SP)
+0x0898e  ? 80             iret
+0x0898f  ? 01             rrwa   X
+0x08990  ? 00 00          neg    (0x00,SP)
+0x08992  ? 80             iret
+0x08993  ? 01             rrwa   X
+0x08994  ? 00 00          neg    (0x00,SP)
+0x08996  ? 80             iret
+0x08997  ? 01             rrwa   X
+0x08998  ? 00 00          neg    (0x00,SP)
+0x0899a  ? 80             iret
+0x0899b  ? 01             rrwa   X
+0x0899c  ? 00 00          neg    (0x00,SP)
+0x0899e  ? 80             iret
+0x0899f  ? 01             rrwa   X
+0x089a0  ? 00 00          neg    (0x00,SP)
+0x089a2  ? 80             iret
+0x089a3  ? 01             rrwa   X
+0x089a4  ? 00 00          neg    (0x00,SP)
+0x089a6  ? 80             iret
+0x089a7  ? 01             rrwa   X
+0x089a8  ? 00 00          neg    (0x00,SP)
+0x089aa  ? 80             iret
+0x089ab  ? 01             rrwa   X
+0x089ac  ? 00 00          neg    (0x00,SP)
+0x089ae  ? 80             iret
+0x089af  ? 01             rrwa   X
+0x089b0  ? 00 00          neg    (0x00,SP)
+0x089b2  ? 80             iret
+0x089b3  ? 01             rrwa   X
+0x089b4  ? 80             iret
+0x089b5  ? 01             rrwa   X
+0x089b6  ? 80             iret
+0x089b7  ? 01             rrwa   X
+0x089b8  ? c0 03 80       sub    A,0x0380
+0x089bb  ? 01             rrwa   X
+0x089bc  ? c0 03 80       sub    A,0x0380
+0x089bf  ? 01             rrwa   X
+0x089c0  ? 80             iret
+0x089c1  ? 01             rrwa   X
+0x089c2  ? 80             iret
+0x089c3  ? 01             rrwa   X
+0x089c4  ? 00 00          neg    (0x00,SP)
+0x089c6  ? 80             iret
+0x089c7  ? 01             rrwa   X
+0x089c8  ? 00 00          neg    (0x00,SP)
+0x089ca  ? 80             iret
+0x089cb  ? 01             rrwa   X
+0x089cc  ? 00 00          neg    (0x00,SP)
+0x089ce  ? 80             iret
+0x089cf  ? 01             rrwa   X
+0x089d0  ? 00 00          neg    (0x00,SP)
+0x089d2  ? 80             iret
+0x089d3  ? 01             rrwa   X
+0x089d4  ? 00 00          neg    (0x00,SP)
+0x089d6  ? 80             iret
+0x089d7  ? 01             rrwa   X
+0x089d8  ? 00 00          neg    (0x00,SP)
+0x089da  ? 80             iret
+0x089db  ? 01             rrwa   X
+0x089dc  ? 00 00          neg    (0x00,SP)
+0x089de  ? 80             iret
+0x089df  ? 01             rrwa   X
+0x089e0  ? 00 00          neg    (0x00,SP)
+0x089e2  ? 80             iret
+0x089e3  ? 01             rrwa   X
+0x089e4  ? 00 00          neg    (0x00,SP)
+0x089e6  ? 80             iret
+0x089e7  ? 01             rrwa   X
+0x089e8  ? 00 00          neg    (0x00,SP)
+0x089ea  ? 80             iret
+0x089eb  ? 02             rlwa   X
+0x089ec  ? 00 00          neg    (0x00,SP)
+0x089ee  ? 40             neg    A
+0x089ef  ? 02             rlwa   X
+0x089f0  ? 00 00          neg    (0x00,SP)
+0x089f2  ? 40             neg    A
+0x089f3  ? 0c 00          inc    (0x00,SP)
+0x089f5  ? 00 30          neg    (0x30,SP)
+0x089f7  ? f0             sub    A,(X)
+0x089f8  ? ff             ldw    (X),Y
+0x089f9  ? ff             ldw    (X),Y
+0x089fa  ? 0f f0          clr    (0xf0,SP)
+0x089fc  ? ff             ldw    (X),Y
+0x089fd  ? ff             ldw    (X),Y
+0x089fe  ? 0f 0c          clr    (0x0c,SP)
+0x08a00  ? 00 00          neg    (0x00,SP)
+0x08a02  ? 30 02          neg    0x02
+0x08a04  ? 00 00          neg    (0x00,SP)
+0x08a06  ? 40             neg    A
+0x08a07  ? 02             rlwa   X
+0x08a08  ? 00 00          neg    (0x00,SP)
+0x08a0a  ? 40             neg    A
+0x08a0b  ? 01             rrwa   X
+0x08a0c  ? 00 00          neg    (0x00,SP)
+0x08a0e  ? 80             iret
+0x08a0f  ? c1 00 00       cp     A,0x0000
+0x08a12  ? 80             iret
+0x08a13  ? e1 01          cp     A,(0x01,X)
+0x08a15  ? 00 80          neg    (0x80,SP)
+0x08a17  ? e1 01          cp     A,(0x01,X)
+0x08a19  ? 00 80          neg    (0x80,SP)
+0x08a1b  ? c1 00 00       cp     A,0x0000
+0x08a1e  ? 80             iret
+0x08a1f  ? 01             rrwa   X
+0x08a20  ? 00 00          neg    (0x00,SP)
+0x08a22  ? 80             iret
+0x08a23  ? 01             rrwa   X
+0x08a24  ? 00 00          neg    (0x00,SP)
+0x08a26  ? 80             iret
+0x08a27  ? 01             rrwa   X
+0x08a28  ? 00 00          neg    (0x00,SP)
+0x08a2a  ? 80             iret
+0x08a2b  ? 01             rrwa   X
+0x08a2c  ? 00 00          neg    (0x00,SP)
+0x08a2e  ? 80             iret
+0x08a2f  ? 01             rrwa   X
+0x08a30  ? 00 00          neg    (0x00,SP)
+0x08a32  ? 80             iret
+0x08a33  ? 01             rrwa   X
+0x08a34  ? 00 00          neg    (0x00,SP)
+0x08a36  ? 80             iret
+0x08a37  ? 01             rrwa   X
+0x08a38  ? 00 00          neg    (0x00,SP)
+0x08a3a  ? 80             iret
+0x08a3b  ? 01             rrwa   X
+0x08a3c  ? 00 00          neg    (0x00,SP)
+0x08a3e  ? 80             iret
+0x08a3f  ? 01             rrwa   X
+0x08a40  ? 00 00          neg    (0x00,SP)
+0x08a42  ? 80             iret
+0x08a43  ? 01             rrwa   X
+0x08a44  ? 00 00          neg    (0x00,SP)
+0x08a46  ? 80             iret
+0x08a47  ? 01             rrwa   X
+0x08a48  ? 00 00          neg    (0x00,SP)
+0x08a4a  ? 80             iret
+0x08a4b  ? 01             rrwa   X
+0x08a4c  ? 00 00          neg    (0x00,SP)
+0x08a4e  ? 80             iret
+0x08a4f  ? 01             rrwa   X
+0x08a50  ? 00 00          neg    (0x00,SP)
+0x08a52  ? 80             iret
+0x08a53  ? 01             rrwa   X
+0x08a54  ? 00 00          neg    (0x00,SP)
+0x08a56  ? 80             iret
+0x08a57  ? 01             rrwa   X
+0x08a58  ? 00 00          neg    (0x00,SP)
+0x08a5a  ? 83             trap
+0x08a5b  ? 01             rrwa   X
+0x08a5c  ? 00 80          neg    (0x80,SP)
+0x08a5e  ? 87             retf
+0x08a5f  ? 01             rrwa   X
+0x08a60  ? 00 80          neg    (0x80,SP)
+0x08a62  ? 87             retf
+0x08a63  ? 01             rrwa   X
+0x08a64  ? 00 00          neg    (0x00,SP)
+0x08a66  ? 83             trap
+0x08a67  ? 01             rrwa   X
+0x08a68  ? 00 00          neg    (0x00,SP)
+0x08a6a  ? 80             iret
+0x08a6b  ? 02             rlwa   X
+0x08a6c  ? 00 00          neg    (0x00,SP)
+0x08a6e  ? 40             neg    A
+0x08a6f  ? 02             rlwa   X
+0x08a70  ? 00 00          neg    (0x00,SP)
+0x08a72  ? 40             neg    A
+0x08a73  ? 0c 00          inc    (0x00,SP)
+0x08a75  ? 00 30          neg    (0x30,SP)
+0x08a77  ? f0             sub    A,(X)
+0x08a78  ? ff             ldw    (X),Y
+0x08a79  ? ff             ldw    (X),Y
+0x08a7a  ? 0f f0          clr    (0xf0,SP)
+0x08a7c  ? ff             ldw    (X),Y
+0x08a7d  ? ff             ldw    (X),Y
+0x08a7e  ? 0f 0c          clr    (0x0c,SP)
+0x08a80  ? 00 00          neg    (0x00,SP)
+0x08a82  ? 30 02          neg    0x02
+0x08a84  ? 00 00          neg    (0x00,SP)
+0x08a86  ? 40             neg    A
+0x08a87  ? 02             rlwa   X
+0x08a88  ? 00 00          neg    (0x00,SP)
+0x08a8a  ? 40             neg    A
+0x08a8b  ? 01             rrwa   X
+0x08a8c  ? 00 00          neg    (0x00,SP)
+0x08a8e  ? 80             iret
+0x08a8f  ? 01             rrwa   X
+0x08a90  ? 00 00          neg    (0x00,SP)
+0x08a92  ? 83             trap
+0x08a93  ? 01             rrwa   X
+0x08a94  ? 00 80          neg    (0x80,SP)
+0x08a96  ? 87             retf
+0x08a97  ? 01             rrwa   X
+0x08a98  ? 00 80          neg    (0x80,SP)
+0x08a9a  ? 87             retf
+0x08a9b  ? 01             rrwa   X
+0x08a9c  ? 00 00          neg    (0x00,SP)
+0x08a9e  ? 83             trap
+0x08a9f  ? 01             rrwa   X
+0x08aa0  ? 00 00          neg    (0x00,SP)
+0x08aa2  ? 80             iret
+0x08aa3  ? 01             rrwa   X
+0x08aa4  ? 00 00          neg    (0x00,SP)
+0x08aa6  ? 80             iret
+0x08aa7  ? 01             rrwa   X
+0x08aa8  ? 00 00          neg    (0x00,SP)
+0x08aaa  ? 80             iret
+0x08aab  ? 01             rrwa   X
+0x08aac  ? 00 00          neg    (0x00,SP)
+0x08aae  ? 80             iret
+0x08aaf  ? 01             rrwa   X
+0x08ab0  ? 00 00          neg    (0x00,SP)
+0x08ab2  ? 80             iret
+0x08ab3  ? 01             rrwa   X
+0x08ab4  ? 80             iret
+0x08ab5  ? 01             rrwa   X
+0x08ab6  ? 80             iret
+0x08ab7  ? 01             rrwa   X
+0x08ab8  ? c0 03 80       sub    A,0x0380
+0x08abb  ? 01             rrwa   X
+0x08abc  ? c0 03 80       sub    A,0x0380
+0x08abf  ? 01             rrwa   X
+0x08ac0  ? 80             iret
+0x08ac1  ? 01             rrwa   X
+0x08ac2  ? 80             iret
+0x08ac3  ? 01             rrwa   X
+0x08ac4  ? 00 00          neg    (0x00,SP)
+0x08ac6  ? 80             iret
+0x08ac7  ? 01             rrwa   X
+0x08ac8  ? 00 00          neg    (0x00,SP)
+0x08aca  ? 80             iret
+0x08acb  ? 01             rrwa   X
+0x08acc  ? 00 00          neg    (0x00,SP)
+0x08ace  ? 80             iret
+0x08acf  ? 01             rrwa   X
+0x08ad0  ? 00 00          neg    (0x00,SP)
+0x08ad2  ? 80             iret
+0x08ad3  ? 01             rrwa   X
+0x08ad4  ? 00 00          neg    (0x00,SP)
+0x08ad6  ? 80             iret
+0x08ad7  ? c1 00 00       cp     A,0x0000
+0x08ada  ? 80             iret
+0x08adb  ? e1 01          cp     A,(0x01,X)
+0x08add  ? 00 80          neg    (0x80,SP)
+0x08adf  ? e1 01          cp     A,(0x01,X)
+0x08ae1  ? 00 80          neg    (0x80,SP)
+0x08ae3  ? c1 00 00       cp     A,0x0000
+0x08ae6  ? 80             iret
+0x08ae7  ? 01             rrwa   X
+0x08ae8  ? 00 00          neg    (0x00,SP)
+0x08aea  ? 80             iret
+0x08aeb  ? 02             rlwa   X
+0x08aec  ? 00 00          neg    (0x00,SP)
+0x08aee  ? 40             neg    A
+0x08aef  ? 02             rlwa   X
+0x08af0  ? 00 00          neg    (0x00,SP)
+0x08af2  ? 40             neg    A
+0x08af3  ? 0c 00          inc    (0x00,SP)
+0x08af5  ? 00 30          neg    (0x30,SP)
+0x08af7  ? f0             sub    A,(X)
+0x08af8  ? ff             ldw    (X),Y
+0x08af9  ? ff             ldw    (X),Y
+0x08afa  ? 0f f0          clr    (0xf0,SP)
+0x08afc  ? ff             ldw    (X),Y
+0x08afd  ? ff             ldw    (X),Y
+0x08afe  ? 0f 0c          clr    (0x0c,SP)
+0x08b00  ? 00 00          neg    (0x00,SP)
+0x08b02  ? 30 02          neg    0x02
+0x08b04  ? 00 00          neg    (0x00,SP)
+0x08b06  ? 40             neg    A
+0x08b07  ? 02             rlwa   X
+0x08b08  ? 00 00          neg    (0x00,SP)
+0x08b0a  ? 40             neg    A
+0x08b0b  ? 01             rrwa   X
+0x08b0c  ? 00 00          neg    (0x00,SP)
+0x08b0e  ? 80             iret
+0x08b0f  ? c1 00 00       cp     A,0x0000
+0x08b12  ? 83             trap
+0x08b13  ? e1 01          cp     A,(0x01,X)
+0x08b15  ? 80             iret
+0x08b16  ? 87             retf
+0x08b17  ? e1 01          cp     A,(0x01,X)
+0x08b19  ? 80             iret
+0x08b1a  ? 87             retf
+0x08b1b  ? c1 00 00       cp     A,0x0000
+0x08b1e  ? 83             trap
+0x08b1f  ? 01             rrwa   X
+0x08b20  ? 00 00          neg    (0x00,SP)
+0x08b22  ? 80             iret
+0x08b23  ? 01             rrwa   X
+0x08b24  ? 00 00          neg    (0x00,SP)
+0x08b26  ? 80             iret
+0x08b27  ? 01             rrwa   X
+0x08b28  ? 00 00          neg    (0x00,SP)
+0x08b2a  ? 80             iret
+0x08b2b  ? 01             rrwa   X
+0x08b2c  ? 00 00          neg    (0x00,SP)
+0x08b2e  ? 80             iret
+0x08b2f  ? 01             rrwa   X
+0x08b30  ? 00 00          neg    (0x00,SP)
+0x08b32  ? 80             iret
+0x08b33  ? 01             rrwa   X
+0x08b34  ? 00 00          neg    (0x00,SP)
+0x08b36  ? 80             iret
+0x08b37  ? 01             rrwa   X
+0x08b38  ? 00 00          neg    (0x00,SP)
+0x08b3a  ? 80             iret
+0x08b3b  ? 01             rrwa   X
+0x08b3c  ? 00 00          neg    (0x00,SP)
+0x08b3e  ? 80             iret
+0x08b3f  ? 01             rrwa   X
+0x08b40  ? 00 00          neg    (0x00,SP)
+0x08b42  ? 80             iret
+0x08b43  ? 01             rrwa   X
+0x08b44  ? 00 00          neg    (0x00,SP)
+0x08b46  ? 80             iret
+0x08b47  ? 01             rrwa   X
+0x08b48  ? 00 00          neg    (0x00,SP)
+0x08b4a  ? 80             iret
+0x08b4b  ? 01             rrwa   X
+0x08b4c  ? 00 00          neg    (0x00,SP)
+0x08b4e  ? 80             iret
+0x08b4f  ? 01             rrwa   X
+0x08b50  ? 00 00          neg    (0x00,SP)
+0x08b52  ? 80             iret
+0x08b53  ? 01             rrwa   X
+0x08b54  ? 00 00          neg    (0x00,SP)
+0x08b56  ? 80             iret
+0x08b57  ? c1 00 00       cp     A,0x0000
+0x08b5a  ? 83             trap
+0x08b5b  ? e1 01          cp     A,(0x01,X)
+0x08b5d  ? 80             iret
+0x08b5e  ? 87             retf
+0x08b5f  ? e1 01          cp     A,(0x01,X)
+0x08b61  ? 80             iret
+0x08b62  ? 87             retf
+0x08b63  ? c1 00 00       cp     A,0x0000
+0x08b66  ? 83             trap
+0x08b67  ? 01             rrwa   X
+0x08b68  ? 00 00          neg    (0x00,SP)
+0x08b6a  ? 80             iret
+0x08b6b  ? 02             rlwa   X
+0x08b6c  ? 00 00          neg    (0x00,SP)
+0x08b6e  ? 40             neg    A
+0x08b6f  ? 02             rlwa   X
+0x08b70  ? 00 00          neg    (0x00,SP)
+0x08b72  ? 40             neg    A
+0x08b73  ? 0c 00          inc    (0x00,SP)
+0x08b75  ? 00 30          neg    (0x30,SP)
+0x08b77  ? f0             sub    A,(X)
+0x08b78  ? ff             ldw    (X),Y
+0x08b79  ? ff             ldw    (X),Y
+0x08b7a  ? 0f f0          clr    (0xf0,SP)
+0x08b7c  ? ff             ldw    (X),Y
+0x08b7d  ? ff             ldw    (X),Y
+0x08b7e  ? 0f 0c          clr    (0x0c,SP)
+0x08b80  ? 00 00          neg    (0x00,SP)
+0x08b82  ? 30 02          neg    0x02
+0x08b84  ? 00 00          neg    (0x00,SP)
+0x08b86  ? 40             neg    A
+0x08b87  ? 02             rlwa   X
+0x08b88  ? 00 00          neg    (0x00,SP)
+0x08b8a  ? 40             neg    A
+0x08b8b  ? 01             rrwa   X
+0x08b8c  ? 00 00          neg    (0x00,SP)
+0x08b8e  ? 80             iret
+0x08b8f  ? c1 00 00       cp     A,0x0000
+0x08b92  ? 83             trap
+0x08b93  ? e1 01          cp     A,(0x01,X)
+0x08b95  ? 80             iret
+0x08b96  ? 87             retf
+0x08b97  ? e1 01          cp     A,(0x01,X)
+0x08b99  ? 80             iret
+0x08b9a  ? 87             retf
+0x08b9b  ? c1 00 00       cp     A,0x0000
+0x08b9e  ? 83             trap
+0x08b9f  ? 01             rrwa   X
+0x08ba0  ? 00 00          neg    (0x00,SP)
+0x08ba2  ? 80             iret
+0x08ba3  ? 01             rrwa   X
+0x08ba4  ? 00 00          neg    (0x00,SP)
+0x08ba6  ? 80             iret
+0x08ba7  ? 01             rrwa   X
+0x08ba8  ? 00 00          neg    (0x00,SP)
+0x08baa  ? 80             iret
+0x08bab  ? 01             rrwa   X
+0x08bac  ? 00 00          neg    (0x00,SP)
+0x08bae  ? 80             iret
+0x08baf  ? 01             rrwa   X
+0x08bb0  ? 00 00          neg    (0x00,SP)
+0x08bb2  ? 80             iret
+0x08bb3  ? 01             rrwa   X
+0x08bb4  ? 80             iret
+0x08bb5  ? 01             rrwa   X
+0x08bb6  ? 80             iret
+0x08bb7  ? 01             rrwa   X
+0x08bb8  ? c0 03 80       sub    A,0x0380
+0x08bbb  ? 01             rrwa   X
+0x08bbc  ? c0 03 80       sub    A,0x0380
+0x08bbf  ? 01             rrwa   X
+0x08bc0  ? 80             iret
+0x08bc1  ? 01             rrwa   X
+0x08bc2  ? 80             iret
+0x08bc3  ? 01             rrwa   X
+0x08bc4  ? 00 00          neg    (0x00,SP)
+0x08bc6  ? 80             iret
+0x08bc7  ? 01             rrwa   X
+0x08bc8  ? 00 00          neg    (0x00,SP)
+0x08bca  ? 80             iret
+0x08bcb  ? 01             rrwa   X
+0x08bcc  ? 00 00          neg    (0x00,SP)
+0x08bce  ? 80             iret
+0x08bcf  ? 01             rrwa   X
+0x08bd0  ? 00 00          neg    (0x00,SP)
+0x08bd2  ? 80             iret
+0x08bd3  ? 01             rrwa   X
+0x08bd4  ? 00 00          neg    (0x00,SP)
+0x08bd6  ? 80             iret
+0x08bd7  ? c1 00 00       cp     A,0x0000
+0x08bda  ? 83             trap
+0x08bdb  ? e1 01          cp     A,(0x01,X)
+0x08bdd  ? 80             iret
+0x08bde  ? 87             retf
+0x08bdf  ? e1 01          cp     A,(0x01,X)
+0x08be1  ? 80             iret
+0x08be2  ? 87             retf
+0x08be3  ? c1 00 00       cp     A,0x0000
+0x08be6  ? 83             trap
+0x08be7  ? 01             rrwa   X
+0x08be8  ? 00 00          neg    (0x00,SP)
+0x08bea  ? 80             iret
+0x08beb  ? 02             rlwa   X
+0x08bec  ? 00 00          neg    (0x00,SP)
+0x08bee  ? 40             neg    A
+0x08bef  ? 02             rlwa   X
+0x08bf0  ? 00 00          neg    (0x00,SP)
+0x08bf2  ? 40             neg    A
+0x08bf3  ? 0c 00          inc    (0x00,SP)
+0x08bf5  ? 00 30          neg    (0x30,SP)
+0x08bf7  ? f0             sub    A,(X)
+0x08bf8  ? ff             ldw    (X),Y
+0x08bf9  ? ff             ldw    (X),Y
+0x08bfa  ? 0f f0          clr    (0xf0,SP)
+0x08bfc  ? ff             ldw    (X),Y
+0x08bfd  ? ff             ldw    (X),Y
+0x08bfe  ? 0f 0c          clr    (0x0c,SP)
+0x08c00  ? 00 00          neg    (0x00,SP)
+0x08c02  ? 30 02          neg    0x02
+0x08c04  ? 00 00          neg    (0x00,SP)
+0x08c06  ? 40             neg    A
+0x08c07  ? 02             rlwa   X
+0x08c08  ? 00 00          neg    (0x00,SP)
+0x08c0a  ? 40             neg    A
+0x08c0b  ? 01             rrwa   X
+0x08c0c  ? 00 00          neg    (0x00,SP)
+0x08c0e  ? 80             iret
+0x08c0f  ? c1 80 01       cp     A,0x8001
+0x08c12  ? 83             trap
+0x08c13  ? e1 c1          cp     A,(0xc1,X)
+0x08c15  ? 83             trap
+0x08c16  ? 87             retf
+0x08c17  ? e1 c1          cp     A,(0xc1,X)
+0x08c19  ? 83             trap
+0x08c1a  ? 87             retf
+0x08c1b  ? c1 80 01       cp     A,0x8001
+0x08c1e  ? 83             trap
+0x08c1f  ? 01             rrwa   X
+0x08c20  ? 00 00          neg    (0x00,SP)
+0x08c22  ? 80             iret
+0x08c23  ? 01             rrwa   X
+0x08c24  ? 00 00          neg    (0x00,SP)
+0x08c26  ? 80             iret
+0x08c27  ? 01             rrwa   X
+0x08c28  ? 00 00          neg    (0x00,SP)
+0x08c2a  ? 80             iret
+0x08c2b  ? 01             rrwa   X
+0x08c2c  ? 00 00          neg    (0x00,SP)
+0x08c2e  ? 80             iret
+0x08c2f  ? 01             rrwa   X
+0x08c30  ? 00 00          neg    (0x00,SP)
+0x08c32  ? 80             iret
+0x08c33  ? 01             rrwa   X
+0x08c34  ? 00 00          neg    (0x00,SP)
+0x08c36  ? 80             iret
+0x08c37  ? 01             rrwa   X
+0x08c38  ? 00 00          neg    (0x00,SP)
+0x08c3a  ? 80             iret
+0x08c3b  ? 01             rrwa   X
+0x08c3c  ? 00 00          neg    (0x00,SP)
+0x08c3e  ? 80             iret
+0x08c3f  ? 01             rrwa   X
+0x08c40  ? 00 00          neg    (0x00,SP)
+0x08c42  ? 80             iret
+0x08c43  ? 01             rrwa   X
+0x08c44  ? 00 00          neg    (0x00,SP)
+0x08c46  ? 80             iret
+0x08c47  ? 01             rrwa   X
+0x08c48  ? 00 00          neg    (0x00,SP)
+0x08c4a  ? 80             iret
+0x08c4b  ? 01             rrwa   X
+0x08c4c  ? 00 00          neg    (0x00,SP)
+0x08c4e  ? 80             iret
+0x08c4f  ? 01             rrwa   X
+0x08c50  ? 00 00          neg    (0x00,SP)
+0x08c52  ? 80             iret
+0x08c53  ? 01             rrwa   X
+0x08c54  ? 00 00          neg    (0x00,SP)
+0x08c56  ? 80             iret
+0x08c57  ? c1 80 01       cp     A,0x8001
+0x08c5a  ? 83             trap
+0x08c5b  ? e1 c1          cp     A,(0xc1,X)
+0x08c5d  ? 83             trap
+0x08c5e  ? 87             retf
+0x08c5f  ? e1 c1          cp     A,(0xc1,X)
+0x08c61  ? 83             trap
+0x08c62  ? 87             retf
+0x08c63  ? c1 80 01       cp     A,0x8001
+0x08c66  ? 83             trap
+0x08c67  ? 01             rrwa   X
+0x08c68  ? 00 00          neg    (0x00,SP)
+0x08c6a  ? 80             iret
+0x08c6b  ? 02             rlwa   X
+0x08c6c  ? 00 00          neg    (0x00,SP)
+0x08c6e  ? 40             neg    A
+0x08c6f  ? 02             rlwa   X
+0x08c70  ? 00 00          neg    (0x00,SP)
+0x08c72  ? 40             neg    A
+0x08c73  ? 0c 00          inc    (0x00,SP)
+0x08c75  ? 00 30          neg    (0x30,SP)
+0x08c77  ? f0             sub    A,(X)
+0x08c78  ? ff             ldw    (X),Y
+0x08c79  ? ff             ldw    (X),Y
+0x08c7a  ? 0f 00          clr    (0x00,SP)
+0x08c7c  ? 0f 42          clr    (0x42,SP)
+0x08c7e  ? 40             neg    A
+0x08c7f  ? 00 01          neg    (0x01,SP)
+0x08c81  ? 86             pop    CC
+0x08c82  ? a1 00          cp     A,#0x00
+0x08c84  ? 0f 42          clr    (0x42,SP)
+0x08c86  ? 40             neg    A
+0x08c87  ? 01             rrwa   X
+0x08c88  ? 02             rlwa   X
+0x08c89  ? 04 08          srl    (0x08,SP)
+0x08c8b  ? 01             rrwa   X
+0x08c8c  ? 02             rlwa   X
+0x08c8d  ? 04 08          srl    (0x08,SP)
+0x08c8f  ? 0a 10          dec    (0x10,SP)
+0x08c91  ? 14 28          and    A,(0x28,SP)
+0x08c93  ? 8c             ccf
+0x08c94  ? a0 62          sub    A,#0x62
+0x08c96  ? 00 00          neg    (0x00,SP)
+0x08c98  ? 8c             ccf
+0x08c99  ? ca 62 00       or     A,0x6200
+0x08c9c  ? 34 8c          srl    0x8c
+0x08c9e  ? cb 00 50       add    A,0x0050
+0x08ca1  ? 05             UNKNOWN/INVALID
+0x08ca2  ? 50             negw   X
+0x08ca3  ? 0f 50          clr    (0x50,SP)
+0x08ca5  ? 0f 50          clr    (0x50,SP)
+0x08ca7  ? 0f 50          clr    (0x50,SP)
+0x08ca9  ? 0a 50          dec    (0x50,SP)
+0x08cab  ? 0a 50          dec    (0x50,SP)
+0x08cad  ? 0a 50          dec    (0x50,SP)
+0x08caf  ? 0a 50          dec    (0x50,SP)
+0x08cb1  ? 0a 50          dec    (0x50,SP)
+0x08cb3  ? 00 50          neg    (0x50,SP)
+0x08cb5  ? 00 50          neg    (0x50,SP)
+0x08cb7  ? 00 50          neg    (0x50,SP)
+0x08cb9  ? 0f 50          clr    (0x50,SP)
+0x08cbb  ? 0f 00          clr    (0x00,SP)
+0x08cbd  ? 00 00          neg    (0x00,SP)
+0x08cbf  ? 00 00          neg    (0x00,SP)
+0x08cc1  ? 00 00          neg    (0x00,SP)
+0x08cc3  ? 00 00          neg    (0x00,SP)
+0x08cc5  ? 80             iret
+0x08cc6  ? 00 00          neg    (0x00,SP)
+0x08cc8  ? 00 00          neg    (0x00,SP)
+0x08cca  ? 00 ae          neg    (0xae,SP)
+0x08ccc  ? 03 ff          cpl    (0xff,SP)
+0x08cce    94             ldw    SP,X
+0x08ccf    90 ce 8c 93    ldw    Y,0x8c93
+0x08cd3    ae 8c 95       ldw    X,#0x8c95
+0x08cd6    <.loop$242>:
+0x08cd6    f6             ld     A,(X)
+0x08cd7    27 25          jreq   0x8cfe <.label$9>
+0x08cd9    a5 60          bcp    A,#0x60
+0x08cdb    27 17          jreq   0x8cf4 <.label$241>
+0x08cdd    bf 2e          ldw    0x2e,X
+0x08cdf    ee 03          ldw    X,(0x03,X)
+0x08ce1    bf 31          ldw    0x31,X
+0x08ce3    be 2e          ldw    X,0x2e
+0x08ce5    ee 01          ldw    X,(0x01,X)
+0x08ce7    <.loop$243>:
+0x08ce7    90 f6          ld     A,(Y)
+0x08ce9    f7             ld     (X),A
+0x08cea    5c             incw   X
+0x08ceb    90 5c          incw   Y
+0x08ced    90 b3 31       cpw    Y,0x31
+0x08cf0    26 f5          jrne   0x8ce7 <.loop$243>
+0x08cf2    be 2e          ldw    X,0x2e
+0x08cf4    <.label$241>:
+0x08cf4    90 93          ldw    Y,X
+0x08cf6    90 ee 03       ldw    Y,(0x03,Y)
+0x08cf9    1c 00 05       addw   X,#0x0005
+0x08cfc    20 d8          jra    0x8cd6 <.loop$242>
+0x08cfe    <.label$9>:
+0x08cfe    ae 00 2a       ldw    X,#0x002a
+0x08d01    20 02          jra    0x8d05 <.label$10>
+0x08d03    <.loop$11>:
+0x08d03    f7             ld     (X),A
+0x08d04    5c             incw   X
+0x08d05    <.label$10>:
+0x08d05    a3 00 34       cpw    X,#0x0034
+0x08d08    26 f9          jrne   0x8d03 <.loop$11>
+0x08d0a    ae 01 00       ldw    X,#0x0100
+0x08d0d    20 02          jra    0x8d11 <.label$12>
+0x08d0f    <.loop$13>:
+0x08d0f    f7             ld     (X),A
+0x08d10    5c             incw   X
+0x08d11    <.label$12>:
+0x08d11    a3 01 00       cpw    X,#0x0100
+0x08d14    26 f9          jrne   0x8d0f <.loop$13>
+0x08d16    cd 8e 05       call   0x8e05 <.func$14>
+0x08d19    <.loop$240>:
+0x08d19    20 fe          jra    0x8d19 <.loop$240>
+0x08d1b  ? 72 5f 50 a0    clr    0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08d1f  ? 72 5f 50 a1    clr    0x50a1 {EXTI_CR2} <EXTI_CR2>
+0x08d23  ? 81             ret
+0x08d24    <.func$120>:
+0x08d24    89             pushw  X
+0x08d25    9e             ld     A,XH
+0x08d26    4d             tnz    A
+0x08d27    27 0e          jreq   0x8d37 <.label$121>
+0x08d29    4a             dec    A
+0x08d2a    27 1a          jreq   0x8d46 <.label$124>
+0x08d2c    4a             dec    A
+0x08d2d    27 25          jreq   0x8d54 <.label$126>
+0x08d2f    4a             dec    A
+0x08d30    27 31          jreq   0x8d63 <.label$128>
+0x08d32    4a             dec    A
+0x08d33    27 45          jreq   0x8d7a <.label$129>
+0x08d35    20 53          jra    0x8d8a <.label$123>
+0x08d37    <.label$121>:
+0x08d37    c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08d3a    a4 fc          and    A,#0xfc
+0x08d3c    c7 50 a0       ld     0x50a0 {EXTI_CR1} <EXTI_CR1>,A
+0x08d3f    c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08d42    1a 02          or     A,(0x02,SP)
+0x08d44    20 2f          jra    0x8d75 <.label$122>
+0x08d46    <.label$124>:
+0x08d46    c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08d49    a4 f3          and    A,#0xf3
+0x08d4b    c7 50 a0       ld     0x50a0 {EXTI_CR1} <EXTI_CR1>,A
+0x08d4e    7b 02          ld     A,(0x02,SP)
+0x08d50    48             sla    A
+0x08d51    48             sla    A
+0x08d52    20 1e          jra    0x8d72 <.label$125>
+0x08d54    <.label$126>:
+0x08d54    c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08d57    a4 cf          and    A,#0xcf
+0x08d59    c7 50 a0       ld     0x50a0 {EXTI_CR1} <EXTI_CR1>,A
+0x08d5c    7b 02          ld     A,(0x02,SP)
+0x08d5e    97             ld     XL,A
+0x08d5f    a6 10          ld     A,#0x10
+0x08d61    20 0d          jra    0x8d70 <.label$127>
+0x08d63    <.label$128>:
+0x08d63    c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08d66    a4 3f          and    A,#0x3f
+0x08d68    c7 50 a0       ld     0x50a0 {EXTI_CR1} <EXTI_CR1>,A
+0x08d6b    7b 02          ld     A,(0x02,SP)
+0x08d6d    97             ld     XL,A
+0x08d6e    a6 40          ld     A,#0x40
+0x08d70    <.label$127>:
+0x08d70    42             mul    X,A
+0x08d71    9f             ld     A,XL
+0x08d72    <.label$125>:
+0x08d72    ca 50 a0       or     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08d75    <.label$122>:
+0x08d75    c7 50 a0       ld     0x50a0 {EXTI_CR1} <EXTI_CR1>,A
+0x08d78    20 10          jra    0x8d8a <.label$123>
+0x08d7a    <.label$129>:
+0x08d7a    c6 50 a1       ld     A,0x50a1 {EXTI_CR2} <EXTI_CR2>
+0x08d7d    a4 fc          and    A,#0xfc
+0x08d7f    c7 50 a1       ld     0x50a1 {EXTI_CR2} <EXTI_CR2>,A
+0x08d82    c6 50 a1       ld     A,0x50a1 {EXTI_CR2} <EXTI_CR2>
+0x08d85    1a 02          or     A,(0x02,SP)
+0x08d87    c7 50 a1       ld     0x50a1 {EXTI_CR2} <EXTI_CR2>,A
+0x08d8a    <.label$123>:
+0x08d8a    85             popw   X
+0x08d8b    81             ret
+0x08d8c  ? 72 15 50 a1    bres   0x50a1 {EXTI_CR2} <EXTI_CR2>,#2
+0x08d90  ? ca 50 a1       or     A,0x50a1 {EXTI_CR2} <EXTI_CR2>
+0x08d93  ? c7 50 a1       ld     0x50a1 {EXTI_CR2} <EXTI_CR2>,A
+0x08d96  ? 81             ret
+0x08d97  ? 88             push   A
+0x08d98  ? 0f 01          clr    (0x01,SP)
+0x08d9a  ? 4d             tnz    A
+0x08d9b  ? 27 10          jreq   0x8dad
+0x08d9d  ? 4a             dec    A
+0x08d9e  ? 27 12          jreq   0x8db2
+0x08da0  ? 4a             dec    A
+0x08da1  ? 27 18          jreq   0x8dbb
+0x08da3  ? 4a             dec    A
+0x08da4  ? 27 1b          jreq   0x8dc1
+0x08da6  ? 4a             dec    A
+0x08da7  ? 27 22          jreq   0x8dcb
+0x08da9  ? 7b 01          ld     A,(0x01,SP)
+0x08dab  ? 20 23          jra    0x8dd0
+0x08dad  ? c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08db0  ? 20 1c          jra    0x8dce
+0x08db2  ? c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08db5  ? a4 0c          and    A,#0x0c
+0x08db7  ? 44             srl    A
+0x08db8  ? 44             srl    A
+0x08db9  ? 20 15          jra    0x8dd0
+0x08dbb  ? c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08dbe  ? 4e             swap   A
+0x08dbf  ? 20 0d          jra    0x8dce
+0x08dc1  ? c6 50 a0       ld     A,0x50a0 {EXTI_CR1} <EXTI_CR1>
+0x08dc4  ? 4e             swap   A
+0x08dc5  ? a4 0c          and    A,#0x0c
+0x08dc7  ? 44             srl    A
+0x08dc8  ? 44             srl    A
+0x08dc9  ? 20 03          jra    0x8dce
+0x08dcb  ? c6 50 a1       ld     A,0x50a1 {EXTI_CR2} <EXTI_CR2>
+0x08dce  ? a4 03          and    A,#0x03
+0x08dd0  ? 5b 01          add    SP,#0x01
+0x08dd2  ? 81             ret
+0x08dd3  ? c6 50 a1       ld     A,0x50a1 {EXTI_CR2} <EXTI_CR2>
+0x08dd6  ? a4 04          and    A,#0x04
+0x08dd8  ? 81             ret
+0x08dd9    <.func$148>:
+0x08dd9    be 25          ldw    X,0x25
+0x08ddb    9f             ld     A,XL
+0x08ddc    4e             swap   A
+0x08ddd    48             sla    A
+0x08dde    a4 e0          and    A,#0xe0
+0x08de0    5f             clrw   X
+0x08de1    95             ld     XH,A
+0x08de2    01             rrwa   X
+0x08de3    b8 26          xor    A,0x26
+0x08de5    01             rrwa   X
+0x08de6    b8 25          xor    A,0x25
+0x08de8    01             rrwa   X
+0x08de9    bf 25          ldw    0x25,X
+0x08deb    4f             clr    A
+0x08dec    01             rrwa   X
+0x08ded    54             srlw   X
+0x08dee    01             rrwa   X
+0x08def    b8 26          xor    A,0x26
+0x08df1    01             rrwa   X
+0x08df2    b8 25          xor    A,0x25
+0x08df4    01             rrwa   X
+0x08df5    bf 25          ldw    0x25,X
+0x08df7    4f             clr    A
+0x08df8    02             rlwa   X
+0x08df9    44             srl    A
+0x08dfa    56             rrcw   X
+0x08dfb    01             rrwa   X
+0x08dfc    b8 26          xor    A,0x26
+0x08dfe    01             rrwa   X
+0x08dff    b8 25          xor    A,0x25
+0x08e01    01             rrwa   X
+0x08e02    bf 25          ldw    0x25,X
+0x08e04    81             ret
+0x08e05    <.func$14>:
+0x08e05    a6 08          ld     A,#0x08
+0x08e07    cd 9a a3       call   0x9aa3 <.func$15>
+0x08e0a    a6 80          ld     A,#0x80
+0x08e0c    cd 9a fd       call   0x9afd <.func$16>
+0x08e0f    ae 50 00       ldw    X,#0x5000 {PA_ODR} <PA_ODR>
+0x08e12    cd 98 9a       call   0x989a <.func$19>
+0x08e15    ae 50 05       ldw    X,#0x5005 {PB_ODR} <PB_ODR>
+0x08e18    cd 98 9a       call   0x989a <.func$19>
+0x08e1b    ae 50 0a       ldw    X,#0x500a {PC_ODR} <PC_ODR>
+0x08e1e    cd 98 9a       call   0x989a <.func$19>
+0x08e21    ae 50 0f       ldw    X,#0x500f {PD_ODR} <PD_ODR>
+0x08e24    cd 98 9a       call   0x989a <.func$19>
+0x08e27    cd 8f ab       call   0x8fab <.func$20>
+0x08e2a    cd 93 8d       call   0x938d <.func$117>
+0x08e2d    cd 93 f3       call   0x93f3 <.func$119>
+0x08e30    ae 03 02       ldw    X,#0x0302
+0x08e33    cd 8d 24       call   0x8d24 <.func$120>
+0x08e36    9a             rim
+0x08e37    cd 94 26       call   0x9426 <.func$0>
+0x08e3a    <.loop$149>:
+0x08e3a    cd 94 87       call   0x9487 <.func$130>
+0x08e3d    b6 21          ld     A,0x21
+0x08e3f    b1 22          cp     A,0x22
+0x08e41    72 06 00 34 03 btjt   0x0034,#3,0x8e49 <.bit3_isset$144>
+0x08e46    cc 8e f3       jp     0x8ef3 <.label$170>
+0x08e49    <.bit3_isset$144>:
+0x08e49    27 28          jreq   0x8e73 <.label$145>
+0x08e4b    cd 93 8d       call   0x938d <.func$117>
+0x08e4e    5f             clrw   X
+0x08e4f    bf 1e          ldw    0x1e,X
+0x08e51    3f 29          clr    0x29
+0x08e53    72 01 00 34 05 btjf   0x0034,#0,0x8e5d <.bit0_unset$168>
+0x08e58    ae a7 00       ldw    X,#0xa700
+0x08e5b    20 03          jra    0x8e60 <.label$169>
+0x08e5d    <.bit0_unset$168>:
+0x08e5d    ae a6 00       ldw    X,#0xa600
+0x08e60    <.label$169>:
+0x08e60    cd 90 2b       call   0x902b <.func$82>
+0x08e63    4f             clr    A
+0x08e64    cd 90 74       call   0x9074 <.func$107>
+0x08e67    72 1d 00 34    bres   0x0034,#6
+0x08e6b    a6 05          ld     A,#0x05
+0x08e6d    cd 92 f5       call   0x92f5 <.func$156>
+0x08e70    45 21 22       mov    0x22,0x21
+0x08e73    <.label$145>:
+0x08e73    72 0d 00 34 68 btjf   0x0034,#6,0x8ee0 <.bit6_unset$146>
+0x08e78    be 1e          ldw    X,0x1e
+0x08e7a    b6 29          ld     A,0x29
+0x08e7c    44             srl    A
+0x08e7d    44             srl    A
+0x08e7e    a0 04          sub    A,#0x04
+0x08e80    40             neg    A
+0x08e81    27 04          jreq   0x8e87 <.label$150>
+0x08e83    <.loop$167>:
+0x08e83    58             slaw   X
+0x08e84    4a             dec    A
+0x08e85    26 fc          jrne   0x8e83 <.loop$167>
+0x08e87    <.label$150>:
+0x08e87    a3 00 00       cpw    X,#0x0000
+0x08e8a    27 03          jreq   0x8e8f <.label$151>
+0x08e8c    cc 8f 32       jp     0x8f32 <.label$147>
+0x08e8f    <.label$151>:
+0x08e8f    b6 29          ld     A,0x29
+0x08e91    a1 0a          cp     A,#0x0a
+0x08e93    24 45          jruge  0x8eda <.label$152>
+0x08e95    cd 94 26       call   0x9426 <.func$0>
+0x08e98    b6 23          ld     A,0x23
+0x08e9a    4c             inc    A
+0x08e9b    26 04          jrne   0x8ea1 <.label$153>
+0x08e9d    3c 29          inc    0x29
+0x08e9f    20 02          jra    0x8ea3 <.label$166>
+0x08ea1    <.label$153>:
+0x08ea1    3f 29          clr    0x29
+0x08ea3    <.label$166>:
+0x08ea3    b6 29          ld     A,0x29
+0x08ea5    a1 08          cp     A,#0x08
+0x08ea7    24 20          jruge  0x8ec9 <.label$154>
+0x08ea9    45 27 28       mov    0x28,0x27
+0x08eac    20 13          jra    0x8ec1 <.label$164>
+0x08eae    <.loop$165>:
+0x08eae    cd 8d d9       call   0x8dd9 <.func$148>
+0x08eb1    b6 26          ld     A,0x26
+0x08eb3    4e             swap   A
+0x08eb4    a4 0e          and    A,#0x0e
+0x08eb6    44             srl    A
+0x08eb7    b7 27          ld     0x27,A
+0x08eb9    a1 06          cp     A,#0x06
+0x08ebb    27 f1          jreq   0x8eae <.loop$165>
+0x08ebd    a1 07          cp     A,#0x07
+0x08ebf    27 ed          jreq   0x8eae <.loop$165>
+0x08ec1    <.label$164>:
+0x08ec1    b6 28          ld     A,0x28
+0x08ec3    b1 27          cp     A,0x27
+0x08ec5    27 e7          jreq   0x8eae <.loop$165>
+0x08ec7    b6 29          ld     A,0x29
+0x08ec9    <.label$154>:
+0x08ec9    a1 08          cp     A,#0x08
+0x08ecb    26 06          jrne   0x8ed3 <.label$155>
+0x08ecd    4f             clr    A
+0x08ece    cd 90 74       call   0x9074 <.func$107>
+0x08ed1    20 5f          jra    0x8f32 <.label$147>
+0x08ed3    <.label$155>:
+0x08ed3    b6 27          ld     A,0x27
+0x08ed5    cd 92 f5       call   0x92f5 <.func$156>
+0x08ed8    20 58          jra    0x8f32 <.label$147>
+0x08eda    <.label$152>:
+0x08eda    72 1d 00 34    bres   0x0034,#6
+0x08ede    20 52          jra    0x8f32 <.label$147>
+0x08ee0    <.bit6_unset$146>:
+0x08ee0    cd 94 26       call   0x9426 <.func$0>
+0x08ee3    b6 23          ld     A,0x23
+0x08ee5    4c             inc    A
+0x08ee6    27 4a          jreq   0x8f32 <.label$147>
+0x08ee8    72 1c 00 34    bset   0x0034,#6
+0x08eec    5f             clrw   X
+0x08eed    bf 1e          ldw    0x1e,X
+0x08eef    3f 29          clr    0x29
+0x08ef1    20 3f          jra    0x8f32 <.label$147>
+0x08ef3    <.label$170>:
+0x08ef3    27 1a          jreq   0x8f0f <.label$171>
+0x08ef5    cd 93 8d       call   0x938d <.func$117>
+0x08ef8    5f             clrw   X
+0x08ef9    bf 1e          ldw    0x1e,X
+0x08efb    72 01 00 34 05 btjf   0x0034,#0,0x8f05 <.bit0_unset$238>
+0x08f00    ae a7 00       ldw    X,#0xa700
+0x08f03    20 03          jra    0x8f08 <.label$239>
+0x08f05    <.bit0_unset$238>:
+0x08f05    ae a6 00       ldw    X,#0xa600
+0x08f08    <.label$239>:
+0x08f08    cd 90 2b       call   0x902b <.func$82>
+0x08f0b    4f             clr    A
+0x08f0c    cd 90 74       call   0x9074 <.func$107>
+0x08f0f    <.label$171>:
+0x08f0f    72 09 00 34 03 btjf   0x0034,#4,0x8f17 <.bit4_unset$172>
+0x08f14    cd 94 26       call   0x9426 <.func$0>
+0x08f17    <.bit4_unset$172>:
+0x08f17    b6 23          ld     A,0x23
+0x08f19    b1 24          cp     A,0x24
+0x08f1b    26 06          jrne   0x8f23 <.label$173>
+0x08f1d    b6 21          ld     A,0x21
+0x08f1f    b1 22          cp     A,0x22
+0x08f21    27 0f          jreq   0x8f32 <.label$147>
+0x08f23    <.label$173>:
+0x08f23    b6 21          ld     A,0x21
+0x08f25    b1 22          cp     A,0x22
+0x08f27    27 03          jreq   0x8f2c <.label$174>
+0x08f29    45 21 22       mov    0x22,0x21
+0x08f2c    <.label$174>:
+0x08f2c    cd 95 08       call   0x9508 <.func$175>
+0x08f2f    45 23 24       mov    0x24,0x23
+0x08f32    <.label$147>:
+0x08f32    cd 8d d9       call   0x8dd9 <.func$148>
+0x08f35    be 1e          ldw    X,0x1e
+0x08f37    5c             incw   X
+0x08f38    bf 1e          ldw    0x1e,X
+0x08f3a    cc 8e 3a       jp     0x8e3a <.loop$149>
+0x08f3d    <.EXTI3>:
+0x08f3d    8a             push   CC
+0x08f3e    84             pop    A
+0x08f3f    a4 bf          and    A,#0xbf
+0x08f41    88             push   A
+0x08f42    86             pop    CC
+0x08f43    3b 00 30       push   0x0030
+0x08f46    be 2e          ldw    X,0x2e
+0x08f48    89             pushw  X
+0x08f49    3b 00 33       push   0x0033
+0x08f4c    be 31          ldw    X,0x31
+0x08f4e    89             pushw  X
+0x08f4f    cd 94 26       call   0x9426 <.func$0>
+0x08f52    72 1a 00 34    bset   0x0034,#5
+0x08f56    85             popw   X
+0x08f57    bf 31          ldw    0x31,X
+0x08f59    32 00 33       pop    0x0033
+0x08f5c    85             popw   X
+0x08f5d    bf 2e          ldw    0x2e,X
+0x08f5f    32 00 30       pop    0x0030
+0x08f62    80             iret
+0x08f63    <.loop$31>:
+0x08f63    88             push   A
+0x08f64    cd 9b 3a       call   0x9b3a <.func$32>
+0x08f67    ae 8c 7b       ldw    X,#0x8c7b
+0x08f6a    cd 9c da       call   0x9cda <.func$38>
+0x08f6d    b6 2d          ld     A,0x2d
+0x08f6f    6b 01          ld     (0x01,SP),A
+0x08f71    cd 95 be       call   0x95be <.func$53>
+0x08f74    7b 01          ld     A,(0x01,SP)
+0x08f76    88             push   A
+0x08f77    4b 00          push   #0x00
+0x08f79    4b 01          push   #0x01
+0x08f7b    4b 00          push   #0x00
+0x08f7d    ae 00 78       ldw    X,#0x0078
+0x08f80    89             pushw  X
+0x08f81    ae 0d 40       ldw    X,#0x0d40
+0x08f84    89             pushw  X
+0x08f85    ae 00 03       ldw    X,#0x0003
+0x08f88    89             pushw  X
+0x08f89    cd 95 e3       call   0x95e3 <.func$54>
+0x08f8c    5b 0a          add    SP,#0x0a
+0x08f8e    a6 01          ld     A,#0x01
+0x08f90    cd 96 ff       call   0x96ff <.func$80>
+0x08f93    84             pop    A
+0x08f94    81             ret
+0x08f95    <.func$21>:
+0x08f95    4b b0          push   #0xb0
+0x08f97    4b 10          push   #0x10
+0x08f99    be 00          ldw    X,0x00
+0x08f9b    cd 98 a2       call   0x98a2 <.func$22>
+0x08f9e    85             popw   X
+0x08f9f    4b b0          push   #0xb0
+0x08fa1    4b 20          push   #0x20
+0x08fa3    be 00          ldw    X,0x00
+0x08fa5    cd 98 a2       call   0x98a2 <.func$22>
+0x08fa8    85             popw   X
+0x08fa9    20 b8          jra    0x8f63 <.loop$31>
+0x08fab    <.func$20>:
+0x08fab    ad e8          callr  0x8f95 <.func$21>
+0x08fad    ae ae 00       ldw    X,#0xae00
+0x08fb0    ad 79          callr  0x902b <.func$82>
+0x08fb2    ae a8 00       ldw    X,#0xa800
+0x08fb5    ad 74          callr  0x902b <.func$82>
+0x08fb7    ae 3f 00       ldw    X,#0x3f00
+0x08fba    ad 6f          callr  0x902b <.func$82>
+0x08fbc    ae d3 00       ldw    X,#0xd300
+0x08fbf    ad 6a          callr  0x902b <.func$82>
+0x08fc1    5f             clrw   X
+0x08fc2    ad 67          callr  0x902b <.func$82>
+0x08fc4    ae 40 00       ldw    X,#0x4000
+0x08fc7    ad 62          callr  0x902b <.func$82>
+0x08fc9    ae a1 00       ldw    X,#0xa100
+0x08fcc    ad 5d          callr  0x902b <.func$82>
+0x08fce    ae c8 00       ldw    X,#0xc800
+0x08fd1    ad 58          callr  0x902b <.func$82>
+0x08fd3    ae da 00       ldw    X,#0xda00
+0x08fd6    ad 53          callr  0x902b <.func$82>
+0x08fd8    ae 12 00       ldw    X,#0x1200
+0x08fdb    ad 4e          callr  0x902b <.func$82>
+0x08fdd    ae 81 00       ldw    X,#0x8100
+0x08fe0    ad 49          callr  0x902b <.func$82>
+0x08fe2    ae ff 00       ldw    X,#0xff00
+0x08fe5    ad 44          callr  0x902b <.func$82>
+0x08fe7    ae a4 00       ldw    X,#0xa400
+0x08fea    ad 3f          callr  0x902b <.func$82>
+0x08fec    ae a6 00       ldw    X,#0xa600
+0x08fef    ad 3a          callr  0x902b <.func$82>
+0x08ff1    ae d5 00       ldw    X,#0xd500
+0x08ff4    ad 35          callr  0x902b <.func$82>
+0x08ff6    ae 80 00       ldw    X,#0x8000
+0x08ff9    ad 30          callr  0x902b <.func$82>
+0x08ffb    ae d9 00       ldw    X,#0xd900
+0x08ffe    ad 2b          callr  0x902b <.func$82>
+0x09000    ae 25 00       ldw    X,#0x2500
+0x09003    ad 26          callr  0x902b <.func$82>
+0x09005    ae db 00       ldw    X,#0xdb00
+0x09008    ad 21          callr  0x902b <.func$82>
+0x0900a    ae 20 00       ldw    X,#0x2000
+0x0900d    ad 1c          callr  0x902b <.func$82>
+0x0900f    ae 20 00       ldw    X,#0x2000
+0x09012    ad 17          callr  0x902b <.func$82>
+0x09014    ae 01 00       ldw    X,#0x0100
+0x09017    ad 12          callr  0x902b <.func$82>
+0x09019    ae 8d 00       ldw    X,#0x8d00
+0x0901c    ad 0d          callr  0x902b <.func$82>
+0x0901e    ae 14 00       ldw    X,#0x1400
+0x09021    ad 08          callr  0x902b <.func$82>
+0x09023    4f             clr    A
+0x09024    ad 4e          callr  0x9074 <.func$107>
+0x09026    ae af 00       ldw    X,#0xaf00
+0x09029    20 00          jra    0x902b <.func$82>
+0x0902b    <.func$82>:
+0x0902b    89             pushw  X
+0x0902c    <.loop$91>:
+0x0902c    ae 03 02       ldw    X,#0x0302
+0x0902f    cd 98 10       call   0x9810 <.func$83>
+0x09032    4d             tnz    A
+0x09033    26 f7          jrne   0x902c <.loop$91>
+0x09035    4c             inc    A
+0x09036    cd 97 19       call   0x9719 <.func$92>
+0x09039    <.loop$99>:
+0x09039    ae 03 01       ldw    X,#0x0301
+0x0903c    cd 97 a0       call   0x97a0 <.func$94>
+0x0903f    4d             tnz    A
+0x09040    27 f7          jreq   0x9039 <.loop$99>
+0x09042    ae 78 00       ldw    X,#0x7800
+0x09045    cd 97 8e       call   0x978e <.func$100>
+0x09048    <.loop$101>:
+0x09048    ae 07 82       ldw    X,#0x0782
+0x0904b    cd 97 a0       call   0x97a0 <.func$94>
+0x0904e    4d             tnz    A
+0x0904f    27 f7          jreq   0x9048 <.loop$101>
+0x09051    7b 02          ld     A,(0x02,SP)
+0x09053    cd 97 9c       call   0x979c <.func$102>
+0x09056    <.loop$103>:
+0x09056    ae 07 80       ldw    X,#0x0780
+0x09059    cd 97 a0       call   0x97a0 <.func$94>
+0x0905c    4d             tnz    A
+0x0905d    27 f7          jreq   0x9056 <.loop$103>
+0x0905f    7b 01          ld     A,(0x01,SP)
+0x09061    cd 97 9c       call   0x979c <.func$102>
+0x09064    <.loop$104>:
+0x09064    ae 07 84       ldw    X,#0x0784
+0x09067    cd 97 a0       call   0x97a0 <.func$94>
+0x0906a    4d             tnz    A
+0x0906b    27 f7          jreq   0x9064 <.loop$104>
+0x0906d    a6 01          ld     A,#0x01
+0x0906f    cd 97 26       call   0x9726 <.func$105>
+0x09072    85             popw   X
+0x09073    81             ret
+0x09074    <.func$107>:
+0x09074    88             push   A
+0x09075    52 04          sub    SP,#0x04
+0x09077    ae 21 00       ldw    X,#0x2100
+0x0907a    ad af          callr  0x902b <.func$82>
+0x0907c    ae 20 00       ldw    X,#0x2000
+0x0907f    ad aa          callr  0x902b <.func$82>
+0x09081    ae 5f 00       ldw    X,#0x5f00
+0x09084    ad a5          callr  0x902b <.func$82>
+0x09086    ae 22 00       ldw    X,#0x2200
+0x09089    ad a0          callr  0x902b <.func$82>
+0x0908b    ae 04 00       ldw    X,#0x0400
+0x0908e    ad 9b          callr  0x902b <.func$82>
+0x09090    ae 07 00       ldw    X,#0x0700
+0x09093    ad 96          callr  0x902b <.func$82>
+0x09095    a6 01          ld     A,#0x01
+0x09097    cd 97 19       call   0x9719 <.func$92>
+0x0909a    <.loop$108>:
+0x0909a    ae 03 01       ldw    X,#0x0301
+0x0909d    cd 97 a0       call   0x97a0 <.func$94>
+0x090a0    4d             tnz    A
+0x090a1    27 f7          jreq   0x909a <.loop$108>
+0x090a3    ae 78 00       ldw    X,#0x7800
+0x090a6    cd 97 8e       call   0x978e <.func$100>
+0x090a9    <.loop$109>:
+0x090a9    ae 07 82       ldw    X,#0x0782
+0x090ac    cd 97 a0       call   0x97a0 <.func$94>
+0x090af    4d             tnz    A
+0x090b0    27 f7          jreq   0x90a9 <.loop$109>
+0x090b2    a6 60          ld     A,#0x60
+0x090b4    cd 97 9c       call   0x979c <.func$102>
+0x090b7    <.loop$110>:
+0x090b7    ae 07 80       ldw    X,#0x0780
+0x090ba    cd 97 a0       call   0x97a0 <.func$94>
+0x090bd    4d             tnz    A
+0x090be    27 f7          jreq   0x90b7 <.loop$110>
+0x090c0    5f             clrw   X
+0x090c1    1f 03          ldw    (0x03,SP),X
+0x090c3    <.loop$115>:
+0x090c3    5f             clrw   X
+0x090c4    72 00 00 34 00 btjt   0x0034,#0,0x90c9 <.bit0_isset$111>
+0x090c9    <.bit0_isset$111>:
+0x090c9    59             rlcw   X
+0x090ca    1f 01          ldw    (0x01,SP),X
+0x090cc    1e 03          ldw    X,(0x03,SP)
+0x090ce    a3 00 fc       cpw    X,#0x00fc
+0x090d1    26 05          jrne   0x90d8 <.label$112>
+0x090d3    ae 00 01       ldw    X,#0x0001
+0x090d6    20 01          jra    0x90d9 <.label$116>
+0x090d8    <.label$112>:
+0x090d8    5f             clrw   X
+0x090d9    <.label$116>:
+0x090d9    01             rrwa   X
+0x090da    14 02          and    A,(0x02,SP)
+0x090dc    01             rrwa   X
+0x090dd    14 01          and    A,(0x01,SP)
+0x090df    01             rrwa   X
+0x090e0    5d             tnzw   X
+0x090e1    27 02          jreq   0x90e5 <.label$113>
+0x090e3    03 05          cpl    (0x05,SP)
+0x090e5    <.label$113>:
+0x090e5    7b 05          ld     A,(0x05,SP)
+0x090e7    cd 97 9c       call   0x979c <.func$102>
+0x090ea    <.loop$114>:
+0x090ea    ae 07 84       ldw    X,#0x0784
+0x090ed    cd 97 a0       call   0x97a0 <.func$94>
+0x090f0    4d             tnz    A
+0x090f1    27 f7          jreq   0x90ea <.loop$114>
+0x090f3    1e 03          ldw    X,(0x03,SP)
+0x090f5    5c             incw   X
+0x090f6    1f 03          ldw    (0x03,SP),X
+0x090f8    a3 01 00       cpw    X,#0x0100
+0x090fb    25 c6          jrult  0x90c3 <.loop$115>
+0x090fd    a6 01          ld     A,#0x01
+0x090ff    cd 97 26       call   0x9726 <.func$105>
+0x09102    5b 05          add    SP,#0x05
+0x09104    81             ret
+0x09105    <.func$179>:
+0x09105    89             pushw  X
+0x09106    89             pushw  X
+0x09107    72 03 00 34 04 btjf   0x0034,#1,0x9110 <.bit1_unset$180>
+0x0910c    a6 1c          ld     A,#0x1c
+0x0910e    20 02          jra    0x9112 <.label$197>
+0x09110    <.bit1_unset$180>:
+0x09110    a6 07          ld     A,#0x07
+0x09112    <.label$197>:
+0x09112    6b 01          ld     (0x01,SP),A
+0x09114    7b 03          ld     A,(0x03,SP)
+0x09116    a4 07          and    A,#0x07
+0x09118    a0 07          sub    A,#0x07
+0x0911a    40             neg    A
+0x0911b    48             sla    A
+0x0911c    48             sla    A
+0x0911d    48             sla    A
+0x0911e    6b 03          ld     (0x03,SP),A
+0x09120    ae 21 00       ldw    X,#0x2100
+0x09123    cd 90 2b       call   0x902b <.func$82>
+0x09126    7b 03          ld     A,(0x03,SP)
+0x09128    ab 20          add    A,#0x20
+0x0912a    5f             clrw   X
+0x0912b    95             ld     XH,A
+0x0912c    cd 90 2b       call   0x902b <.func$82>
+0x0912f    7b 03          ld     A,(0x03,SP)
+0x09131    ab 26          add    A,#0x26
+0x09133    5f             clrw   X
+0x09134    95             ld     XH,A
+0x09135    cd 90 2b       call   0x902b <.func$82>
+0x09138    ae 22 00       ldw    X,#0x2200
+0x0913b    cd 90 2b       call   0x902b <.func$82>
+0x0913e    72 03 00 34 05 btjf   0x0034,#1,0x9148 <.bit1_unset$181>
+0x09143    ae 04 00       ldw    X,#0x0400
+0x09146    20 03          jra    0x914b <.label$196>
+0x09148    <.bit1_unset$181>:
+0x09148    ae 07 00       ldw    X,#0x0700
+0x0914b    <.label$196>:
+0x0914b    cd 90 2b       call   0x902b <.func$82>
+0x0914e    ae 07 00       ldw    X,#0x0700
+0x09151    cd 90 2b       call   0x902b <.func$82>
+0x09154    a6 01          ld     A,#0x01
+0x09156    cd 97 19       call   0x9719 <.func$92>
+0x09159    <.loop$182>:
+0x09159    ae 03 01       ldw    X,#0x0301
+0x0915c    cd 97 a0       call   0x97a0 <.func$94>
+0x0915f    4d             tnz    A
+0x09160    27 f7          jreq   0x9159 <.loop$182>
+0x09162    ae 78 00       ldw    X,#0x7800
+0x09165    cd 97 8e       call   0x978e <.func$100>
+0x09168    <.loop$183>:
+0x09168    ae 07 82       ldw    X,#0x0782
+0x0916b    cd 97 a0       call   0x97a0 <.func$94>
+0x0916e    4d             tnz    A
+0x0916f    27 f7          jreq   0x9168 <.loop$183>
+0x09171    a6 60          ld     A,#0x60
+0x09173    cd 97 9c       call   0x979c <.func$102>
+0x09176    <.loop$184>:
+0x09176    ae 07 80       ldw    X,#0x0780
+0x09179    cd 97 a0       call   0x97a0 <.func$94>
+0x0917c    4d             tnz    A
+0x0917d    27 f7          jreq   0x9176 <.loop$184>
+0x0917f    0f 02          clr    (0x02,SP)
+0x09181    20 47          jra    0x91ca <.label$185>
+0x09183    <.loop$186>:
+0x09183    7b 04          ld     A,(0x04,SP)
+0x09185    4a             dec    A
+0x09186    26 1b          jrne   0x91a3 <.label$187>
+0x09188    7b 02          ld     A,(0x02,SP)
+0x0918a    5f             clrw   X
+0x0918b    4d             tnz    A
+0x0918c    72 03 00 34 09 btjf   0x0034,#1,0x919a <.bit1_unset$193>
+0x09191    2a 01          jrpl   0x9194 <.label$195>
+0x09193    53             cplw   X
+0x09194    <.label$195>:
+0x09194    97             ld     XL,A
+0x09195    d6 80 b1       ld     A,(0x80b1,X)
+0x09198    20 22          jra    0x91bc <.label$192>
+0x0919a    <.bit1_unset$193>:
+0x0919a    2a 01          jrpl   0x919d <.label$194>
+0x0919c    53             cplw   X
+0x0919d    <.label$194>:
+0x0919d    97             ld     XL,A
+0x0919e    d6 80 d4       ld     A,(0x80d4,X)
+0x091a1    20 19          jra    0x91bc <.label$192>
+0x091a3    <.label$187>:
+0x091a3    7b 02          ld     A,(0x02,SP)
+0x091a5    5f             clrw   X
+0x091a6    4d             tnz    A
+0x091a7    72 03 00 34 09 btjf   0x0034,#1,0x91b5 <.bit1_unset$188>
+0x091ac    2a 01          jrpl   0x91af <.label$191>
+0x091ae    53             cplw   X
+0x091af    <.label$191>:
+0x091af    97             ld     XL,A
+0x091b0    d6 80 95       ld     A,(0x8095,X)
+0x091b3    20 07          jra    0x91bc <.label$192>
+0x091b5    <.bit1_unset$188>:
+0x091b5    2a 01          jrpl   0x91b8 <.label$189>
+0x091b7    53             cplw   X
+0x091b8    <.label$189>:
+0x091b8    97             ld     XL,A
+0x091b9    d6 80 cd       ld     A,(0x80cd,X)
+0x091bc    <.label$192>:
+0x091bc    cd 97 9c       call   0x979c <.func$102>
+0x091bf    <.loop$190>:
+0x091bf    ae 07 84       ldw    X,#0x0784
+0x091c2    cd 97 a0       call   0x97a0 <.func$94>
+0x091c5    4d             tnz    A
+0x091c6    27 f7          jreq   0x91bf <.loop$190>
+0x091c8    0c 02          inc    (0x02,SP)
+0x091ca    <.label$185>:
+0x091ca    7b 02          ld     A,(0x02,SP)
+0x091cc    11 01          cp     A,(0x01,SP)
+0x091ce    2f b3          jrslt  0x9183 <.loop$186>
+0x091d0    a6 01          ld     A,#0x01
+0x091d2    cd 97 26       call   0x9726 <.func$105>
+0x091d5    5b 04          add    SP,#0x04
+0x091d7    81             ret
+0x091d8    <.func$213>:
+0x091d8    89             pushw  X
+0x091d9    52 06          sub    SP,#0x06
+0x091db    5f             clrw   X
+0x091dc    1f 03          ldw    (0x03,SP),X
+0x091de    0f 05          clr    (0x05,SP)
+0x091e0    20 13          jra    0x91f5 <.label$214>
+0x091e2    <.loop$216>:
+0x091e2    1e 03          ldw    X,(0x03,SP)
+0x091e4    72 05 00 34 05 btjf   0x0034,#2,0x91ee <.bit2_unset$217>
+0x091e9    1c 00 60       addw   X,#0x0060
+0x091ec    20 03          jra    0x91f1 <.label$218>
+0x091ee    <.bit2_unset$217>:
+0x091ee    1c 00 2a       addw   X,#0x002a
+0x091f1    <.label$218>:
+0x091f1    1f 03          ldw    (0x03,SP),X
+0x091f3    0c 05          inc    (0x05,SP)
+0x091f5    <.label$214>:
+0x091f5    7b 05          ld     A,(0x05,SP)
+0x091f7    5f             clrw   X
+0x091f8    4d             tnz    A
+0x091f9    2a 01          jrpl   0x91fc <.label$215>
+0x091fb    53             cplw   X
+0x091fc    <.label$215>:
+0x091fc    97             ld     XL,A
+0x091fd    7b 07          ld     A,(0x07,SP)
+0x091ff    90 5f          clrw   Y
+0x09201    90 97          ld     YL,A
+0x09203    90 bf 31       ldw    0x31,Y
+0x09206    b3 31          cpw    X,0x31
+0x09208    2f d8          jrslt  0x91e2 <.loop$216>
+0x0920a    ae 21 00       ldw    X,#0x2100
+0x0920d    cd 90 2b       call   0x902b <.func$82>
+0x09210    7b 08          ld     A,(0x08,SP)
+0x09212    5f             clrw   X
+0x09213    95             ld     XH,A
+0x09214    cd 90 2b       call   0x902b <.func$82>
+0x09217    7b 08          ld     A,(0x08,SP)
+0x09219    72 05 00 34 04 btjf   0x0034,#2,0x9222 <.bit2_unset$219>
+0x0921e    ab 17          add    A,#0x17
+0x09220    20 02          jra    0x9224 <.label$237>
+0x09222    <.bit2_unset$219>:
+0x09222    ab 0d          add    A,#0x0d
+0x09224    <.label$237>:
+0x09224    5f             clrw   X
+0x09225    95             ld     XH,A
+0x09226    cd 90 2b       call   0x902b <.func$82>
+0x09229    ae 22 00       ldw    X,#0x2200
+0x0922c    cd 90 2b       call   0x902b <.func$82>
+0x0922f    ae 04 00       ldw    X,#0x0400
+0x09232    cd 90 2b       call   0x902b <.func$82>
+0x09235    72 05 00 34 05 btjf   0x0034,#2,0x923f <.bit2_unset$220>
+0x0923a    ae 07 00       ldw    X,#0x0700
+0x0923d    20 03          jra    0x9242 <.label$236>
+0x0923f    <.bit2_unset$220>:
+0x0923f    ae 06 00       ldw    X,#0x0600
+0x09242    <.label$236>:
+0x09242    cd 90 2b       call   0x902b <.func$82>
+0x09245    a6 01          ld     A,#0x01
+0x09247    cd 97 19       call   0x9719 <.func$92>
+0x0924a    <.loop$221>:
+0x0924a    ae 03 01       ldw    X,#0x0301
+0x0924d    cd 97 a0       call   0x97a0 <.func$94>
+0x09250    4d             tnz    A
+0x09251    27 f7          jreq   0x924a <.loop$221>
+0x09253    ae 78 00       ldw    X,#0x7800
+0x09256    cd 97 8e       call   0x978e <.func$100>
+0x09259    <.loop$222>:
+0x09259    ae 07 82       ldw    X,#0x0782
+0x0925c    cd 97 a0       call   0x97a0 <.func$94>
+0x0925f    4d             tnz    A
+0x09260    27 f7          jreq   0x9259 <.loop$222>
+0x09262    a6 60          ld     A,#0x60
+0x09264    cd 97 9c       call   0x979c <.func$102>
+0x09267    <.loop$223>:
+0x09267    ae 07 80       ldw    X,#0x0780
+0x0926a    cd 97 a0       call   0x97a0 <.func$94>
+0x0926d    4d             tnz    A
+0x0926e    27 f7          jreq   0x9267 <.loop$223>
+0x09270    72 05 00 34 43 btjf   0x0034,#2,0x92b8 <.bit2_unset$224>
+0x09275    0f 05          clr    (0x05,SP)
+0x09277    <.loop$235>:
+0x09277    a6 03          ld     A,#0x03
+0x09279    6b 06          ld     (0x06,SP),A
+0x0927b    <.loop$234>:
+0x0927b    5f             clrw   X
+0x0927c    4d             tnz    A
+0x0927d    2a 01          jrpl   0x9280 <.label$231>
+0x0927f    53             cplw   X
+0x09280    <.label$231>:
+0x09280    97             ld     XL,A
+0x09281    1f 01          ldw    (0x01,SP),X
+0x09283    5f             clrw   X
+0x09284    7b 05          ld     A,(0x05,SP)
+0x09286    4d             tnz    A
+0x09287    2a 01          jrpl   0x928a <.label$232>
+0x09289    53             cplw   X
+0x0928a    <.label$232>:
+0x0928a    97             ld     XL,A
+0x0928b    72 fb 03       addw   X,(0x03,SP)
+0x0928e    72 fb 01       addw   X,(0x01,SP)
+0x09291    d6 83 7b       ld     A,(0x837b,X)
+0x09294    cd 97 9c       call   0x979c <.func$102>
+0x09297    <.loop$233>:
+0x09297    ae 07 84       ldw    X,#0x0784
+0x0929a    cd 97 a0       call   0x97a0 <.func$94>
+0x0929d    4d             tnz    A
+0x0929e    27 f7          jreq   0x9297 <.loop$233>
+0x092a0    0a 06          dec    (0x06,SP)
+0x092a2    7b 06          ld     A,(0x06,SP)
+0x092a4    2a d5          jrpl   0x927b <.loop$234>
+0x092a6    7b 05          ld     A,(0x05,SP)
+0x092a8    ab 04          add    A,#0x04
+0x092aa    6b 05          ld     (0x05,SP),A
+0x092ac    a1 60          cp     A,#0x60
+0x092ae    2f c7          jrslt  0x9277 <.loop$235>
+0x092b0    <.loop$230>:
+0x092b0    a6 01          ld     A,#0x01
+0x092b2    cd 97 26       call   0x9726 <.func$105>
+0x092b5    5b 08          add    SP,#0x08
+0x092b7    81             ret
+0x092b8    <.bit2_unset$224>:
+0x092b8    0f 05          clr    (0x05,SP)
+0x092ba    <.loop$229>:
+0x092ba    a6 02          ld     A,#0x02
+0x092bc    6b 06          ld     (0x06,SP),A
+0x092be    <.loop$228>:
+0x092be    5f             clrw   X
+0x092bf    4d             tnz    A
+0x092c0    2a 01          jrpl   0x92c3 <.label$225>
+0x092c2    53             cplw   X
+0x092c3    <.label$225>:
+0x092c3    97             ld     XL,A
+0x092c4    1f 01          ldw    (0x01,SP),X
+0x092c6    5f             clrw   X
+0x092c7    7b 05          ld     A,(0x05,SP)
+0x092c9    4d             tnz    A
+0x092ca    2a 01          jrpl   0x92cd <.label$226>
+0x092cc    53             cplw   X
+0x092cd    <.label$226>:
+0x092cd    97             ld     XL,A
+0x092ce    72 fb 03       addw   X,(0x03,SP)
+0x092d1    72 fb 01       addw   X,(0x01,SP)
+0x092d4    d6 80 db       ld     A,(0x80db,X)
+0x092d7    cd 97 9c       call   0x979c <.func$102>
+0x092da    <.loop$227>:
+0x092da    ae 07 84       ldw    X,#0x0784
+0x092dd    cd 97 a0       call   0x97a0 <.func$94>
+0x092e0    4d             tnz    A
+0x092e1    27 f7          jreq   0x92da <.loop$227>
+0x092e3    0a 06          dec    (0x06,SP)
+0x092e5    7b 06          ld     A,(0x06,SP)
+0x092e7    2a d5          jrpl   0x92be <.loop$228>
+0x092e9    7b 05          ld     A,(0x05,SP)
+0x092eb    ab 03          add    A,#0x03
+0x092ed    6b 05          ld     (0x05,SP),A
+0x092ef    a1 2a          cp     A,#0x2a
+0x092f1    2f c7          jrslt  0x92ba <.loop$229>
+0x092f3    20 bb          jra    0x92b0 <.loop$230>
+0x092f5    <.func$156>:
+0x092f5    88             push   A
+0x092f6    52 04          sub    SP,#0x04
+0x092f8    5f             clrw   X
+0x092f9    1f 01          ldw    (0x01,SP),X
+0x092fb    20 0a          jra    0x9307 <.label$157>
+0x092fd    <.loop$158>:
+0x092fd    1e 01          ldw    X,(0x01,SP)
+0x092ff    1c 00 80       addw   X,#0x0080
+0x09302    1f 01          ldw    (0x01,SP),X
+0x09304    1e 03          ldw    X,(0x03,SP)
+0x09306    5c             incw   X
+0x09307    <.label$157>:
+0x09307    1f 03          ldw    (0x03,SP),X
+0x09309    5f             clrw   X
+0x0930a    7b 05          ld     A,(0x05,SP)
+0x0930c    97             ld     XL,A
+0x0930d    bf 2e          ldw    0x2e,X
+0x0930f    1e 03          ldw    X,(0x03,SP)
+0x09311    b3 2e          cpw    X,0x2e
+0x09313    2f e8          jrslt  0x92fd <.loop$158>
+0x09315    ae 21 00       ldw    X,#0x2100
+0x09318    cd 90 2b       call   0x902b <.func$82>
+0x0931b    ae 30 00       ldw    X,#0x3000
+0x0931e    cd 90 2b       call   0x902b <.func$82>
+0x09321    ae 4f 00       ldw    X,#0x4f00
+0x09324    cd 90 2b       call   0x902b <.func$82>
+0x09327    ae 22 00       ldw    X,#0x2200
+0x0932a    cd 90 2b       call   0x902b <.func$82>
+0x0932d    ae 04 00       ldw    X,#0x0400
+0x09330    cd 90 2b       call   0x902b <.func$82>
+0x09333    ae 07 00       ldw    X,#0x0700
+0x09336    cd 90 2b       call   0x902b <.func$82>
+0x09339    a6 01          ld     A,#0x01
+0x0933b    cd 97 19       call   0x9719 <.func$92>
+0x0933e    <.loop$159>:
+0x0933e    ae 03 01       ldw    X,#0x0301
+0x09341    cd 97 a0       call   0x97a0 <.func$94>
+0x09344    4d             tnz    A
+0x09345    27 f7          jreq   0x933e <.loop$159>
+0x09347    ae 78 00       ldw    X,#0x7800
+0x0934a    cd 97 8e       call   0x978e <.func$100>
+0x0934d    <.loop$160>:
+0x0934d    ae 07 82       ldw    X,#0x0782
+0x09350    cd 97 a0       call   0x97a0 <.func$94>
+0x09353    4d             tnz    A
+0x09354    27 f7          jreq   0x934d <.loop$160>
+0x09356    a6 60          ld     A,#0x60
+0x09358    cd 97 9c       call   0x979c <.func$102>
+0x0935b    <.loop$161>:
+0x0935b    ae 07 80       ldw    X,#0x0780
+0x0935e    cd 97 a0       call   0x97a0 <.func$94>
+0x09361    4d             tnz    A
+0x09362    27 f7          jreq   0x935b <.loop$161>
+0x09364    5f             clrw   X
+0x09365    1f 03          ldw    (0x03,SP),X
+0x09367    <.loop$163>:
+0x09367    1e 01          ldw    X,(0x01,SP)
+0x09369    72 fb 03       addw   X,(0x03,SP)
+0x0936c    d6 89 7b       ld     A,(0x897b,X)
+0x0936f    cd 97 9c       call   0x979c <.func$102>
+0x09372    <.loop$162>:
+0x09372    ae 07 84       ldw    X,#0x0784
+0x09375    cd 97 a0       call   0x97a0 <.func$94>
+0x09378    4d             tnz    A
+0x09379    27 f7          jreq   0x9372 <.loop$162>
+0x0937b    1e 03          ldw    X,(0x03,SP)
+0x0937d    5c             incw   X
+0x0937e    1f 03          ldw    (0x03,SP),X
+0x09380    a3 00 80       cpw    X,#0x0080
+0x09383    2f e2          jrslt  0x9367 <.loop$163>
+0x09385    a6 01          ld     A,#0x01
+0x09387    cd 97 26       call   0x9726 <.func$105>
+0x0938a    5b 05          add    SP,#0x05
+0x0938c    81             ret
+0x0938d    <.func$117>:
+0x0938d    88             push   A
+0x0938e    0f 01          clr    (0x01,SP)
+0x09390    72 07 00 34 04 btjf   0x0034,#3,0x9399 <.bit3_unset$118>
+0x09395    a6 40          ld     A,#0x40
+0x09397    6b 01          ld     (0x01,SP),A
+0x09399    <.bit3_unset$118>:
+0x09399    7b 01          ld     A,(0x01,SP)
+0x0939b    88             push   A
+0x0939c    4b 80          push   #0x80
+0x0939e    be 10          ldw    X,0x10
+0x093a0    cd 98 a2       call   0x98a2 <.func$22>
+0x093a3    85             popw   X
+0x093a4    7b 01          ld     A,(0x01,SP)
+0x093a6    88             push   A
+0x093a7    4b 40          push   #0x40
+0x093a9    be 0e          ldw    X,0x0e
+0x093ab    cd 98 a2       call   0x98a2 <.func$22>
+0x093ae    85             popw   X
+0x093af    7b 01          ld     A,(0x01,SP)
+0x093b1    88             push   A
+0x093b2    4b 20          push   #0x20
+0x093b4    be 0c          ldw    X,0x0c
+0x093b6    cd 98 a2       call   0x98a2 <.func$22>
+0x093b9    85             popw   X
+0x093ba    7b 01          ld     A,(0x01,SP)
+0x093bc    88             push   A
+0x093bd    4b 10          push   #0x10
+0x093bf    be 0a          ldw    X,0x0a
+0x093c1    cd 98 a2       call   0x98a2 <.func$22>
+0x093c4    85             popw   X
+0x093c5    7b 01          ld     A,(0x01,SP)
+0x093c7    88             push   A
+0x093c8    4b 08          push   #0x08
+0x093ca    be 08          ldw    X,0x08
+0x093cc    cd 98 a2       call   0x98a2 <.func$22>
+0x093cf    85             popw   X
+0x093d0    7b 01          ld     A,(0x01,SP)
+0x093d2    88             push   A
+0x093d3    4b 40          push   #0x40
+0x093d5    be 06          ldw    X,0x06
+0x093d7    cd 98 a2       call   0x98a2 <.func$22>
+0x093da    85             popw   X
+0x093db    7b 01          ld     A,(0x01,SP)
+0x093dd    88             push   A
+0x093de    4b 20          push   #0x20
+0x093e0    be 04          ldw    X,0x04
+0x093e2    cd 98 a2       call   0x98a2 <.func$22>
+0x093e5    85             popw   X
+0x093e6    7b 01          ld     A,(0x01,SP)
+0x093e8    88             push   A
+0x093e9    4b 10          push   #0x10
+0x093eb    be 02          ldw    X,0x02
+0x093ed    cd 98 a2       call   0x98a2 <.func$22>
+0x093f0    5b 03          add    SP,#0x03
+0x093f2    81             ret
+0x093f3    <.func$119>:
+0x093f3    4b 40          push   #0x40
+0x093f5    4b 02          push   #0x02
+0x093f7    be 12          ldw    X,0x12
+0x093f9    cd 98 a2       call   0x98a2 <.func$22>
+0x093fc    85             popw   X
+0x093fd    4b 40          push   #0x40
+0x093ff    4b 04          push   #0x04
+0x09401    be 14          ldw    X,0x14
+0x09403    cd 98 a2       call   0x98a2 <.func$22>
+0x09406    85             popw   X
+0x09407    4b 40          push   #0x40
+0x09409    4b 08          push   #0x08
+0x0940b    be 16          ldw    X,0x16
+0x0940d    cd 98 a2       call   0x98a2 <.func$22>
+0x09410    85             popw   X
+0x09411    4b 40          push   #0x40
+0x09413    4b 04          push   #0x04
+0x09415    be 18          ldw    X,0x18
+0x09417    cd 98 a2       call   0x98a2 <.func$22>
+0x0941a    85             popw   X
+0x0941b    4b 60          push   #0x60
+0x0941d    4b 08          push   #0x08
+0x0941f    be 1a          ldw    X,0x1a
+0x09421    cd 98 a2       call   0x98a2 <.func$22>
+0x09424    85             popw   X
+0x09425    81             ret
+0x09426    <.func$0>:
+0x09426    3f 23          clr    0x23
+0x09428    be 10          ldw    X,0x10
+0x0942a    e6 01          ld     A,(0x01,X)
+0x0942c    2a 04          jrpl   0x9432 <.label$1>
+0x0942e    72 10 00 23    bset   0x0023,#0
+0x09432    <.label$1>:
+0x09432    be 0e          ldw    X,0x0e
+0x09434    e6 01          ld     A,(0x01,X)
+0x09436    a5 40          bcp    A,#0x40
+0x09438    27 04          jreq   0x943e <.label$2>
+0x0943a    72 12 00 23    bset   0x0023,#1
+0x0943e    <.label$2>:
+0x0943e    be 0c          ldw    X,0x0c
+0x09440    e6 01          ld     A,(0x01,X)
+0x09442    a5 20          bcp    A,#0x20
+0x09444    27 04          jreq   0x944a <.label$3>
+0x09446    72 14 00 23    bset   0x0023,#2
+0x0944a    <.label$3>:
+0x0944a    be 0a          ldw    X,0x0a
+0x0944c    e6 01          ld     A,(0x01,X)
+0x0944e    a5 10          bcp    A,#0x10
+0x09450    27 04          jreq   0x9456 <.label$4>
+0x09452    72 16 00 23    bset   0x0023,#3
+0x09456    <.label$4>:
+0x09456    be 08          ldw    X,0x08
+0x09458    e6 01          ld     A,(0x01,X)
+0x0945a    a5 08          bcp    A,#0x08
+0x0945c    27 04          jreq   0x9462 <.label$5>
+0x0945e    72 18 00 23    bset   0x0023,#4
+0x09462    <.label$5>:
+0x09462    be 06          ldw    X,0x06
+0x09464    e6 01          ld     A,(0x01,X)
+0x09466    a5 40          bcp    A,#0x40
+0x09468    27 04          jreq   0x946e <.label$6>
+0x0946a    72 1a 00 23    bset   0x0023,#5
+0x0946e    <.label$6>:
+0x0946e    be 04          ldw    X,0x04
+0x09470    e6 01          ld     A,(0x01,X)
+0x09472    a5 20          bcp    A,#0x20
+0x09474    27 04          jreq   0x947a <.label$7>
+0x09476    72 1c 00 23    bset   0x0023,#6
+0x0947a    <.label$7>:
+0x0947a    be 02          ldw    X,0x02
+0x0947c    e6 01          ld     A,(0x01,X)
+0x0947e    a5 10          bcp    A,#0x10
+0x09480    27 04          jreq   0x9486 <.label$8>
+0x09482    72 1e 00 23    bset   0x0023,#7
+0x09486    <.label$8>:
+0x09486    81             ret
+0x09487    <.func$130>:
+0x09487    3f 21          clr    0x21
+0x09489    be 12          ldw    X,0x12
+0x0948b    e6 01          ld     A,(0x01,X)
+0x0948d    a5 02          bcp    A,#0x02
+0x0948f    27 04          jreq   0x9495 <.label$131>
+0x09491    72 10 00 21    bset   0x0021,#0
+0x09495    <.label$131>:
+0x09495    be 14          ldw    X,0x14
+0x09497    e6 01          ld     A,(0x01,X)
+0x09499    a5 04          bcp    A,#0x04
+0x0949b    27 04          jreq   0x94a1 <.label$132>
+0x0949d    72 12 00 21    bset   0x0021,#1
+0x094a1    <.label$132>:
+0x094a1    be 16          ldw    X,0x16
+0x094a3    e6 01          ld     A,(0x01,X)
+0x094a5    a5 08          bcp    A,#0x08
+0x094a7    27 04          jreq   0x94ad <.label$133>
+0x094a9    72 14 00 21    bset   0x0021,#2
+0x094ad    <.label$133>:
+0x094ad    b6 21          ld     A,0x21
+0x094af    a4 03          and    A,#0x03
+0x094b1    4a             dec    A
+0x094b2    26 06          jrne   0x94ba <.label$134>
+0x094b4    72 14 00 34    bset   0x0034,#2
+0x094b8    20 04          jra    0x94be <.label$143>
+0x094ba    <.label$134>:
+0x094ba    72 15 00 34    bres   0x0034,#2
+0x094be    <.label$143>:
+0x094be    b6 21          ld     A,0x21
+0x094c0    a4 03          and    A,#0x03
+0x094c2    a1 02          cp     A,#0x02
+0x094c4    26 06          jrne   0x94cc <.label$135>
+0x094c6    72 12 00 34    bset   0x0034,#1
+0x094ca    20 04          jra    0x94d0 <.label$142>
+0x094cc    <.label$135>:
+0x094cc    72 13 00 34    bres   0x0034,#1
+0x094d0    <.label$142>:
+0x094d0    72 04 00 21 06 btjt   0x0021,#2,0x94db <.bit2_isset$136>
+0x094d5    72 10 00 34    bset   0x0034,#0
+0x094d9    20 04          jra    0x94df <.label$141>
+0x094db    <.bit2_isset$136>:
+0x094db    72 11 00 34    bres   0x0034,#0
+0x094df    <.label$141>:
+0x094df    b6 21          ld     A,0x21
+0x094e1    a5 03          bcp    A,#0x03
+0x094e3    26 06          jrne   0x94eb <.label$137>
+0x094e5    72 16 00 34    bset   0x0034,#3
+0x094e9    20 04          jra    0x94ef <.label$140>
+0x094eb    <.label$137>:
+0x094eb    72 17 00 34    bres   0x0034,#3
+0x094ef    <.label$140>:
+0x094ef    72 0b 00 34 02 btjf   0x0034,#5,0x94f6 <.bit5_unset$138>
+0x094f4    20 0d          jra    0x9503 <.label$139>
+0x094f6    <.bit5_unset$138>:
+0x094f6    be 18          ldw    X,0x18
+0x094f8    e6 01          ld     A,(0x01,X)
+0x094fa    a5 04          bcp    A,#0x04
+0x094fc    27 05          jreq   0x9503 <.label$139>
+0x094fe    72 18 00 34    bset   0x0034,#4
+0x09502    81             ret
+0x09503    <.label$139>:
+0x09503    72 19 00 34    bres   0x0034,#4
+0x09507    81             ret
+0x09508    <.func$175>:
+0x09508    72 05 00 34 17 btjf   0x0034,#2,0x9524 <.bit2_unset$176>
+0x0950d    b6 23          ld     A,0x23
+0x0950f    4e             swap   A
+0x09510    a4 0f          and    A,#0x0f
+0x09512    ae 00 26       ldw    X,#0x0026
+0x09515    95             ld     XH,A
+0x09516    cd 91 d8       call   0x91d8 <.func$213>
+0x09519    b6 23          ld     A,0x23
+0x0951b    a4 0f          and    A,#0x0f
+0x0951d    ae 00 41       ldw    X,#0x0041
+0x09520    95             ld     XH,A
+0x09521    cc 91 d8       jp     0x91d8 <.func$213>
+0x09524    <.bit2_unset$176>:
+0x09524    72 02 00 34 17 btjt   0x0034,#1,0x9540 <.bit1_isset$177>
+0x09529    b6 23          ld     A,0x23
+0x0952b    4e             swap   A
+0x0952c    a4 0f          and    A,#0x0f
+0x0952e    ae 00 2f       ldw    X,#0x002f
+0x09531    95             ld     XH,A
+0x09532    cd 91 d8       call   0x91d8 <.func$213>
+0x09535    b6 23          ld     A,0x23
+0x09537    a4 0f          and    A,#0x0f
+0x09539    ae 00 42       ldw    X,#0x0042
+0x0953c    95             ld     XH,A
+0x0953d    cd 91 d8       call   0x91d8 <.func$213>
+0x09540    <.bit1_isset$177>:
+0x09540    72 01 00 23 05 btjf   0x0023,#0,0x954a <.bit0_unset$178>
+0x09545    ae 00 01       ldw    X,#0x0001
+0x09548    20 01          jra    0x954b <.label$212>
+0x0954a    <.bit0_unset$178>:
+0x0954a    5f             clrw   X
+0x0954b    <.label$212>:
+0x0954b    cd 91 05       call   0x9105 <.func$179>
+0x0954e    72 03 00 23 05 btjf   0x0023,#1,0x9558 <.bit1_unset$198>
+0x09553    ae 01 01       ldw    X,#0x0101
+0x09556    20 03          jra    0x955b <.label$211>
+0x09558    <.bit1_unset$198>:
+0x09558    ae 01 00       ldw    X,#0x0100
+0x0955b    <.label$211>:
+0x0955b    cd 91 05       call   0x9105 <.func$179>
+0x0955e    72 05 00 23 05 btjf   0x0023,#2,0x9568 <.bit2_unset$199>
+0x09563    ae 02 01       ldw    X,#0x0201
+0x09566    20 03          jra    0x956b <.label$210>
+0x09568    <.bit2_unset$199>:
+0x09568    ae 02 00       ldw    X,#0x0200
+0x0956b    <.label$210>:
+0x0956b    cd 91 05       call   0x9105 <.func$179>
+0x0956e    72 07 00 23 05 btjf   0x0023,#3,0x9578 <.bit3_unset$200>
+0x09573    ae 03 01       ldw    X,#0x0301
+0x09576    20 03          jra    0x957b <.label$209>
+0x09578    <.bit3_unset$200>:
+0x09578    ae 03 00       ldw    X,#0x0300
+0x0957b    <.label$209>:
+0x0957b    cd 91 05       call   0x9105 <.func$179>
+0x0957e    72 09 00 23 05 btjf   0x0023,#4,0x9588 <.bit4_unset$201>
+0x09583    ae 04 01       ldw    X,#0x0401
+0x09586    20 03          jra    0x958b <.label$208>
+0x09588    <.bit4_unset$201>:
+0x09588    ae 04 00       ldw    X,#0x0400
+0x0958b    <.label$208>:
+0x0958b    cd 91 05       call   0x9105 <.func$179>
+0x0958e    72 0b 00 23 05 btjf   0x0023,#5,0x9598 <.bit5_unset$202>
+0x09593    ae 05 01       ldw    X,#0x0501
+0x09596    20 03          jra    0x959b <.label$207>
+0x09598    <.bit5_unset$202>:
+0x09598    ae 05 00       ldw    X,#0x0500
+0x0959b    <.label$207>:
+0x0959b    cd 91 05       call   0x9105 <.func$179>
+0x0959e    72 0d 00 23 05 btjf   0x0023,#6,0x95a8 <.bit6_unset$203>
+0x095a3    ae 06 01       ldw    X,#0x0601
+0x095a6    20 03          jra    0x95ab <.label$206>
+0x095a8    <.bit6_unset$203>:
+0x095a8    ae 06 00       ldw    X,#0x0600
+0x095ab    <.label$206>:
+0x095ab    cd 91 05       call   0x9105 <.func$179>
+0x095ae    72 0f 00 23 05 btjf   0x0023,#7,0x95b8 <.bit7_unset$204>
+0x095b3    ae 07 01       ldw    X,#0x0701
+0x095b6    20 03          jra    0x95bb <.label$205>
+0x095b8    <.bit7_unset$204>:
+0x095b8    ae 07 00       ldw    X,#0x0700
+0x095bb    <.label$205>:
+0x095bb    cc 91 05       jp     0x9105 <.func$179>
+0x095be    <.func$53>:
+0x095be    72 5f 52 10    clr    0x5210 {I2C_CR1}
+0x095c2    72 5f 52 11    clr    0x5211 {I2C_CR2}
+0x095c6    72 5f 52 12    clr    0x5212 {I2C_FREQR}
+0x095ca    72 5f 52 13    clr    0x5213 {I2C_OARL}
+0x095ce    72 5f 52 14    clr    0x5214 {I2C_OARH}
+0x095d2    72 5f 52 1a    clr    0x521a {I2C_ITR}
+0x095d6    72 5f 52 1b    clr    0x521b {I2C_CCRL}
+0x095da    72 5f 52 1c    clr    0x521c {I2C_CCRH}
+0x095de    35 02 52 1d    mov    0x521d {I2C_TRISER},#0x02
+0x095e2    81             ret
+0x095e3    <.func$54>:
+0x095e3    52 09          sub    SP,#0x09
+0x095e5    0f 07          clr    (0x07,SP)
+0x095e7    c6 52 12       ld     A,0x5212 {I2C_FREQR}
+0x095ea    a4 c0          and    A,#0xc0
+0x095ec    c7 52 12       ld     0x5212 {I2C_FREQR},A
+0x095ef    c6 52 12       ld     A,0x5212 {I2C_FREQR}
+0x095f2    1a 15          or     A,(0x15,SP)
+0x095f4    c7 52 12       ld     0x5212 {I2C_FREQR},A
+0x095f7    72 11 52 10    bres   0x5210 {I2C_CR1},#0
+0x095fb    c6 52 1c       ld     A,0x521c {I2C_CCRH}
+0x095fe    a4 30          and    A,#0x30
+0x09600    c7 52 1c       ld     0x521c {I2C_CCRH},A
+0x09603    72 5f 52 1b    clr    0x521b {I2C_CCRL}
+0x09607    96             ldw    X,SP
+0x09608    1c 00 0c       addw   X,#0x000c
+0x0960b    cd 9c c8       call   0x9cc8 <.func$35>
+0x0960e    ae 8c 7f       ldw    X,#0x8c7f
+0x09611    cd 9c 1d       call   0x9c1d <.func$55>
+0x09614    25 7c          jrult  0x9692 <.label$59>
+0x09616    a6 80          ld     A,#0x80
+0x09618    6b 07          ld     (0x07,SP),A
+0x0961a    96             ldw    X,SP
+0x0961b    0d 12          tnz    (0x12,SP)
+0x0961d    26 2b          jrne   0x964a <.label$68>
+0x0961f    1c 00 0c       addw   X,#0x000c
+0x09622    cd 9c c8       call   0x9cc8 <.func$35>
+0x09625    a6 03          ld     A,#0x03
+0x09627    cd 9e 3e       call   0x9e3e <.func$69>
+0x0962a    96             ldw    X,SP
+0x0962b    5c             incw   X
+0x0962c    cd 9e 01       call   0x9e01 <.func$37>
+0x0962f    7b 15          ld     A,(0x15,SP)
+0x09631    b7 2d          ld     0x2d,A
+0x09633    3f 2c          clr    0x2c
+0x09635    3f 2b          clr    0x2b
+0x09637    3f 2a          clr    0x2a
+0x09639    ae 8c 83       ldw    X,#0x8c83
+0x0963c    cd 9c 3d       call   0x9c3d <.func$60>
+0x0963f    96             ldw    X,SP
+0x09640    5c             incw   X
+0x09641    cd 9c da       call   0x9cda <.func$38>
+0x09644    be 2c          ldw    X,0x2c
+0x09646    1f 08          ldw    (0x08,SP),X
+0x09648    20 2f          jra    0x9679 <.label$79>
+0x0964a    <.label$68>:
+0x0964a    1c 00 0c       addw   X,#0x000c
+0x0964d    cd 9c c8       call   0x9cc8 <.func$35>
+0x09650    a6 19          ld     A,#0x19
+0x09652    cd 9e 3e       call   0x9e3e <.func$69>
+0x09655    96             ldw    X,SP
+0x09656    5c             incw   X
+0x09657    cd 9e 01       call   0x9e01 <.func$37>
+0x0965a    7b 15          ld     A,(0x15,SP)
+0x0965c    b7 2d          ld     0x2d,A
+0x0965e    3f 2c          clr    0x2c
+0x09660    3f 2b          clr    0x2b
+0x09662    3f 2a          clr    0x2a
+0x09664    ae 8c 83       ldw    X,#0x8c83
+0x09667    cd 9c 3d       call   0x9c3d <.func$60>
+0x0966a    96             ldw    X,SP
+0x0966b    5c             incw   X
+0x0966c    cd 9c da       call   0x9cda <.func$38>
+0x0966f    be 2c          ldw    X,0x2c
+0x09671    1f 08          ldw    (0x08,SP),X
+0x09673    7b 07          ld     A,(0x07,SP)
+0x09675    aa 40          or     A,#0x40
+0x09677    6b 07          ld     (0x07,SP),A
+0x09679    <.label$79>:
+0x09679    1e 08          ldw    X,(0x08,SP)
+0x0967b    26 03          jrne   0x9680 <.label$72>
+0x0967d    5c             incw   X
+0x0967e    1f 08          ldw    (0x08,SP),X
+0x09680    <.label$72>:
+0x09680    7b 15          ld     A,(0x15,SP)
+0x09682    97             ld     XL,A
+0x09683    a6 03          ld     A,#0x03
+0x09685    42             mul    X,A
+0x09686    a6 0a          ld     A,#0x0a
+0x09688    cd 9e 19       call   0x9e19 <.func$73>
+0x0968b    5c             incw   X
+0x0968c    1f 05          ldw    (0x05,SP),X
+0x0968e    7b 06          ld     A,(0x06,SP)
+0x09690    20 38          jra    0x96ca <.label$78>
+0x09692    <.label$59>:
+0x09692    96             ldw    X,SP
+0x09693    1c 00 0c       addw   X,#0x000c
+0x09696    cd 9c c8       call   0x9cc8 <.func$35>
+0x09699    38 2d          sla    0x2d
+0x0969b    39 2c          rlc    0x2c
+0x0969d    39 2b          rlc    0x2b
+0x0969f    96             ldw    X,SP
+0x096a0    39 2a          rlc    0x2a
+0x096a2    5c             incw   X
+0x096a3    cd 9e 01       call   0x9e01 <.func$37>
+0x096a6    7b 15          ld     A,(0x15,SP)
+0x096a8    b7 2d          ld     0x2d,A
+0x096aa    3f 2c          clr    0x2c
+0x096ac    3f 2b          clr    0x2b
+0x096ae    3f 2a          clr    0x2a
+0x096b0    ae 8c 83       ldw    X,#0x8c83
+0x096b3    cd 9c 3d       call   0x9c3d <.func$60>
+0x096b6    96             ldw    X,SP
+0x096b7    5c             incw   X
+0x096b8    cd 9c da       call   0x9cda <.func$38>
+0x096bb    be 2c          ldw    X,0x2c
+0x096bd    a3 00 04       cpw    X,#0x0004
+0x096c0    24 03          jruge  0x96c5 <.label$64>
+0x096c2    ae 00 04       ldw    X,#0x0004
+0x096c5    <.label$64>:
+0x096c5    1f 08          ldw    (0x08,SP),X
+0x096c7    7b 15          ld     A,(0x15,SP)
+0x096c9    4c             inc    A
+0x096ca    <.label$78>:
+0x096ca    c7 52 1d       ld     0x521d {I2C_TRISER},A
+0x096cd    7b 09          ld     A,(0x09,SP)
+0x096cf    c7 52 1b       ld     0x521b {I2C_CCRL},A
+0x096d2    7b 08          ld     A,(0x08,SP)
+0x096d4    a4 0f          and    A,#0x0f
+0x096d6    1a 07          or     A,(0x07,SP)
+0x096d8    c7 52 1c       ld     0x521c {I2C_CCRH},A
+0x096db    72 10 52 10    bset   0x5210 {I2C_CR1},#0
+0x096df    7b 13          ld     A,(0x13,SP)
+0x096e1    ad 6a          callr  0x974d <.func$65>
+0x096e3    7b 11          ld     A,(0x11,SP)
+0x096e5    c7 52 13       ld     0x5213 {I2C_OARL},A
+0x096e8    1e 10          ldw    X,(0x10,SP)
+0x096ea    4f             clr    A
+0x096eb    01             rrwa   X
+0x096ec    48             sla    A
+0x096ed    01             rrwa   X
+0x096ee    49             rlc    A
+0x096ef    a4 06          and    A,#0x06
+0x096f1    6b 04          ld     (0x04,SP),A
+0x096f3    7b 14          ld     A,(0x14,SP)
+0x096f5    aa 40          or     A,#0x40
+0x096f7    1a 04          or     A,(0x04,SP)
+0x096f9    c7 52 14       ld     0x5214 {I2C_OARH},A
+0x096fc    5b 09          add    SP,#0x09
+0x096fe    81             ret
+0x096ff    <.func$80>:
+0x096ff    4d             tnz    A
+0x09700    27 05          jreq   0x9707 <.label$81>
+0x09702    72 10 52 10    bset   0x5210 {I2C_CR1},#0
+0x09706    81             ret
+0x09707    <.label$81>:
+0x09707    72 11 52 10    bres   0x5210 {I2C_CR1},#0
+0x0970b    81             ret
+0x0970c  ? 4d             tnz    A
+0x0970d  ? 27 05          jreq   0x9714
+0x0970f  ? 72 1c 52 10    bset   0x5210 {I2C_CR1},#6
+0x09713  ? 81             ret
+0x09714  ? 72 1d 52 10    bres   0x5210 {I2C_CR1},#6
+0x09718  ? 81             ret
+0x09719    <.func$92>:
+0x09719    4d             tnz    A
+0x0971a    27 05          jreq   0x9721 <.label$93>
+0x0971c    72 10 52 11    bset   0x5211 {I2C_CR2},#0
+0x09720    81             ret
+0x09721    <.label$93>:
+0x09721    72 11 52 11    bres   0x5211 {I2C_CR2},#0
+0x09725    81             ret
+0x09726    <.func$105>:
+0x09726    4d             tnz    A
+0x09727    27 05          jreq   0x972e <.label$106>
+0x09729    72 12 52 11    bset   0x5211 {I2C_CR2},#1
+0x0972d    81             ret
+0x0972e    <.label$106>:
+0x0972e    72 13 52 11    bres   0x5211 {I2C_CR2},#1
+0x09732    81             ret
+0x09733  ? 4d             tnz    A
+0x09734  ? 27 05          jreq   0x973b
+0x09736  ? 72 1e 52 11    bset   0x5211 {I2C_CR2},#7
+0x0973a  ? 81             ret
+0x0973b  ? 72 1f 52 11    bres   0x5211 {I2C_CR2},#7
+0x0973f  ? 81             ret
+0x09740  ? 4d             tnz    A
+0x09741  ? 27 05          jreq   0x9748
+0x09743  ? 72 1f 52 10    bres   0x5210 {I2C_CR1},#7
+0x09747  ? 81             ret
+0x09748  ? 72 1e 52 10    bset   0x5210 {I2C_CR1},#7
+0x0974c  ? 81             ret
+0x0974d    <.func$65>:
+0x0974d    4d             tnz    A
+0x0974e    26 05          jrne   0x9755 <.label$66>
+0x09750    72 15 52 11    bres   0x5211 {I2C_CR2},#2
+0x09754    81             ret
+0x09755    <.label$66>:
+0x09755    72 14 52 11    bset   0x5211 {I2C_CR2},#2
+0x09759    4a             dec    A
+0x0975a    26 05          jrne   0x9761 <.label$67>
+0x0975c    72 17 52 11    bres   0x5211 {I2C_CR2},#3
+0x09760    81             ret
+0x09761    <.label$67>:
+0x09761    72 16 52 11    bset   0x5211 {I2C_CR2},#3
+0x09765    81             ret
+0x09766  ? 89             pushw  X
+0x09767  ? 9f             ld     A,XL
+0x09768  ? 4d             tnz    A
+0x09769  ? 27 06          jreq   0x9771
+0x0976b  ? 9e             ld     A,XH
+0x0976c  ? ca 52 1a       or     A,0x521a {I2C_ITR}
+0x0976f  ? 20 06          jra    0x9777
+0x09771  ? 7b 01          ld     A,(0x01,SP)
+0x09773  ? 43             cpl    A
+0x09774  ? c4 52 1a       and    A,0x521a {I2C_ITR}
+0x09777  ? c7 52 1a       ld     0x521a {I2C_ITR},A
+0x0977a  ? 85             popw   X
+0x0977b  ? 81             ret
+0x0977c  ? a1 40          cp     A,#0x40
+0x0977e  ? 26 05          jrne   0x9785
+0x09780  ? 72 1c 52 1c    bset   0x521c {I2C_CCRH},#6
+0x09784  ? 81             ret
+0x09785  ? 72 1d 52 1c    bres   0x521c {I2C_CCRH},#6
+0x09789  ? 81             ret
+0x0978a  ? c6 52 16       ld     A,0x5216 {I2C_DR}
+0x0978d  ? 81             ret
+0x0978e    <.func$100>:
+0x0978e    89             pushw  X
+0x0978f    7b 01          ld     A,(0x01,SP)
+0x09791    a4 fe          and    A,#0xfe
+0x09793    6b 01          ld     (0x01,SP),A
+0x09795    1a 02          or     A,(0x02,SP)
+0x09797    c7 52 16       ld     0x5216 {I2C_DR},A
+0x0979a    85             popw   X
+0x0979b    81             ret
+0x0979c    <.func$102>:
+0x0979c    c7 52 16       ld     0x5216 {I2C_DR},A
+0x0979f    81             ret
+0x097a0    <.func$94>:
+0x097a0    89             pushw  X
+0x097a1    52 06          sub    SP,#0x06
+0x097a3    5f             clrw   X
+0x097a4    1f 04          ldw    (0x04,SP),X
+0x097a6    1e 07          ldw    X,(0x07,SP)
+0x097a8    a3 00 04       cpw    X,#0x0004
+0x097ab    26 09          jrne   0x97b6 <.label$95>
+0x097ad    c6 52 18       ld     A,0x5218 {I2C_SR2}
+0x097b0    a4 04          and    A,#0x04
+0x097b2    5f             clrw   X
+0x097b3    97             ld     XL,A
+0x097b4    20 1a          jra    0x97d0 <.label$98>
+0x097b6    <.label$95>:
+0x097b6    c6 52 17       ld     A,0x5217 {I2C_SR1}
+0x097b9    6b 03          ld     (0x03,SP),A
+0x097bb    c6 52 19       ld     A,0x5219 {I2C_SR3}
+0x097be    6b 06          ld     (0x06,SP),A
+0x097c0    5f             clrw   X
+0x097c1    7b 03          ld     A,(0x03,SP)
+0x097c3    97             ld     XL,A
+0x097c4    1f 01          ldw    (0x01,SP),X
+0x097c6    5f             clrw   X
+0x097c7    7b 06          ld     A,(0x06,SP)
+0x097c9    97             ld     XL,A
+0x097ca    7b 02          ld     A,(0x02,SP)
+0x097cc    01             rrwa   X
+0x097cd    1a 01          or     A,(0x01,SP)
+0x097cf    01             rrwa   X
+0x097d0    <.label$98>:
+0x097d0    1f 04          ldw    (0x04,SP),X
+0x097d2    1e 04          ldw    X,(0x04,SP)
+0x097d4    01             rrwa   X
+0x097d5    14 08          and    A,(0x08,SP)
+0x097d7    01             rrwa   X
+0x097d8    14 07          and    A,(0x07,SP)
+0x097da    01             rrwa   X
+0x097db    13 07          cpw    X,(0x07,SP)
+0x097dd    26 04          jrne   0x97e3 <.label$96>
+0x097df    a6 01          ld     A,#0x01
+0x097e1    20 01          jra    0x97e4 <.label$97>
+0x097e3    <.label$96>:
+0x097e3    4f             clr    A
+0x097e4    <.label$97>:
+0x097e4    5b 08          add    SP,#0x08
+0x097e6    81             ret
+0x097e7  ? 52 06          sub    SP,#0x06
+0x097e9  ? 5f             clrw   X
+0x097ea  ? 1f 05          ldw    (0x05,SP),X
+0x097ec  ? 72 05 52 18 05 btjf   0x5218 {I2C_SR2},#2,0x97f6
+0x097f1  ? ae 00 04       ldw    X,#0x0004
+0x097f4  ? 20 13          jra    0x9809
+0x097f6  ? c6 52 17       ld     A,0x5217 {I2C_SR1}
+0x097f9  ? 97             ld     XL,A
+0x097fa  ? 1f 01          ldw    (0x01,SP),X
+0x097fc  ? c6 52 19       ld     A,0x5219 {I2C_SR3}
+0x097ff  ? 5f             clrw   X
+0x09800  ? 97             ld     XL,A
+0x09801  ? 1f 03          ldw    (0x03,SP),X
+0x09803  ? 7b 02          ld     A,(0x02,SP)
+0x09805  ? 01             rrwa   X
+0x09806  ? 1a 01          or     A,(0x01,SP)
+0x09808  ? 01             rrwa   X
+0x09809  ? 1f 05          ldw    (0x05,SP),X
+0x0980b  ? 1e 05          ldw    X,(0x05,SP)
+0x0980d  ? 5b 06          add    SP,#0x06
+0x0980f  ? 81             ret
+0x09810    <.func$83>:
+0x09810    89             pushw  X
+0x09811    89             pushw  X
+0x09812    0f 02          clr    (0x02,SP)
+0x09814    9e             ld     A,XH
+0x09815    6b 01          ld     (0x01,SP),A
+0x09817    4a             dec    A
+0x09818    27 08          jreq   0x9822 <.label$84>
+0x0981a    4a             dec    A
+0x0981b    27 0a          jreq   0x9827 <.label$88>
+0x0981d    4a             dec    A
+0x0981e    27 0c          jreq   0x982c <.label$89>
+0x09820    20 0f          jra    0x9831 <.label$90>
+0x09822    <.label$84>:
+0x09822    c6 52 17       ld     A,0x5217 {I2C_SR1}
+0x09825    20 08          jra    0x982f <.label$85>
+0x09827    <.label$88>:
+0x09827    c6 52 18       ld     A,0x5218 {I2C_SR2}
+0x0982a    20 03          jra    0x982f <.label$85>
+0x0982c    <.label$89>:
+0x0982c    c6 52 19       ld     A,0x5219 {I2C_SR3}
+0x0982f    <.label$85>:
+0x0982f    6b 02          ld     (0x02,SP),A
+0x09831    <.label$90>:
+0x09831    7b 04          ld     A,(0x04,SP)
+0x09833    15 02          bcp    A,(0x02,SP)
+0x09835    27 04          jreq   0x983b <.label$86>
+0x09837    a6 01          ld     A,#0x01
+0x09839    20 01          jra    0x983c <.label$87>
+0x0983b    <.label$86>:
+0x0983b    4f             clr    A
+0x0983c    <.label$87>:
+0x0983c    5b 04          add    SP,#0x04
+0x0983e    81             ret
+0x0983f  ? 89             pushw  X
+0x09840  ? 01             rrwa   X
+0x09841  ? 5f             clrw   X
+0x09842  ? 02             rlwa   X
+0x09843  ? 1f 01          ldw    (0x01,SP),X
+0x09845  ? 7b 02          ld     A,(0x02,SP)
+0x09847  ? 43             cpl    A
+0x09848  ? c7 52 18       ld     0x5218 {I2C_SR2},A
+0x0984b  ? 85             popw   X
+0x0984c  ? 81             ret
+0x0984d  ? 89             pushw  X
+0x0984e  ? 52 04          sub    SP,#0x04
+0x09850  ? 0f 03          clr    (0x03,SP)
+0x09852  ? 9e             ld     A,XH
+0x09853  ? a4 07          and    A,#0x07
+0x09855  ? 5f             clrw   X
+0x09856  ? 97             ld     XL,A
+0x09857  ? 1f 01          ldw    (0x01,SP),X
+0x09859  ? c6 52 1a       ld     A,0x521a {I2C_ITR}
+0x0985c  ? 14 02          and    A,(0x02,SP)
+0x0985e  ? 6b 03          ld     (0x03,SP),A
+0x09860  ? 7b 05          ld     A,(0x05,SP)
+0x09862  ? a4 30          and    A,#0x30
+0x09864  ? 97             ld     XL,A
+0x09865  ? 4f             clr    A
+0x09866  ? 02             rlwa   X
+0x09867  ? a3 01 00       cpw    X,#0x0100
+0x0986a  ? 26 0d          jrne   0x9879
+0x0986c  ? c6 52 17       ld     A,0x5217 {I2C_SR1}
+0x0986f  ? 15 06          bcp    A,(0x06,SP)
+0x09871  ? 27 15          jreq   0x9888
+0x09873  ? 0d 03          tnz    (0x03,SP)
+0x09875  ? 27 11          jreq   0x9888
+0x09877  ? 20 0b          jra    0x9884
+0x09879  ? c6 52 18       ld     A,0x5218 {I2C_SR2}
+0x0987c  ? 15 06          bcp    A,(0x06,SP)
+0x0987e  ? 27 08          jreq   0x9888
+0x09880  ? 0d 03          tnz    (0x03,SP)
+0x09882  ? 27 04          jreq   0x9888
+0x09884  ? a6 01          ld     A,#0x01
+0x09886  ? 20 01          jra    0x9889
+0x09888  ? 4f             clr    A
+0x09889  ? 5b 06          add    SP,#0x06
+0x0988b  ? 81             ret
+0x0988c  ? 89             pushw  X
+0x0988d  ? 01             rrwa   X
+0x0988e  ? 5f             clrw   X
+0x0988f  ? 02             rlwa   X
+0x09890  ? 1f 01          ldw    (0x01,SP),X
+0x09892  ? 7b 02          ld     A,(0x02,SP)
+0x09894  ? 43             cpl    A
+0x09895  ? c7 52 18       ld     0x5218 {I2C_SR2},A
+0x09898  ? 85             popw   X
+0x09899  ? 81             ret
+0x0989a    <.func$19>:
+0x0989a    7f             clr    (X)
+0x0989b    6f 02          clr    (0x02,X)
+0x0989d    6f 03          clr    (0x03,X)
+0x0989f    6f 04          clr    (0x04,X)
+0x098a1    81             ret
+0x098a2    <.func$22>:
+0x098a2    89             pushw  X
+0x098a3    7b 05          ld     A,(0x05,SP)
+0x098a5    43             cpl    A
+0x098a6    e4 04          and    A,(0x04,X)
+0x098a8    e7 04          ld     (0x04,X),A
+0x098aa    7b 06          ld     A,(0x06,SP)
+0x098ac    2a 16          jrpl   0x98c4 <.label$23>
+0x098ae    a5 10          bcp    A,#0x10
+0x098b0    27 05          jreq   0x98b7 <.label$28>
+0x098b2    f6             ld     A,(X)
+0x098b3    1a 05          or     A,(0x05,SP)
+0x098b5    20 04          jra    0x98bb <.label$30>
+0x098b7    <.label$28>:
+0x098b7    7b 05          ld     A,(0x05,SP)
+0x098b9    43             cpl    A
+0x098ba    f4             and    A,(X)
+0x098bb    <.label$30>:
+0x098bb    f7             ld     (X),A
+0x098bc    1e 01          ldw    X,(0x01,SP)
+0x098be    e6 02          ld     A,(0x02,X)
+0x098c0    1a 05          or     A,(0x05,SP)
+0x098c2    20 05          jra    0x98c9 <.label$29>
+0x098c4    <.label$23>:
+0x098c4    7b 05          ld     A,(0x05,SP)
+0x098c6    43             cpl    A
+0x098c7    e4 02          and    A,(0x02,X)
+0x098c9    <.label$29>:
+0x098c9    e7 02          ld     (0x02,X),A
+0x098cb    7b 06          ld     A,(0x06,SP)
+0x098cd    a5 40          bcp    A,#0x40
+0x098cf    27 06          jreq   0x98d7 <.label$24>
+0x098d1    e6 03          ld     A,(0x03,X)
+0x098d3    1a 05          or     A,(0x05,SP)
+0x098d5    20 05          jra    0x98dc <.label$27>
+0x098d7    <.label$24>:
+0x098d7    7b 05          ld     A,(0x05,SP)
+0x098d9    43             cpl    A
+0x098da    e4 03          and    A,(0x03,X)
+0x098dc    <.label$27>:
+0x098dc    e7 03          ld     (0x03,X),A
+0x098de    7b 06          ld     A,(0x06,SP)
+0x098e0    a5 20          bcp    A,#0x20
+0x098e2    27 06          jreq   0x98ea <.label$25>
+0x098e4    e6 04          ld     A,(0x04,X)
+0x098e6    1a 05          or     A,(0x05,SP)
+0x098e8    20 05          jra    0x98ef <.label$26>
+0x098ea    <.label$25>:
+0x098ea    7b 05          ld     A,(0x05,SP)
+0x098ec    43             cpl    A
+0x098ed    e4 04          and    A,(0x04,X)
+0x098ef    <.label$26>:
+0x098ef    e7 04          ld     (0x04,X),A
+0x098f1    85             popw   X
+0x098f2    81             ret
+0x098f3  ? 7b 03          ld     A,(0x03,SP)
+0x098f5  ? f7             ld     (X),A
+0x098f6  ? 81             ret
+0x098f7  ? f6             ld     A,(X)
+0x098f8  ? 1a 03          or     A,(0x03,SP)
+0x098fa  ? f7             ld     (X),A
+0x098fb  ? 81             ret
+0x098fc  ? 7b 03          ld     A,(0x03,SP)
+0x098fe  ? 43             cpl    A
+0x098ff  ? f4             and    A,(X)
+0x09900  ? f7             ld     (X),A
+0x09901  ? 81             ret
+0x09902  ? f6             ld     A,(X)
+0x09903  ? 18 03          xor    A,(0x03,SP)
+0x09905  ? f7             ld     (X),A
+0x09906  ? 81             ret
+0x09907  ? f6             ld     A,(X)
+0x09908  ? 81             ret
+0x09909  ? e6 01          ld     A,(0x01,X)
+0x0990b  ? 81             ret
+0x0990c  ? e6 01          ld     A,(0x01,X)
+0x0990e  ? 14 03          and    A,(0x03,SP)
+0x09910  ? 81             ret
+0x09911  ? 7b 04          ld     A,(0x04,SP)
+0x09913  ? 27 06          jreq   0x991b
+0x09915  ? e6 03          ld     A,(0x03,X)
+0x09917  ? 1a 03          or     A,(0x03,SP)
+0x09919  ? 20 05          jra    0x9920
+0x0991b  ? 7b 03          ld     A,(0x03,SP)
+0x0991d  ? 43             cpl    A
+0x0991e  ? e4 03          and    A,(0x03,X)
+0x09920  ? e7 03          ld     (0x03,X),A
+0x09922  ? 81             ret
+0x09923  ? 35 01 50 c0    mov    0x50c0 {CLK_ICKR} <CLK_ICKR>,#0x01
+0x09927  ? 72 5f 50 c1    clr    0x50c1 <CLK_ECKR>
+0x0992b  ? 35 e1 50 c4    mov    0x50c4 <CLK_SWR>,#0xe1
+0x0992f  ? 72 5f 50 c5    clr    0x50c5 <CLK_SWCR>
+0x09933  ? 35 18 50 c6    mov    0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>,#0x18
+0x09937  ? 35 ff 50 c7    mov    0x50c7 {CLK_PCKENR1} <CLK_PCKENR1>,#0xff
+0x0993b  ? 35 ff 50 ca    mov    0x50ca {CLK_PCKENR2} <CLK_PCKENR2>,#0xff
+0x0993f  ? 72 5f 50 c8    clr    0x50c8 <CLK_CSSR>
+0x09943  ? 72 5f 50 c9    clr    0x50c9 <CLK_CCOR>
+0x09947  ? 72 00 50 c9 fb btjt   0x50c9 <CLK_CCOR>,#0 <CCOEN>,0x9947
+0x0994c  ? 72 5f 50 c9    clr    0x50c9 <CLK_CCOR>
+0x09950  ? 72 5f 50 cc    clr    0x50cc <CLK_HSITRIMR>
+0x09954  ? 72 5f 50 cd    clr    0x50cd <CLK_SWIMCCR>
+0x09958  ? 81             ret
+0x09959  ? 4d             tnz    A
+0x0995a  ? 27 05          jreq   0x9961
+0x0995c  ? 72 14 50 c0    bset   0x50c0 {CLK_ICKR} <CLK_ICKR>,#2 <FHWU>
+0x09960  ? 81             ret
+0x09961  ? 72 15 50 c0    bres   0x50c0 {CLK_ICKR} <CLK_ICKR>,#2 <FHWU>
+0x09965  ? 81             ret
+0x09966  ? 4d             tnz    A
+0x09967  ? 27 05          jreq   0x996e
+0x09969  ? 72 10 50 c1    bset   0x50c1 <CLK_ECKR>,#0 <HSEEN>
+0x0996d  ? 81             ret
+0x0996e  ? 72 11 50 c1    bres   0x50c1 <CLK_ECKR>,#0 <HSEEN>
+0x09972  ? 81             ret
+0x09973  ? 4d             tnz    A
+0x09974  ? 27 05          jreq   0x997b
+0x09976  ? 72 10 50 c0    bset   0x50c0 {CLK_ICKR} <CLK_ICKR>,#0 <HSIEN>
+0x0997a  ? 81             ret
+0x0997b  ? 72 11 50 c0    bres   0x50c0 {CLK_ICKR} <CLK_ICKR>,#0 <HSIEN>
+0x0997f  ? 81             ret
+0x09980  ? 4d             tnz    A
+0x09981  ? 27 05          jreq   0x9988
+0x09983  ? 72 16 50 c0    bset   0x50c0 {CLK_ICKR} <CLK_ICKR>,#3 <LSIEN>
+0x09987  ? 81             ret
+0x09988  ? 72 17 50 c0    bres   0x50c0 {CLK_ICKR} <CLK_ICKR>,#3 <LSIEN>
+0x0998c  ? 81             ret
+0x0998d  ? 4d             tnz    A
+0x0998e  ? 27 05          jreq   0x9995
+0x09990  ? 72 10 50 c9    bset   0x50c9 <CLK_CCOR>,#0 <CCOEN>
+0x09994  ? 81             ret
+0x09995  ? 72 11 50 c9    bres   0x50c9 <CLK_CCOR>,#0 <CCOEN>
+0x09999  ? 81             ret
+0x0999a  ? 4d             tnz    A
+0x0999b  ? 27 05          jreq   0x99a2
+0x0999d  ? 72 12 50 c5    bset   0x50c5 <CLK_SWCR>,#1 <SWEN>
+0x099a1  ? 81             ret
+0x099a2  ? 72 13 50 c5    bres   0x50c5 <CLK_SWCR>,#1 <SWEN>
+0x099a6  ? 81             ret
+0x099a7  ? 4d             tnz    A
+0x099a8  ? 27 05          jreq   0x99af
+0x099aa  ? 72 1a 50 c0    bset   0x50c0 {CLK_ICKR} <CLK_ICKR>,#5 <REGAH>
+0x099ae  ? 81             ret
+0x099af  ? 72 1b 50 c0    bres   0x50c0 {CLK_ICKR} <CLK_ICKR>,#5 <REGAH>
+0x099b3  ? 81             ret
+0x099b4  ? 89             pushw  X
+0x099b5  ? 9e             ld     A,XH
+0x099b6  ? a5 10          bcp    A,#0x10
+0x099b8  ? 26 30          jrne   0x99ea
+0x099ba  ? 7b 02          ld     A,(0x02,SP)
+0x099bc  ? 27 14          jreq   0x99d2
+0x099be  ? 7b 01          ld     A,(0x01,SP)
+0x099c0  ? a4 0f          and    A,#0x0f
+0x099c2  ? 5f             clrw   X
+0x099c3  ? 97             ld     XL,A
+0x099c4  ? a6 01          ld     A,#0x01
+0x099c6  ? 5d             tnzw   X
+0x099c7  ? 27 04          jreq   0x99cd
+0x099c9  ? 48             sla    A
+0x099ca  ? 5a             decw   X
+0x099cb  ? 26 fc          jrne   0x99c9
+0x099cd  ? ca 50 c7       or     A,0x50c7 {CLK_PCKENR1} <CLK_PCKENR1>
+0x099d0  ? 20 13          jra    0x99e5
+0x099d2  ? 7b 01          ld     A,(0x01,SP)
+0x099d4  ? a4 0f          and    A,#0x0f
+0x099d6  ? 5f             clrw   X
+0x099d7  ? 97             ld     XL,A
+0x099d8  ? a6 01          ld     A,#0x01
+0x099da  ? 5d             tnzw   X
+0x099db  ? 27 04          jreq   0x99e1
+0x099dd  ? 48             sla    A
+0x099de  ? 5a             decw   X
+0x099df  ? 26 fc          jrne   0x99dd
+0x099e1  ? 43             cpl    A
+0x099e2  ? c4 50 c7       and    A,0x50c7 {CLK_PCKENR1} <CLK_PCKENR1>
+0x099e5  ? c7 50 c7       ld     0x50c7 {CLK_PCKENR1} <CLK_PCKENR1>,A
+0x099e8  ? 20 2e          jra    0x9a18
+0x099ea  ? 7b 02          ld     A,(0x02,SP)
+0x099ec  ? 27 14          jreq   0x9a02
+0x099ee  ? 7b 01          ld     A,(0x01,SP)
+0x099f0  ? a4 0f          and    A,#0x0f
+0x099f2  ? 5f             clrw   X
+0x099f3  ? 97             ld     XL,A
+0x099f4  ? a6 01          ld     A,#0x01
+0x099f6  ? 5d             tnzw   X
+0x099f7  ? 27 04          jreq   0x99fd
+0x099f9  ? 48             sla    A
+0x099fa  ? 5a             decw   X
+0x099fb  ? 26 fc          jrne   0x99f9
+0x099fd  ? ca 50 ca       or     A,0x50ca {CLK_PCKENR2} <CLK_PCKENR2>
+0x09a00  ? 20 13          jra    0x9a15
+0x09a02  ? 7b 01          ld     A,(0x01,SP)
+0x09a04  ? a4 0f          and    A,#0x0f
+0x09a06  ? 5f             clrw   X
+0x09a07  ? 97             ld     XL,A
+0x09a08  ? a6 01          ld     A,#0x01
+0x09a0a  ? 5d             tnzw   X
+0x09a0b  ? 27 04          jreq   0x9a11
+0x09a0d  ? 48             sla    A
+0x09a0e  ? 5a             decw   X
+0x09a0f  ? 26 fc          jrne   0x9a0d
+0x09a11  ? 43             cpl    A
+0x09a12  ? c4 50 ca       and    A,0x50ca {CLK_PCKENR2} <CLK_PCKENR2>
+0x09a15  ? c7 50 ca       ld     0x50ca {CLK_PCKENR2} <CLK_PCKENR2>,A
+0x09a18  ? 85             popw   X
+0x09a19  ? 81             ret
+0x09a1a  ? 89             pushw  X
+0x09a1b  ? 52 04          sub    SP,#0x04
+0x09a1d  ? ae 04 91       ldw    X,#0x0491
+0x09a20  ? 1f 03          ldw    (0x03,SP),X
+0x09a22  ? c6 50 c3       ld     A,0x50c3 <CLK_CMSR>
+0x09a25  ? 6b 01          ld     (0x01,SP),A
+0x09a27  ? 7b 05          ld     A,(0x05,SP)
+0x09a29  ? 4a             dec    A
+0x09a2a  ? 26 2d          jrne   0x9a59
+0x09a2c  ? 72 12 50 c5    bset   0x50c5 <CLK_SWCR>,#1 <SWEN>
+0x09a30  ? 7b 09          ld     A,(0x09,SP)
+0x09a32  ? 27 06          jreq   0x9a3a
+0x09a34  ? 72 14 50 c5    bset   0x50c5 <CLK_SWCR>,#2 <SWIEN>
+0x09a38  ? 20 04          jra    0x9a3e
+0x09a3a  ? 72 15 50 c5    bres   0x50c5 <CLK_SWCR>,#2 <SWIEN>
+0x09a3e  ? 7b 06          ld     A,(0x06,SP)
+0x09a40  ? c7 50 c4       ld     0x50c4 <CLK_SWR>,A
+0x09a43  ? 20 03          jra    0x9a48
+0x09a45  ? 5a             decw   X
+0x09a46  ? 1f 03          ldw    (0x03,SP),X
+0x09a48  ? 72 01 50 c5 04 btjf   0x50c5 <CLK_SWCR>,#0 <SWBSY>,0x9a51
+0x09a4d  ? 1e 03          ldw    X,(0x03,SP)
+0x09a4f  ? 26 f4          jrne   0x9a45
+0x09a51  ? 1e 03          ldw    X,(0x03,SP)
+0x09a53  ? 26 17          jrne   0x9a6c
+0x09a55  ? 0f 02          clr    (0x02,SP)
+0x09a57  ? 20 17          jra    0x9a70
+0x09a59  ? 7b 09          ld     A,(0x09,SP)
+0x09a5b  ? 27 06          jreq   0x9a63
+0x09a5d  ? 72 14 50 c5    bset   0x50c5 <CLK_SWCR>,#2 <SWIEN>
+0x09a61  ? 20 04          jra    0x9a67
+0x09a63  ? 72 15 50 c5    bres   0x50c5 <CLK_SWCR>,#2 <SWIEN>
+0x09a67  ? 7b 06          ld     A,(0x06,SP)
+0x09a69  ? c7 50 c4       ld     0x50c4 <CLK_SWR>,A
+0x09a6c  ? a6 01          ld     A,#0x01
+0x09a6e  ? 6b 02          ld     (0x02,SP),A
+0x09a70  ? 7b 0a          ld     A,(0x0a,SP)
+0x09a72  ? 26 0c          jrne   0x9a80
+0x09a74  ? 7b 01          ld     A,(0x01,SP)
+0x09a76  ? a1 e1          cp     A,#0xe1
+0x09a78  ? 26 06          jrne   0x9a80
+0x09a7a  ? 72 11 50 c0    bres   0x50c0 {CLK_ICKR} <CLK_ICKR>,#0 <HSIEN>
+0x09a7e  ? 20 1e          jra    0x9a9e
+0x09a80  ? 7b 0a          ld     A,(0x0a,SP)
+0x09a82  ? 26 0c          jrne   0x9a90
+0x09a84  ? 7b 01          ld     A,(0x01,SP)
+0x09a86  ? a1 d2          cp     A,#0xd2
+0x09a88  ? 26 06          jrne   0x9a90
+0x09a8a  ? 72 17 50 c0    bres   0x50c0 {CLK_ICKR} <CLK_ICKR>,#3 <LSIEN>
+0x09a8e  ? 20 0e          jra    0x9a9e
+0x09a90  ? 7b 0a          ld     A,(0x0a,SP)
+0x09a92  ? 26 0a          jrne   0x9a9e
+0x09a94  ? 7b 01          ld     A,(0x01,SP)
+0x09a96  ? a1 b4          cp     A,#0xb4
+0x09a98  ? 26 04          jrne   0x9a9e
+0x09a9a  ? 72 11 50 c1    bres   0x50c1 <CLK_ECKR>,#0 <HSEEN>
+0x09a9e  ? 7b 02          ld     A,(0x02,SP)
+0x09aa0  ? 5b 06          add    SP,#0x06
+0x09aa2  ? 81             ret
+0x09aa3    <.func$15>:
+0x09aa3    88             push   A
+0x09aa4    c6 50 c6       ld     A,0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>
+0x09aa7    a4 e7          and    A,#0xe7
+0x09aa9    c7 50 c6       ld     0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>,A
+0x09aac    c6 50 c6       ld     A,0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>
+0x09aaf    1a 01          or     A,(0x01,SP)
+0x09ab1    c7 50 c6       ld     0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>,A
+0x09ab4    84             pop    A
+0x09ab5    81             ret
+0x09ab6  ? 88             push   A
+0x09ab7  ? c6 50 c9       ld     A,0x50c9 <CLK_CCOR>
+0x09aba  ? a4 e1          and    A,#0xe1
+0x09abc  ? c7 50 c9       ld     0x50c9 <CLK_CCOR>,A
+0x09abf  ? c6 50 c9       ld     A,0x50c9 <CLK_CCOR>
+0x09ac2  ? 1a 01          or     A,(0x01,SP)
+0x09ac4  ? c7 50 c9       ld     0x50c9 <CLK_CCOR>,A
+0x09ac7  ? 72 10 50 c9    bset   0x50c9 <CLK_CCOR>,#0 <CCOEN>
+0x09acb  ? 84             pop    A
+0x09acc  ? 81             ret
+0x09acd  ? 89             pushw  X
+0x09ace  ? 9f             ld     A,XL
+0x09acf  ? 4d             tnz    A
+0x09ad0  ? 27 15          jreq   0x9ae7
+0x09ad2  ? 9e             ld     A,XH
+0x09ad3  ? a0 0c          sub    A,#0x0c
+0x09ad5  ? 27 0a          jreq   0x9ae1
+0x09ad7  ? a0 10          sub    A,#0x10
+0x09ad9  ? 26 20          jrne   0x9afb
+0x09adb  ? 72 14 50 c5    bset   0x50c5 <CLK_SWCR>,#2 <SWIEN>
+0x09adf  ? 20 1a          jra    0x9afb
+0x09ae1  ? 72 14 50 c8    bset   0x50c8 <CLK_CSSR>,#2 <CSSDIE>
+0x09ae5  ? 20 14          jra    0x9afb
+0x09ae7  ? 7b 01          ld     A,(0x01,SP)
+0x09ae9  ? a0 0c          sub    A,#0x0c
+0x09aeb  ? 27 0a          jreq   0x9af7
+0x09aed  ? a0 10          sub    A,#0x10
+0x09aef  ? 26 0a          jrne   0x9afb
+0x09af1  ? 72 15 50 c5    bres   0x50c5 <CLK_SWCR>,#2 <SWIEN>
+0x09af5  ? 20 04          jra    0x9afb
+0x09af7  ? 72 15 50 c8    bres   0x50c8 <CLK_CSSR>,#2 <CSSDIE>
+0x09afb  ? 85             popw   X
+0x09afc  ? 81             ret
+0x09afd    <.func$16>:
+0x09afd    88             push   A
+0x09afe    a5 80          bcp    A,#0x80
+0x09b00    26 0e          jrne   0x9b10 <.label$17>
+0x09b02    c6 50 c6       ld     A,0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>
+0x09b05    a4 e7          and    A,#0xe7
+0x09b07    c7 50 c6       ld     0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>,A
+0x09b0a    7b 01          ld     A,(0x01,SP)
+0x09b0c    a4 18          and    A,#0x18
+0x09b0e    20 0c          jra    0x9b1c <.label$18>
+0x09b10    <.label$17>:
+0x09b10    c6 50 c6       ld     A,0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>
+0x09b13    a4 f8          and    A,#0xf8
+0x09b15    c7 50 c6       ld     0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>,A
+0x09b18    7b 01          ld     A,(0x01,SP)
+0x09b1a    a4 07          and    A,#0x07
+0x09b1c    <.label$18>:
+0x09b1c    ca 50 c6       or     A,0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>
+0x09b1f    c7 50 c6       ld     0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>,A
+0x09b22    84             pop    A
+0x09b23    81             ret
+0x09b24  ? 4d             tnz    A
+0x09b25  ? 27 05          jreq   0x9b2c
+0x09b27  ? 72 10 50 cd    bset   0x50cd <CLK_SWIMCCR>,#0 <SWIMCLK>
+0x09b2b  ? 81             ret
+0x09b2c  ? 72 11 50 cd    bres   0x50cd <CLK_SWIMCCR>,#0 <SWIMCLK>
+0x09b30  ? 81             ret
+0x09b31  ? 72 10 50 c8    bset   0x50c8 <CLK_CSSR>,#0 <CSSEN>
+0x09b35  ? 81             ret
+0x09b36  ? c6 50 c3       ld     A,0x50c3 <CLK_CMSR>
+0x09b39  ? 81             ret
+0x09b3a    <.func$32>:
+0x09b3a    52 09          sub    SP,#0x09
+0x09b3c    c6 50 c3       ld     A,0x50c3 <CLK_CMSR>
+0x09b3f    6b 09          ld     (0x09,SP),A
+0x09b41    a1 e1          cp     A,#0xe1
+0x09b43    26 34          jrne   0x9b79 <.label$33>
+0x09b45    c6 50 c6       ld     A,0x50c6 {CLK_CKDIVR} <CLK_CKDIVR>
+0x09b48    a4 18          and    A,#0x18
+0x09b4a    44             srl    A
+0x09b4b    44             srl    A
+0x09b4c    44             srl    A
+0x09b4d    5f             clrw   X
+0x09b4e    97             ld     XL,A
+0x09b4f    d6 8c 87       ld     A,(0x8c87,X)
+0x09b52    6b 09          ld     (0x09,SP),A
+0x09b54    b7 2d          ld     0x2d,A
+0x09b56    3f 2c          clr    0x2c
+0x09b58    3f 2b          clr    0x2b
+0x09b5a    3f 2a          clr    0x2a
+0x09b5c    96             ldw    X,SP
+0x09b5d    5c             incw   X
+0x09b5e    cd 9e 01       call   0x9e01 <.func$37>
+0x09b61    ae 24 00       ldw    X,#0x2400
+0x09b64    bf 2c          ldw    0x2c,X
+0x09b66    ae 00 f4       ldw    X,#0x00f4
+0x09b69    bf 2a          ldw    0x2a,X
+0x09b6b    96             ldw    X,SP
+0x09b6c    5c             incw   X
+0x09b6d    cd 9c da       call   0x9cda <.func$38>
+0x09b70    96             ldw    X,SP
+0x09b71    1c 00 05       addw   X,#0x0005
+0x09b74    cd 9e 01       call   0x9e01 <.func$37>
+0x09b77    20 18          jra    0x9b91 <.label$52>
+0x09b79    <.label$33>:
+0x09b79    a1 d2          cp     A,#0xd2
+0x09b7b    26 0a          jrne   0x9b87 <.label$34>
+0x09b7d    ae f4 00       ldw    X,#0xf400
+0x09b80    1f 07          ldw    (0x07,SP),X
+0x09b82    ae 00 01       ldw    X,#0x0001
+0x09b85    20 08          jra    0x9b8f <.label$36>
+0x09b87    <.label$34>:
+0x09b87    ae 24 00       ldw    X,#0x2400
+0x09b8a    1f 07          ldw    (0x07,SP),X
+0x09b8c    ae 00 f4       ldw    X,#0x00f4
+0x09b8f    <.label$36>:
+0x09b8f    1f 05          ldw    (0x05,SP),X
+0x09b91    <.label$52>:
+0x09b91    96             ldw    X,SP
+0x09b92    1c 00 05       addw   X,#0x0005
+0x09b95    cd 9c c8       call   0x9cc8 <.func$35>
+0x09b98    5b 09          add    SP,#0x09
+0x09b9a    81             ret
+0x09b9b  ? 88             push   A
+0x09b9c  ? c6 50 cc       ld     A,0x50cc <CLK_HSITRIMR>
+0x09b9f  ? a4 f8          and    A,#0xf8
+0x09ba1  ? 1a 01          or     A,(0x01,SP)
+0x09ba3  ? c7 50 cc       ld     0x50cc <CLK_HSITRIMR>,A
+0x09ba6  ? 84             pop    A
+0x09ba7  ? 81             ret
+0x09ba8  ? 72 11 50 c5    bres   0x50c5 <CLK_SWCR>,#0 <SWBSY>
+0x09bac  ? 81             ret
+0x09bad  ? 89             pushw  X
+0x09bae  ? 52 03          sub    SP,#0x03
+0x09bb0  ? 01             rrwa   X
+0x09bb1  ? 4f             clr    A
+0x09bb2  ? 02             rlwa   X
+0x09bb3  ? 1f 01          ldw    (0x01,SP),X
+0x09bb5  ? a3 01 00       cpw    X,#0x0100
+0x09bb8  ? 26 05          jrne   0x9bbf
+0x09bba  ? c6 50 c0       ld     A,0x50c0 {CLK_ICKR} <CLK_ICKR>
+0x09bbd  ? 20 21          jra    0x9be0
+0x09bbf  ? a3 02 00       cpw    X,#0x0200
+0x09bc2  ? 26 05          jrne   0x9bc9
+0x09bc4  ? c6 50 c1       ld     A,0x50c1 <CLK_ECKR>
+0x09bc7  ? 20 17          jra    0x9be0
+0x09bc9  ? a3 03 00       cpw    X,#0x0300
+0x09bcc  ? 26 05          jrne   0x9bd3
+0x09bce  ? c6 50 c5       ld     A,0x50c5 <CLK_SWCR>
+0x09bd1  ? 20 0d          jra    0x9be0
+0x09bd3  ? a3 04 00       cpw    X,#0x0400
+0x09bd6  ? 26 05          jrne   0x9bdd
+0x09bd8  ? c6 50 c8       ld     A,0x50c8 <CLK_CSSR>
+0x09bdb  ? 20 03          jra    0x9be0
+0x09bdd  ? c6 50 c9       ld     A,0x50c9 <CLK_CCOR>
+0x09be0  ? 6b 03          ld     (0x03,SP),A
+0x09be2  ? 7b 05          ld     A,(0x05,SP)
+0x09be4  ? 15 03          bcp    A,(0x03,SP)
+0x09be6  ? 27 04          jreq   0x9bec
+0x09be8  ? a6 01          ld     A,#0x01
+0x09bea  ? 20 01          jra    0x9bed
+0x09bec  ? 4f             clr    A
+0x09bed  ? 5b 05          add    SP,#0x05
+0x09bef  ? 81             ret
+0x09bf0  ? 88             push   A
+0x09bf1  ? 88             push   A
+0x09bf2  ? a1 1c          cp     A,#0x1c
+0x09bf4  ? 26 09          jrne   0x9bff
+0x09bf6  ? c4 50 c5       and    A,0x50c5 <CLK_SWCR>
+0x09bf9  ? a1 0c          cp     A,#0x0c
+0x09bfb  ? 26 0f          jrne   0x9c0c
+0x09bfd  ? 20 09          jra    0x9c08
+0x09bff  ? c6 50 c8       ld     A,0x50c8 <CLK_CSSR>
+0x09c02  ? 14 02          and    A,(0x02,SP)
+0x09c04  ? a1 0c          cp     A,#0x0c
+0x09c06  ? 26 04          jrne   0x9c0c
+0x09c08  ? a6 01          ld     A,#0x01
+0x09c0a  ? 20 01          jra    0x9c0d
+0x09c0c  ? 4f             clr    A
+0x09c0d  ? 85             popw   X
+0x09c0e  ? 81             ret
+0x09c0f  ? a1 0c          cp     A,#0x0c
+0x09c11  ? 26 05          jrne   0x9c18
+0x09c13  ? 72 17 50 c8    bres   0x50c8 <CLK_CSSR>,#3 <CSSD>
+0x09c17  ? 81             ret
+0x09c18  ? 72 17 50 c5    bres   0x50c5 <CLK_SWCR>,#3 <SWIF>
+0x09c1c  ? 81             ret
+0x09c1d    <.func$55>:
+0x09c1d    b6 2a          ld     A,0x2a
+0x09c1f    f1             cp     A,(X)
+0x09c20    26 1a          jrne   0x9c3c <.label$56>
+0x09c22    b6 2b          ld     A,0x2b
+0x09c24    e1 01          cp     A,(0x01,X)
+0x09c26    26 0c          jrne   0x9c34 <.label$57>
+0x09c28    b6 2c          ld     A,0x2c
+0x09c2a    e1 02          cp     A,(0x02,X)
+0x09c2c    26 06          jrne   0x9c34 <.label$57>
+0x09c2e    b6 2d          ld     A,0x2d
+0x09c30    e1 03          cp     A,(0x03,X)
+0x09c32    27 08          jreq   0x9c3c <.label$56>
+0x09c34    <.label$57>:
+0x09c34    9c             rvf
+0x09c35    24 03          jruge  0x9c3a <.label$58>
+0x09c37    a6 ff          ld     A,#0xff
+0x09c39    81             ret
+0x09c3a    <.label$58>:
+0x09c3a    a6 01          ld     A,#0x01
+0x09c3c    <.label$56>:
+0x09c3c    81             ret
+0x09c3d    <.func$60>:
+0x09c3d    e6 03          ld     A,(0x03,X)
+0x09c3f    88             push   A
+0x09c40    e6 02          ld     A,(0x02,X)
+0x09c42    88             push   A
+0x09c43    fe             ldw    X,(X)
+0x09c44    89             pushw  X
+0x09c45    1e 03          ldw    X,(0x03,SP)
+0x09c47    b6 2a          ld     A,0x2a
+0x09c49    42             mul    X,A
+0x09c4a    bf 2e          ldw    0x2e,X
+0x09c4c    be 2a          ldw    X,0x2a
+0x09c4e    7b 03          ld     A,(0x03,SP)
+0x09c50    42             mul    X,A
+0x09c51    72 bb 00 2e    addw   X,0x002e
+0x09c55    bf 2e          ldw    0x2e,X
+0x09c57    be 2b          ldw    X,0x2b
+0x09c59    7b 02          ld     A,(0x02,SP)
+0x09c5b    42             mul    X,A
+0x09c5c    72 bb 00 2e    addw   X,0x002e
+0x09c60    bf 2e          ldw    0x2e,X
+0x09c62    be 2c          ldw    X,0x2c
+0x09c64    7b 01          ld     A,(0x01,SP)
+0x09c66    42             mul    X,A
+0x09c67    72 bb 00 2e    addw   X,0x002e
+0x09c6b    9f             ld     A,XL
+0x09c6c    b7 2a          ld     0x2a,A
+0x09c6e    be 2a          ldw    X,0x2a
+0x09c70    7b 04          ld     A,(0x04,SP)
+0x09c72    3f 2b          clr    0x2b
+0x09c74    42             mul    X,A
+0x09c75    72 bb 00 2a    addw   X,0x002a
+0x09c79    bf 2a          ldw    0x2a,X
+0x09c7b    be 2b          ldw    X,0x2b
+0x09c7d    7b 03          ld     A,(0x03,SP)
+0x09c7f    42             mul    X,A
+0x09c80    72 bb 00 2a    addw   X,0x002a
+0x09c84    bf 2a          ldw    0x2a,X
+0x09c86    be 2c          ldw    X,0x2c
+0x09c88    7b 02          ld     A,(0x02,SP)
+0x09c8a    42             mul    X,A
+0x09c8b    72 bb 00 2a    addw   X,0x002a
+0x09c8f    bf 2a          ldw    0x2a,X
+0x09c91    be 2b          ldw    X,0x2b
+0x09c93    7b 04          ld     A,(0x04,SP)
+0x09c95    3f 2c          clr    0x2c
+0x09c97    42             mul    X,A
+0x09c98    72 bb 00 2b    addw   X,0x002b
+0x09c9c    bf 2b          ldw    0x2b,X
+0x09c9e    24 02          jruge  0x9ca2 <.label$61>
+0x09ca0    3c 2a          inc    0x2a
+0x09ca2    <.label$61>:
+0x09ca2    be 2c          ldw    X,0x2c
+0x09ca4    7b 03          ld     A,(0x03,SP)
+0x09ca6    42             mul    X,A
+0x09ca7    72 bb 00 2b    addw   X,0x002b
+0x09cab    bf 2b          ldw    0x2b,X
+0x09cad    24 02          jruge  0x9cb1 <.label$62>
+0x09caf    3c 2a          inc    0x2a
+0x09cb1    <.label$62>:
+0x09cb1    be 2c          ldw    X,0x2c
+0x09cb3    7b 04          ld     A,(0x04,SP)
+0x09cb5    3f 2d          clr    0x2d
+0x09cb7    42             mul    X,A
+0x09cb8    72 bb 00 2c    addw   X,0x002c
+0x09cbc    bf 2c          ldw    0x2c,X
+0x09cbe    24 05          jruge  0x9cc5 <.label$63>
+0x09cc0    be 2a          ldw    X,0x2a
+0x09cc2    5c             incw   X
+0x09cc3    bf 2a          ldw    0x2a,X
+0x09cc5    <.label$63>:
+0x09cc5    5b 04          add    SP,#0x04
+0x09cc7    81             ret
+0x09cc8    <.func$35>:
+0x09cc8    88             push   A
+0x09cc9    f6             ld     A,(X)
+0x09cca    b7 2a          ld     0x2a,A
+0x09ccc    e6 01          ld     A,(0x01,X)
+0x09cce    b7 2b          ld     0x2b,A
+0x09cd0    e6 02          ld     A,(0x02,X)
+0x09cd2    b7 2c          ld     0x2c,A
+0x09cd4    e6 03          ld     A,(0x03,X)
+0x09cd6    b7 2d          ld     0x2d,A
+0x09cd8    84             pop    A
+0x09cd9    81             ret
+0x09cda    <.func$38>:
+0x09cda    52 04          sub    SP,#0x04
+0x09cdc    e6 03          ld     A,(0x03,X)
+0x09cde    88             push   A
+0x09cdf    e6 02          ld     A,(0x02,X)
+0x09ce1    88             push   A
+0x09ce2    e6 01          ld     A,(0x01,X)
+0x09ce4    88             push   A
+0x09ce5    f6             ld     A,(X)
+0x09ce6    96             ldw    X,SP
+0x09ce7    88             push   A
+0x09ce8    cd 9d 05       call   0x9d05 <.func$39>
+0x09ceb    5b 08          add    SP,#0x08
+0x09ced    81             ret
+0x09cee  ? 3f 2e          clr    0x2e
+0x09cf0  ? 4d             tnz    A
+0x09cf1  ? 2a 07          jrpl   0x9cfa
+0x09cf3  ? cd 9d d9       call   0x9dd9
+0x09cf6  ? 72 10 00 2e    bset   0x002e,#0
+0x09cfa  ? b6 2a          ld     A,0x2a
+0x09cfc  ? 2a 07          jrpl   0x9d05 <.func$39>
+0x09cfe  ? cd 9d ec       call   0x9dec
+0x09d01  ? 72 12 00 2e    bset   0x002e,#1
+0x09d05    <.func$39>:
+0x09d05    90 89          pushw  Y
+0x09d07    f6             ld     A,(X)
+0x09d08    26 67          jrne   0x9d71 <.label$40>
+0x09d0a    e6 01          ld     A,(0x01,X)
+0x09d0c    26 63          jrne   0x9d71 <.label$40>
+0x09d0e    90 be 2a       ldw    Y,0x2a
+0x09d11    27 1b          jreq   0x9d2e <.label$47>
+0x09d13    e6 02          ld     A,(0x02,X)
+0x09d15    27 2e          jreq   0x9d45 <.label$48>
+0x09d17    b1 2a          cp     A,0x2a
+0x09d19    22 59          jrugt  0x9d74 <.label$49>
+0x09d1b    26 06          jrne   0x9d23 <.label$50>
+0x09d1d    e6 03          ld     A,(0x03,X)
+0x09d1f    b1 2b          cp     A,0x2b
+0x09d21    22 51          jrugt  0x9d74 <.label$49>
+0x09d23    <.label$50>:
+0x09d23    90 ae 00 20    ldw    Y,#0x0020
+0x09d27    4f             clr    A
+0x09d28    e7 06          ld     (0x06,X),A
+0x09d2a    e7 07          ld     (0x07,X),A
+0x09d2c    20 57          jra    0x9d85 <.label$51>
+0x09d2e    <.label$47>:
+0x09d2e    89             pushw  X
+0x09d2f    ee 02          ldw    X,(0x02,X)
+0x09d31    90 be 2c       ldw    Y,0x2c
+0x09d34    51             exgw   X,Y
+0x09d35    65             divw   X,Y
+0x09d36    bf 2c          ldw    0x2c,X
+0x09d38    85             popw   X
+0x09d39    ef 06          ldw    (0x06,X),Y
+0x09d3b    90 5f          clrw   Y
+0x09d3d    ef 04          ldw    (0x04,X),Y
+0x09d3f    90 bf 2a       ldw    0x2a,Y
+0x09d42    90 85          popw   Y
+0x09d44    81             ret
+0x09d45    <.label$48>:
+0x09d45    e7 04          ld     (0x04,X),A
+0x09d47    e7 05          ld     (0x05,X),A
+0x09d49    e7 06          ld     (0x06,X),A
+0x09d4b    e6 03          ld     A,(0x03,X)
+0x09d4d    90 62          div    Y,A
+0x09d4f    90 bf 2a       ldw    0x2a,Y
+0x09d52    90 95          ld     YH,A
+0x09d54    b6 2c          ld     A,0x2c
+0x09d56    90 97          ld     YL,A
+0x09d58    e6 03          ld     A,(0x03,X)
+0x09d5a    90 62          div    Y,A
+0x09d5c    90 01          rrwa   Y
+0x09d5e    b7 2c          ld     0x2c,A
+0x09d60    b6 2d          ld     A,0x2d
+0x09d62    90 97          ld     YL,A
+0x09d64    e6 03          ld     A,(0x03,X)
+0x09d66    90 62          div    Y,A
+0x09d68    e7 07          ld     (0x07,X),A
+0x09d6a    90 9f          ld     A,YL
+0x09d6c    b7 2d          ld     0x2d,A
+0x09d6e    90 85          popw   Y
+0x09d70    81             ret
+0x09d71    <.label$40>:
+0x09d71    90 be 2a       ldw    Y,0x2a
+0x09d74    <.label$49>:
+0x09d74    ef 06          ldw    (0x06,X),Y
+0x09d76    90 be 2c       ldw    Y,0x2c
+0x09d79    90 bf 2a       ldw    0x2a,Y
+0x09d7c    90 ae 00 10    ldw    Y,#0x0010
+0x09d80    4f             clr    A
+0x09d81    b7 2c          ld     0x2c,A
+0x09d83    b7 2d          ld     0x2d,A
+0x09d85    <.label$51>:
+0x09d85    e7 05          ld     (0x05,X),A
+0x09d87    <.loop$42>:
+0x09d87    38 2d          sla    0x2d
+0x09d89    39 2c          rlc    0x2c
+0x09d8b    39 2b          rlc    0x2b
+0x09d8d    39 2a          rlc    0x2a
+0x09d8f    69 07          rlc    (0x07,X)
+0x09d91    69 06          rlc    (0x06,X)
+0x09d93    69 05          rlc    (0x05,X)
+0x09d95    49             rlc    A
+0x09d96    f1             cp     A,(X)
+0x09d97    25 37          jrult  0x9dd0 <.label$41>
+0x09d99    26 1c          jrne   0x9db7 <.label$43>
+0x09d9b    e7 04          ld     (0x04,X),A
+0x09d9d    e6 05          ld     A,(0x05,X)
+0x09d9f    e1 01          cp     A,(0x01,X)
+0x09da1    25 10          jrult  0x9db3 <.label$44>
+0x09da3    26 14          jrne   0x9db9 <.label$45>
+0x09da5    e6 06          ld     A,(0x06,X)
+0x09da7    e1 02          cp     A,(0x02,X)
+0x09da9    25 08          jrult  0x9db3 <.label$44>
+0x09dab    26 0c          jrne   0x9db9 <.label$45>
+0x09dad    e6 07          ld     A,(0x07,X)
+0x09daf    e0 03          sub    A,(0x03,X)
+0x09db1    24 0a          jruge  0x9dbd <.label$46>
+0x09db3    <.label$44>:
+0x09db3    e6 04          ld     A,(0x04,X)
+0x09db5    20 19          jra    0x9dd0 <.label$41>
+0x09db7    <.label$43>:
+0x09db7    e7 04          ld     (0x04,X),A
+0x09db9    <.label$45>:
+0x09db9    e6 07          ld     A,(0x07,X)
+0x09dbb    e0 03          sub    A,(0x03,X)
+0x09dbd    <.label$46>:
+0x09dbd    e7 07          ld     (0x07,X),A
+0x09dbf    e6 06          ld     A,(0x06,X)
+0x09dc1    e2 02          sbc    A,(0x02,X)
+0x09dc3    e7 06          ld     (0x06,X),A
+0x09dc5    e6 05          ld     A,(0x05,X)
+0x09dc7    e2 01          sbc    A,(0x01,X)
+0x09dc9    e7 05          ld     (0x05,X),A
+0x09dcb    e6 04          ld     A,(0x04,X)
+0x09dcd    f2             sbc    A,(X)
+0x09dce    3c 2d          inc    0x2d
+0x09dd0    <.label$41>:
+0x09dd0    90 5a          decw   Y
+0x09dd2    26 b3          jrne   0x9d87 <.loop$42>
+0x09dd4    90 85          popw   Y
+0x09dd6    e7 04          ld     (0x04,X),A
+0x09dd8    81             ret
+0x09dd9  ? 73             cpl    (X)
+0x09dda  ? 63 01          cpl    (0x01,X)
+0x09ddc  ? 63 02          cpl    (0x02,X)
+0x09dde  ? 60 03          neg    (0x03,X)
+0x09de0  ? 26 09          jrne   0x9deb
+0x09de2  ? 6c 02          inc    (0x02,X)
+0x09de4  ? 26 05          jrne   0x9deb
+0x09de6  ? 6c 01          inc    (0x01,X)
+0x09de8  ? 26 01          jrne   0x9deb
+0x09dea  ? 7c             inc    (X)
+0x09deb  ? 81             ret
+0x09dec  ? 33 2a          cpl    0x2a
+0x09dee  ? 33 2b          cpl    0x2b
+0x09df0  ? 33 2c          cpl    0x2c
+0x09df2  ? 30 2d          neg    0x2d
+0x09df4  ? 26 0a          jrne   0x9e00
+0x09df6  ? 3c 2c          inc    0x2c
+0x09df8  ? 26 06          jrne   0x9e00
+0x09dfa  ? 3c 2b          inc    0x2b
+0x09dfc  ? 26 02          jrne   0x9e00
+0x09dfe  ? 3c 2a          inc    0x2a
+0x09e00  ? 81             ret
+0x09e01    <.func$37>:
+0x09e01    88             push   A
+0x09e02    b6 2a          ld     A,0x2a
+0x09e04    f7             ld     (X),A
+0x09e05    b6 2b          ld     A,0x2b
+0x09e07    e7 01          ld     (0x01,X),A
+0x09e09    b6 2c          ld     A,0x2c
+0x09e0b    e7 02          ld     (0x02,X),A
+0x09e0d    b6 2d          ld     A,0x2d
+0x09e0f    e7 03          ld     (0x03,X),A
+0x09e11    84             pop    A
+0x09e12    81             ret
+0x09e13  ? 35 80 00 2e    mov    0x002e,#0x80
+0x09e17  ? 20 02          jra    0x9e1b
+0x09e19    <.func$73>:
+0x09e19    3f 2e          clr    0x2e
+0x09e1b    5d             tnzw   X
+0x09e1c    2a 09          jrpl   0x9e27 <.label$74>
+0x09e1e    50             negw   X
+0x09e1f    72 10 00 2e    bset   0x002e,#0
+0x09e23    72 12 00 2e    bset   0x002e,#1
+0x09e27    <.label$74>:
+0x09e27    4d             tnz    A
+0x09e28    2a 05          jrpl   0x9e2f <.label$75>
+0x09e2a    40             neg    A
+0x09e2b    90 12 00 2e    bcpl   0x00,#1
+0x09e2f    <.label$75>:
+0x09e2f    62             div    X,A
+0x09e30    37 2e          sra    0x2e
+0x09e32    2a 06          jrpl   0x9e3a <.label$76>
+0x09e34    5f             clrw   X
+0x09e35    97             ld     XL,A
+0x09e36    24 05          jruge  0x9e3d <.label$77>
+0x09e38    50             negw   X
+0x09e39    81             ret
+0x09e3a    <.label$76>:
+0x09e3a    27 01          jreq   0x9e3d <.label$77>
+0x09e3c    50             negw   X
+0x09e3d    <.label$77>:
+0x09e3d    81             ret
+0x09e3e    <.func$69>:
+0x09e3e    89             pushw  X
+0x09e3f    90 89          pushw  Y
+0x09e41    90 97          ld     YL,A
+0x09e43    97             ld     XL,A
+0x09e44    b6 2a          ld     A,0x2a
+0x09e46    42             mul    X,A
+0x09e47    9f             ld     A,XL
+0x09e48    b7 2a          ld     0x2a,A
+0x09e4a    93             ldw    X,Y
+0x09e4b    b6 2b          ld     A,0x2b
+0x09e4d    3f 2b          clr    0x2b
+0x09e4f    42             mul    X,A
+0x09e50    72 bb 00 2a    addw   X,0x002a
+0x09e54    bf 2a          ldw    0x2a,X
+0x09e56    93             ldw    X,Y
+0x09e57    b6 2c          ld     A,0x2c
+0x09e59    3f 2c          clr    0x2c
+0x09e5b    42             mul    X,A
+0x09e5c    72 bb 00 2b    addw   X,0x002b
+0x09e60    bf 2b          ldw    0x2b,X
+0x09e62    24 02          jruge  0x9e66 <.label$70>
+0x09e64    3c 2a          inc    0x2a
+0x09e66    <.label$70>:
+0x09e66    b6 2d          ld     A,0x2d
+0x09e68    93             ldw    X,Y
+0x09e69    3f 2d          clr    0x2d
+0x09e6b    42             mul    X,A
+0x09e6c    72 bb 00 2c    addw   X,0x002c
+0x09e70    bf 2c          ldw    0x2c,X
+0x09e72    24 05          jruge  0x9e79 <.label$71>
+0x09e74    be 2a          ldw    X,0x2a
+0x09e76    5c             incw   X
+0x09e77    bf 2a          ldw    0x2a,X
+0x09e79    <.label$71>:
+0x09e79    90 85          popw   Y
+0x09e7b    85             popw   X
+0x09e7c    81             ret
+0x09e7d    <.isr_unused>:
+0x09e7d    80             iret
