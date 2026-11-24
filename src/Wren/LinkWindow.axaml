@@ -22,6 +22,12 @@
                 ToolTip.Tip="Uploads the program open in Wren through the FAT (least-written blocks first)" />
         <Button Name="RunButton" Content="Run" Click="OnRun" ToolTip.Tip="Reset the Thing and let it run" />
       </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"
+                ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as the Thing's factory firmware) like Install kernel: only blocks that differ, then checked. Leaves read-out protection off." />
+        <Button Name="UnprotectButton" Content="Remove protection" Click="OnRemoveProtection"
+                ToolTip.Tip="Turns read-out protection off. The chip erases all its flash and EEPROM as it does so." />
+      </StackPanel>
       <TextBlock Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold" />
     </StackPanel>
     <HeaderedContentControl Classes="group" Header="Log" Margin="0,8,0,0">

@@ -66,6 +66,21 @@ If Connect says the target did not answer in time, check:
 - that SWIM goes to GP16 and NRST to GP17;
 - that the Thing has 3.3 V on VCC.
 
+## Read-out protection and factory firmware
+
+- **If the Thing refuses memory access** (SWIM_CSR's NO_ACCESS bit stays set for half a
+  second after Connect), its read-out protection is likely on. Only **Remove protection**
+  is then available. After two clicks it:
+  1. writes $00 to the read-out protection byte, which makes the chip erase all its
+     flash and EEPROM;
+  2. resets the chip and connects again;
+  3. writes ST's default option bytes.
+
+  The chip is left blank and unprotected.
+- **Write image…** writes any firmware file (.s19 or .hex), such as the Thing's factory
+  firmware. It works like Install kernel: only blocks that differ are written, then
+  checked. An image without option bytes, like Digicool's, leaves read-out protection off.
+
 ## How Wren talks to it
 
 `src/Wren.Link/EspStLink.cs` speaks the esp-stlink protocol (reset, entry, SRST, read,

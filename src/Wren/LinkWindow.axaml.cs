@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Wren.Asm;
 using Wren.Link;
 using Wren.Script;
 
@@ -15,6 +16,8 @@ public partial class LinkWindow : Window
     private IReadOnlyList<ProgrammerInfo> devices = Array.Empty<ProgrammerInfo>();
     private ThingLink? link;
     private bool kernelConfirmed;
+    private bool unprotectConfirmed;
+    private string? imageToWrite;
     private readonly WindowLayout layout;
 
     public LinkWindow() : this(null, () => null) { }
@@ -48,13 +51,18 @@ public partial class LinkWindow : Window
     private void UpdateButtons()
     {
         bool connected = link != null;
+        bool open = connected && !link!.Target.NoAccess;
         ConnectButton.IsEnabled = !connected && devices.Count > 0;
         DisconnectButton.IsEnabled = connected;
-        KernelButton.IsEnabled = connected && kernel != null;
-        UploadButton.IsEnabled = connected;
-        BackupButton.IsEnabled = connected;
+        KernelButton.IsEnabled = open && kernel != null;
+        UploadButton.IsEnabled = open;
+        BackupButton.IsEnabled = open;
+        ImageButton.IsEnabled = open;
         RunButton.IsEnabled = connected;
+        UnprotectButton.IsEnabled = connected && link!.Target.NoAccess;
         KernelButton.Content = kernelConfirmed ? "Click again to install" : "Install kernel";
+        UnprotectButton.Content = unprotectConfirmed ? "Click again to erase and unprotect" : "Remove protection";
+        ImageButton.Content = imageToWrite != null ? $"Click again to write {Path.GetFileName(imageToWrite)}" : "Write image…";
     }
 
     /// <summary>Runs work off the UI thread, logging what it says and any failure.</summary>
@@ -182,8 +190,81 @@ public partial class LinkWindow : Window
         link?.Dispose();
         link = null;
         kernelConfirmed = false;
+        unprotectConfirmed = false;
+        imageToWrite = null;
         Log("Disconnected.");
         UpdateButtons();
+    }
+
+    private async void OnRemoveProtection(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        if (!unprotectConfirmed)
+        {
+            unprotectConfirmed = true;
+            Log("Removing read-out protection makes the chip erase all its flash and EEPROM: the firmware on it is gone for good. " +
+                "Afterwards it is blank and unprotected, ready for Install kernel or Write image. Click again to go ahead.");
+            UpdateButtons();
+            return;
+        }
+        unprotectConfirmed = false;
+        var l = link;
+        await Work("Remove protection", () =>
+        {
+            l.Programmer.Progress += Log;
+            try
+            {
+                l.Programmer.RemoveReadOutProtection();
+                ShowStatus(l);
+            }
+            finally
+            {
+                l.Programmer.Progress -= Log;
+            }
+        });
+    }
+
+    private async void OnWriteImage(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        if (imageToWrite == null)
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Choose a firmware image to write to the Thing",
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("Firmware images") { Patterns = new[] { "*.s19", "*.hex", "*.ihx" } },
+                    new FilePickerFileType("All files") { Patterns = new[] { "*" } },
+                },
+            });
+            string? chosen = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+            if (chosen == null) return;
+            imageToWrite = chosen;
+            Log($"{Path.GetFileName(chosen)} will be written to the Thing's flash: only the blocks that differ, each costing one of an OLED Thing's ~100 flash writes. " +
+                "Read-out protection stays off. Click again to go ahead.");
+            UpdateButtons();
+            return;
+        }
+        string path = imageToWrite;
+        imageToWrite = null;
+        var l = link;
+        await Work("Write image", () =>
+        {
+            var image = MemoryImage.Parse(File.ReadAllText(path));
+            if (image.Count == 0) throw new InvalidOperationException($"{Path.GetFileName(path)} holds no S-records or Intel HEX data");
+            l.Programmer.Progress += Log;
+            try
+            {
+                l.Programmer.WriteImage(image, Path.GetFileName(path));
+                ShowStatus(l);
+            }
+            finally
+            {
+                l.Programmer.Progress -= Log;
+            }
+        });
     }
 
     private async void OnBackup(object? sender, RoutedEventArgs e)

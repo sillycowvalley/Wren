@@ -96,7 +96,7 @@ public sealed class FakeEspStLink : Stream
                 int n = r[1], address = (r[2] << 16) | (r[3] << 8) | r[4];
                 LargestRead = Math.Max(LargestRead, n);
                 if (Error is int e) { Fail(r[0], e); return; }
-                if (ReadOutProtected && address != SwimTarget.SwimCsr) { Fail(r[0], EspStLink.ErrorTimeout); return; }
+                if (ReadOutProtected && Withheld(address)) { Fail(r[0], EspStLink.ErrorTimeout); return; }
                 Reply(r[0], EspStLink.Success, r[1], r[2], r[3], r[4]);
                 Reply(Enumerable.Range(address, n).Select(ReadTarget).ToArray());
                 return;
@@ -114,6 +114,9 @@ public sealed class FakeEspStLink : Stream
         // Unknown commands get no answer, as in pico-swimlib.
     }
 
+    /// <summary>What read-out protection withholds: memory (RAM, EEPROM, option bytes, flash), not registers.</summary>
+    private static bool Withheld(int address) => address < 0x5000 || address >= 0x8000;
+
     private byte ReadTarget(int address) => address switch
     {
         SwimTarget.SwimCsr => swimCsr,
@@ -125,7 +128,17 @@ public sealed class FakeEspStLink : Stream
     {
         if (address == SwimTarget.SwimCsr) swimCsr = (byte)((value & ~0x42) | (swimCsr & 0x42)); // HSIT and NO_ACCESS are read-only
         else if (address == SwimTarget.DmCsr2) dmCsr2 = value;
-        else Device.DebugWrite(address, value);
+        else
+        {
+            Device.DebugWrite(address, value);
+            if (ReadOutProtected && address == 0x4800 && value == 0x00 && Device.Read(0x4800) == 0x00)
+            {
+                // Removing the protection erases flash and EEPROM.
+                ReadOutProtected = false;
+                Device.Load(Enumerable.Range(0x8000, 0x2000).Select(a => new KeyValuePair<int, byte>(a, 0))
+                    .Concat(Enumerable.Range(0x4000, 128).Select(a => new KeyValuePair<int, byte>(a, 0))));
+            }
+        }
     }
 
     public override bool CanRead => true;

@@ -98,10 +98,18 @@ public sealed class ThingProgrammer
     /// differ, sets the option bytes the kernel image carries (UBC), and checks it all.
     /// Returns how many flash blocks were written.
     /// </summary>
-    public int InstallKernel(MemoryImage kernel)
+    public int InstallKernel(MemoryImage kernel) => WriteImage(kernel, "kernel");
+
+    /// <summary>
+    /// Writes any firmware image (a .s19 or .hex, such as a Thing's factory firmware) the way
+    /// the kernel is installed: lifts the UBC lock, writes the flash blocks that differ, sets
+    /// any option bytes the image carries, and checks it all. An image without option bytes
+    /// leaves them as they are, so read-out protection stays off. Returns the blocks written.
+    /// </summary>
+    public int WriteImage(MemoryImage image, string what = "image")
     {
-        var flash = kernel.Bytes.Where(kv => kv.Key >= FlashStart).ToList();
-        var options = kernel.Bytes.Where(kv => kv.Key is >= OptionRop and < OptionRop + 0x80).ToList();
+        var flash = image.Bytes.Where(kv => kv.Key >= FlashStart).ToList();
+        var options = image.Bytes.Where(kv => kv.Key is >= OptionRop and < OptionRop + 0x80).ToList();
 
         if (target.ReadByte(OptionUbc) != 0)
         {
@@ -110,7 +118,7 @@ public sealed class ThingProgrammer
             target.WriteOptionByte(OptionNubc, 0xFF);
         }
 
-        int written = WriteChangedBlocks(flash, TargetMemory.Flash, "kernel");
+        int written = WriteChangedBlocks(flash, TargetMemory.Flash, what);
 
         foreach (var (address, value) in options)
         {
@@ -119,9 +127,36 @@ public sealed class ThingProgrammer
             target.WriteOptionByte(address, value);
         }
 
-        Verify(flash.Concat(options), "kernel");
-        Say(written == 0 ? "The kernel was already installed: nothing written" : $"Kernel installed: {written} blocks written");
+        Verify(flash.Concat(options), what);
+        Say(written == 0 ? $"The {what} was already there: nothing written" : $"The {what} is written: {written} blocks");
         return written;
+    }
+
+    /// <summary>ST's default option bytes from $4801 on: everything off, each with its complement.</summary>
+    public static readonly byte[] DefaultOptions = { 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF };
+
+    /// <summary>
+    /// Removes read-out protection: writes $00 to the ROP option byte, which makes the chip
+    /// erase all its flash and EEPROM (the hardware's own rule); resets it, connects again and
+    /// writes ST's default option bytes. The chip is left blank and unprotected. As
+    /// esp-stlink's readout_protection.py and factory_reset.py do it.
+    /// </summary>
+    public void RemoveReadOutProtection()
+    {
+        Say("Writing $00 to the read-out protection byte: the chip now erases its flash and EEPROM");
+        target.WriteOptionByte(OptionRop, 0x00);
+        target.Link.Sleep(100);
+        Say("Resetting and connecting again");
+        target.Run();
+        target.Link.Sleep(50);
+        target.Connect();
+        if (target.NoAccess) throw new LinkException("The chip still refuses memory access after removing the protection");
+        Say("Writing the default option bytes");
+        for (int i = 0; i < DefaultOptions.Length; i++)
+        {
+            if (target.ReadByte(OptionUbc + i) != DefaultOptions[i]) target.WriteOptionByte(OptionUbc + i, DefaultOptions[i]);
+        }
+        Say(target.ReadByte(OptionRop) == 0x00 ? "Read-out protection is off; the chip is blank" : "The read-out protection byte did not read back as $00");
     }
 
     /// <summary>

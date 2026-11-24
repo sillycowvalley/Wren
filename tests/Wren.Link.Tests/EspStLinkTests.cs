@@ -1,3 +1,4 @@
+using Wren.Asm;
 using Wren.Emu;
 using Wren.Script;
 using Xunit;
@@ -93,6 +94,34 @@ public class EspStLinkTests
         link.Target.Connect();
         Assert.True(link.Target.NoAccess);
         Assert.Throws<LinkException>(() => link.Programmer.ReadStatus());
+    }
+
+    [Fact]
+    public void RemovingTheProtectionLeavesABlankUnprotectedChipThatTakesAnImage()
+    {
+        var thing = new OledThing();
+        thing.Mcu.Load(new[] { new KeyValuePair<int, byte>(0x8000, 0x82), new(0x8001, 0x00), new(0x4800, 0xAA), new(0x4010, 0x55) });
+        var fake = new FakeEspStLink(thing.Mcu) { ReadOutProtected = true };
+        var link = new ThingLink(new EspStLink(fake), "COM7");
+        link.Link.Sleep = _ => { };
+        link.Target.Connect();
+        Assert.True(link.Target.NoAccess);
+
+        link.Programmer.RemoveReadOutProtection();
+        Assert.False(link.Target.NoAccess);
+        var status = link.Programmer.ReadStatus(Kernel.Image);
+        Assert.False(status.ReadOutProtected);
+        Assert.Equal(FlashContents.Empty, status.Flash);
+        Assert.Equal(0, thing.Mcu.Read(0x4010));
+        Assert.Equal(ThingProgrammer.DefaultOptions, link.Target.Read(0x4801, 10));
+
+        // A factory-style image: flash only, no option bytes.
+        var image = new MemoryImage();
+        image.Write(0x8000, Enumerable.Range(0, 300).Select(i => (byte)(i == 0 ? 0x82 : i * 3)).ToArray());
+        int written = link.Programmer.WriteImage(image, "factory firmware");
+        Assert.Equal(5, written);
+        Assert.Equal(0x00, thing.Mcu.Read(0x4800)); // still unprotected
+        Assert.Equal(FlashContents.OtherFirmware, link.Programmer.ReadStatus(Kernel.Image).Flash);
     }
 
     [Fact]
