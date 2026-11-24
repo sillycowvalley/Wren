@@ -150,6 +150,7 @@ public sealed class Compiler
             {
                 int settings = h.Edges;
                 if (h.QualifierPin >= 0) settings |= 0x04 | (h.QualifierHigh ? 0x08 : 0) | (h.QualifierPin << 4);
+                if (IsSoloLatch(h, program.Handlers)) settings |= SoloLatch;
                 code.Emit((byte)settings);
             }
             else if (h.Event == "EVERY")
@@ -724,4 +725,18 @@ public sealed class Compiler
                 return null;
         }
     }
+
+    /// <summary>LATCH settings bit 7: port D's interrupt is this LATCH's edge (docs/Bytecode.md).</summary>
+    public const int SoloLatch = 0x80;
+
+    /// <summary>
+    /// A LATCH the kernel can take from port D's interrupt alone, without reading the pins
+    /// back, so a pulse of any length is caught: on PD2 or PD3, the only LATCH on port D,
+    /// one edge, no qualifier.
+    /// </summary>
+    private static bool IsSoloLatch(Handler h, IEnumerable<Handler> handlers) =>
+        h.Event == "LATCH" && h.Pin is PinPd2 or PinPd3 && h.Edges is 1 or 2 && h.QualifierPin < 0
+        && handlers.Count(o => o.Event == "LATCH" && o.Pin is PinPd2 or PinPd3) == 1;
+
+    private const int PinPd2 = 3, PinPd3 = 4;
 }

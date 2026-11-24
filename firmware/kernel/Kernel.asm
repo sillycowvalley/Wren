@@ -52,6 +52,7 @@ millis      equ $0E         ; 2  milliseconds since start
 lost        equ $10         ; 2  events lost to a full queue
 qhead       equ $12         ; 1  queue: next to take
 qtail       equ $13         ; 1  queue: next free
+solo        equ $14         ; 1  the LATCH event port D's interrupt fires by itself, or 0
 inputs_last equ $17         ; 1  b0-b7 at the last check
 prev_pins   equ $18         ; 1  PA1,PA2,PA3,PD2,PD3 (bits 0-4) at the last edge
 latch_now   equ $19         ; 1  the same, now (in the edge interrupt)
@@ -131,7 +132,7 @@ DEBOUNCE_MS equ 20
         int exti_a                  ; 3 port A
         int unused_irq              ; 4 port B
         int unused_irq              ; 5 port C
-        int exti_d                  ; 6 port D
+        int exti_d                  ; 6 port D (at the end)
 
 ; IRQs 7 to 22 are never enabled, and the CPU only reads the vector of an interrupt it
 ; takes, so their 64 bytes of vector space hold constant tables instead.
@@ -491,8 +492,8 @@ setup_next:
         dec tmp
         jra setup_loop
 setup_done:
-        ; both edges on ports A and D; the interrupt picks the ones each LATCH wants
-        mov EXTI_CR1,#$C3
+        call setup_exti             ; port edges, the tick below the ports
+        nop                         ; keeps the code after it where it was
         call read_pins
         ld prev_pins,a
         ld pins_stable,a
@@ -568,8 +569,8 @@ find_none:
 ; Events without a handler are not queued. CHANGE and PINS replace a waiting one of
 ; the same kind instead of adding another.
 queue_event:
-        clrw y
-        ld yl,a
+        call queue_lock             ; interrupts off until it returns; Y = event
+        nop
         tnz (HANDLED,y)
         jreq queue_done
         ld tmp2,a
@@ -779,14 +780,16 @@ pins_next:
         jrne pins_loop
         jp isr_restore
 
-; Port A and port D edges: LATCH on PA1-PA3, PD2 and PD3. b0-b7 and the pins are
-; read first, as close to the edge as possible. Each LATCH pin's settings choose the
-; edge and an optional qualifier pin that must be at a given level.
+; Port A and port D edges: LATCH on PA1-PA3, PD2 and PD3 (port D's interrupt starts at
+; exti_d, at the end). b0-b7 and the pins are read first, as close to the edge as
+; possible. Each LATCH pin's settings choose the edge and an optional qualifier pin
+; that must be at a given level; the pins are read back to see which pin moved, and
+; which way, so a pulse must last until they are read.
 exti_a:
-exti_d:
         call isr_save
         call read_inputs
         ld latch_in,a
+exti_pins:
         call read_pins
         ld latch_now,a
         clr tmp+1                   ; pin
@@ -890,5 +893,68 @@ vm_error:
         include "Oled.inc"
         include "Loader.inc"
         include "Fonts.inc"
+
+; ---- Kept at the end, so that the code before them did not move ----
+
+; Port edges and interrupt levels. A LATCH on PD2 or PD3 marked solo (settings bit 7:
+; the only LATCH on port D, one edge, no qualifier) sets port D's interrupt to that
+; edge alone, so the interrupt is the edge: exti_d fires it without reading the pins
+; back, and a pulse of any length is caught. The tick goes to level 1, below the port
+; interrupts' level 3, so a LATCH never waits for it.
+setup_exti:
+        mov ITC_SPR1+5,#$7F         ; TIM4 (IRQ 23: ITC_SPR6 bits 7:6) at level 1
+        mov EXTI_CR1,#$C3           ; both edges on ports A and D
+        ldw x,#latch_cfg+3          ; PD2
+        call solo_pin
+        incw x                      ; PD3
+solo_pin:
+        ld a,(x)
+        jrpl solo_done              ; not solo
+        clr (x)                     ; port D's interrupt fires it, not the pin scan
+        srl a                       ; carry: falling
+        ld a,#$BF                   ; falling only: no rising edge (bit 6)
+        jrc solo_mask
+        ld a,#$7F                   ; rising only: no falling edge (bit 7)
+solo_mask:
+        and a,EXTI_CR1
+        ld EXTI_CR1,a
+        ld a,xl
+        sub a,#LOW(latch_cfg)-EV_LATCH
+        ld solo,a                   ; the pin's LATCH event
+solo_done:
+        ret
+
+; Port D's edge interrupt: b0-b7 first; then the solo LATCH if there is one, or the
+; pin scan.
+exti_d:
+        call read_inputs
+        call isr_save
+        ld latch_in,a
+        clrw x
+        ld xl,a
+        ld a,solo
+        jrne exti_solo
+        jp exti_pins
+exti_solo:
+        call queue_event
+        jp isr_restore
+
+; queue_event's first call: turns interrupts off until queue_event returns (the tick,
+; which the port interrupts can now interrupt, and they both add to the queue), and
+; sets Y to the event in A, as the instructions it replaced did.
+queue_lock:
+        popw y                      ; back into queue_event
+        push cc
+        sim
+        push #LOW(queue_unlock)     ; queue_event returns through queue_unlock
+        push #HIGH(queue_unlock)
+        pushw y
+        clrw y
+        ld yl,a
+        ret
+
+queue_unlock:
+        pop cc
+        ret
 
 kernel_end:

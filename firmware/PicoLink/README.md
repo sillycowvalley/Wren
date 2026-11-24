@@ -3,8 +3,11 @@
 `PicoLink.ino` turns a Raspberry Pi Pico, or a Pico-pinout RP2040 board such as the
 Waveshare RP2040 Plus, into Wren's SWIM programmer.
 
-- **Timing:** SWIM is timed by the RP2040's PIO, using Richard Hulme's pico-swimlib PIO
-  program and method (BSD 3-Clause; the notice is in the sketch).
+- **SWIM:** Richard Hulme's pico-swimlib does all of it (`swimlib.c`, `swim.h`,
+  `swim.pio.h`; BSD 3-Clause, `LICENSE-pico-swimlib.txt`): its PIO program times the bits and
+  DMA, under its interrupt, chains each frame to the next. `swimlib.c` is pico-swimlib's
+  `swim.c` with its interrupt defaults set in the file (its header says which); `swim.pio.h`
+  is its `swim.pio` assembled. The sketch adds Wren's serial protocol and NRST.
 - **Wiring:** the same as for pico-swimlib's own firmware: SWIM on GP16 with a 470 Ω
   pull-up, NRST on GP17.
 - **Protocol:** Wren talks to it with its own protocol (`src/Wren.Link/PicoLink.cs`).
@@ -22,5 +25,7 @@ Pico/RP2040/RP2350" core installed, choose the board, and upload.
 
 ## How PicoLink.uf2 was built
 
-`sdk/` builds the unchanged sketch with Pico SDK 2.1.0 (`PICO_BOARD=pico`).
+`sdk/` builds the unchanged sketch and `swimlib.c` with Pico SDK 2.1.0 (`PICO_BOARD=pico`).
+The Arduino IDE needs the Philhower core version 4 or later (Pico SDK 2), as `swim.pio.h`
+does.
 `arduino_shim.h` stands in for the Arduino serial port with the SDK's USB serial.

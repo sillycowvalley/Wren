@@ -10,8 +10,7 @@ namespace Wren.Link;
 /// wiring as pico-swimlib's own firmware (<see cref="EspStLink"/>).
 /// The serial protocol is Wren's own; each request is a command byte and its arguments, and
 /// each reply is the command byte echoed, a status byte, then any data. After an error status
-/// come three bytes: the frame of the request that failed (from 1; 0 for the entry), then two
-/// zero bytes.
+/// come three zero bytes.
 /// <list type="bullet">
 /// <item><c>H</c>: hello. Data: "WREN" and the sketch's version.</item>
 /// <item><c>R</c> s: NRST driven high (s = 0), driven low (1) or let go (FF).</item>
@@ -30,10 +29,10 @@ public sealed class PicoLink : ITargetLink
     public const byte ResetHigh = 0x00, ResetLow = 0x01, ResetLetGo = 0xFF;
 
     /// <summary>The sketch version this Wren speaks to.</summary>
-    public const int SketchVersion = 15;
+    public const int SketchVersion = 16;
 
     public const byte StatusOk = 0, StatusNoAnswer = 1, StatusNack = 2, StatusParity = 3,
-        StatusBadFrame = 4, StatusNoSync = 5, StatusBadCommand = 6;
+        StatusBadFrame = 4, StatusNoSync = 5, StatusBadCommand = 6, StatusBusy = 7;
 
     /// <summary>The most bytes one read or write carries: a flash block.</summary>
     public const int MaxChunk = 64;
@@ -157,8 +156,8 @@ public sealed class PicoLink : ITargetLink
             throw new LinkException($"The Pico answered '{(char)head[0]}' to '{(char)request[0]}': out of step. Disconnect and connect again.");
         if (head[1] != StatusOk)
         {
-            byte[] detail = ReadExactly(3);
-            throw new LinkException(Describe(head[1]) + (detail[0] == 0 ? "" : $" [frame {detail[0]}]"));
+            ReadExactly(3);
+            throw new LinkException(Describe(head[1]));
         }
         return ReadExactly(dataLength);
     }
@@ -183,6 +182,7 @@ public sealed class PicoLink : ITargetLink
         StatusParity => "SWIM: a byte from the target kept arriving damaged (parity)",
         StatusBadFrame => "SWIM: the target's reply did not start like a SWIM frame",
         StatusNoSync => "SWIM: the target did not answer the entry sequence (is it powered at 3.3 V, and are SWIM and NRST wired?)",
+        StatusBusy => "The Pico was still busy with the previous SWIM transfer",
         StatusBadCommand => "The Pico did not understand a request: is its sketch the same version as Wren?",
         _ => $"The Pico reported error {status}",
     };
