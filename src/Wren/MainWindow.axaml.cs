@@ -33,15 +33,54 @@ public partial class MainWindow : Window
     private bool stepping;
     private bool reloadPending;
     private int shownLine = -1;
+    private readonly WindowLayout layout;
+
+    /// <summary>The right-hand column, sized with the splitter.</summary>
+    private ColumnDefinition SidePanel => RightGrid.ColumnDefinitions[2];
+
+    /// <summary>The right-hand column's width as last chosen with the splitter (or the default).</summary>
+    private double sideWidth = 320;
+
+    /// <summary>
+    /// Gives the right-hand column its chosen width, or less when the window is too narrow for
+    /// that and the program's minimum width.
+    /// </summary>
+    private void FitSidePanel()
+    {
+        double room = RightGrid.Bounds.Width - RightGrid.ColumnDefinitions[0].MinWidth - RightGrid.ColumnDefinitions[1].ActualWidth;
+        double width = Math.Max(Math.Min(sideWidth, room), SidePanel.MinWidth);
+        if (SidePanel.Width.Value != width) SidePanel.Width = new GridLength(width);
+    }
 
     public MainWindow() : this(null) { }
 
-    /// <summary>Opens startPath if given, otherwise programs/OledThing.bas.</summary>
+    /// <summary>Opens startPath if given, otherwise the program open last time, otherwise programs/OledThing.bas.</summary>
     public MainWindow(string? startPath)
     {
         InitializeComponent();
         bits = new[] { B0, B1, B2, B3, B4, B5, B6, B7 };
         KeyDown += OnWindowKeyDown;
+
+        var settings = SavedSettings.Current;
+        layout = new WindowLayout(this, settings.MainWindow);
+        Closing += (_, _) =>
+        {
+            settings.MainWindow = layout.Placement;
+            settings.SidePanelWidth = sideWidth;
+            linkWindow?.KeepLayout();
+            SavedSettings.Save();
+        };
+        if (settings.SidePanelWidth is double side && double.IsFinite(side))
+            sideWidth = Math.Clamp(side, SidePanel.MinWidth, SidePanel.MaxWidth);
+        SidePanel.Width = new GridLength(sideWidth);
+        RightGrid.SizeChanged += (_, _) => FitSidePanel();
+        Splitter.DragCompleted += (_, _) => sideWidth = SidePanel.ActualWidth;
+        if (settings.Board == BoardChoice.DevelopmentBoard)
+        {
+            chip = DeviceInfo.Stm8s103f3;
+            DevBoardMenu.IsChecked = true;
+            ThingMenu.IsChecked = false;
+        }
 
         Pd2Button.PropertyChanged += (_, e) =>
         {
@@ -69,7 +108,8 @@ public partial class MainWindow : Window
             messages.Add(ex.Message);
         }
 
-        string? first = startPath ?? FindProgram("OledThing.bas");
+        string? last = settings.LastFile is { } saved && File.Exists(saved) ? saved : null;
+        string? first = startPath ?? last ?? FindProgram("OledThing.bas");
         if (first != null) Open(first);
         UpdateView();
     }
@@ -127,6 +167,7 @@ public partial class MainWindow : Window
     private void Open(string file)
     {
         path = file;
+        SavedSettings.Current.LastFile = Path.GetFullPath(file);
         Title = $"{Path.GetFileName(file)} - Wren";
         Watch(file);
         messages.Clear();
@@ -309,6 +350,7 @@ public partial class MainWindow : Window
         var chosen = DevBoardMenu.IsChecked ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
         if (chosen == chip) return;
         chip = chosen;
+        SavedSettings.Current.Board = chip == DeviceInfo.Stm8s103f3 ? BoardChoice.DevelopmentBoard : BoardChoice.Thing;
         NewSession();
         if (path != null) Open(path);
     }
