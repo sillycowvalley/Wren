@@ -7,7 +7,7 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 ## About Michael
 - He has written C++ and C# for decades. Everything that lands on his machine is C#,
   plus STM8 assembly for firmware, and one Arduino sketch for the Pico programmer
-  (`firmware/PicoLink`, using pico-swimlib's BSD PIO program; also shipped as a .uf2).
+  (`firmware/PicoLink`, using pico-swimlib's BSD SWIM code; also shipped as a .uf2).
   pico-swimlib's own firmware is `firmware/pico-swimlib`, a prebuilt .uf2.
   No Python, no JavaScript, no leading underscore in names.
 - He works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps written for

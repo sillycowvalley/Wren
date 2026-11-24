@@ -6,8 +6,9 @@ jobs through it: install the kernel, upload programs, read the wear history, wri
 restore factory settings, run. Two firmwares are available. Both use the same wiring, and
 Wren recognises either.
 
-- **Wren's PicoLink** (`firmware/PicoLink`): Wren's own sketch, built with pico-swimlib's
-  BSD-licensed PIO program and method.
+- **Wren's PicoLink** (`firmware/PicoLink`): Wren's own sketch, sketch version 16. Its
+  SWIM is pico-swimlib's own code (BSD 3-Clause), unchanged but for its interrupt
+  defaults; the sketch adds Wren's protocol and NRST.
   - **To install:** drag `PicoLink.uf2` onto the board, or upload `PicoLink.ino` from the
     Arduino IDE.
 - **pico-swimlib** (`firmware/pico-swimlib/pico-espstlink.uf2`): Richard Hulme's
@@ -108,13 +109,6 @@ If Connect says the target did not answer in time, check:
 
 ## Open issues
 
-1. **Wren's PicoLink fails part way through long transfers.** On a real Thing, sketch
-   version 15:
-   - connects, and reads thousands of bytes;
-   - writes five kernel blocks;
-   - then the Thing stops answering in the middle of a 64-byte transfer.
-
-   It uses pico-swimlib's PIO program, timings and sequence, so the difference is in how
-   the sketch feeds the PIO between frames (pico-swimlib does it from DMA and its
-   interrupt). Until that is fixed, use pico-swimlib's firmware, which installed the
-   kernel and restored Digicool's firmware without an error.
+1. **Wren's PicoLink is not yet proven on a Thing.** It runs SWIM exactly as
+   pico-swimlib's own firmware does (PIO, DMA and interrupt), but has not yet installed a
+   kernel on hardware. Until it has, pico-swimlib's firmware is the one to trust.

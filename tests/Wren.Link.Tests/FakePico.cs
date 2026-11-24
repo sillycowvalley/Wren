@@ -58,7 +58,7 @@ public sealed class FakePico : Stream
         replies.Enqueue(command);
         replies.Enqueue(status);
         if (status == PicoLink.StatusOk) foreach (byte b in data) replies.Enqueue(b);
-        else { replies.Enqueue(1); replies.Enqueue(0); replies.Enqueue(0); } // frame 1
+        else { replies.Enqueue(0); replies.Enqueue(0); replies.Enqueue(0); }
     }
 
     private void Answer()
