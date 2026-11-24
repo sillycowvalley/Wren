@@ -26,7 +26,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 8;
+const uint8_t SketchVersion = 9;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -112,6 +112,15 @@ static void __not_in_flash_func(sendBit)(uint32_t t, int bit) {
   waitUntil(t, hostPeriod);
 }
 
+// Sends a frame's last bit and returns as soon as its low is over: the target may answer
+// as soon as the line has been high for a moment (UM0470 table 3: inter-bit time > 0), well
+// before the host's bit period would end.
+static void __not_in_flash_func(sendLastBit)(uint32_t t, int bit) {
+  driveLow();
+  waitUntil(t, bit ? shortLow : longLow);
+  letGoSharply();
+}
+
 // Reads one bit from the target: 1 or 0, or -1 if the line never fell. *at is its start.
 static int __not_in_flash_func(readBit)(uint32_t timeout, uint32_t *at) {
   if (!waitFall(timeout, at)) return -1;
@@ -137,7 +146,7 @@ static uint8_t __not_in_flash_func(sendFrame)(uint32_t value, int bits) {
       sendBit(t, bit);
       t += hostPeriod;
     }
-    sendBit(t, parity);
+    sendLastBit(t, parity);
     uint32_t at;
     int ack = readBit(answerTimeout, &at);
     if (ack < 0) return StatusNoAnswer;
@@ -193,7 +202,8 @@ static uint8_t __not_in_flash_func(receiveFrame)(uint8_t *out) {
     letGoSharply();
     lineBusyFrom = t;
     lineBusyFor = hostPeriod + interFrameGap;
-    if (!good) waitUntil(t, hostPeriod);
+    // After a NACK the target sends the frame again, perhaps as soon as the NACK's low is
+    // over: go straight back to listening for its start bit.
     if (good) {
       *out = (uint8_t)(value >> 1);
       return StatusOk;

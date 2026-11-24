@@ -30,7 +30,7 @@ public sealed class PicoLink : ITargetLink
         Read = (byte)'r', Write = (byte)'w', Release = (byte)'X', LineCheck = (byte)'D', CommsReset = (byte)'L', ReadTrace = (byte)'T';
 
     /// <summary>The sketch version this Wren speaks to.</summary>
-    public const int SketchVersion = 8;
+    public const int SketchVersion = 9;
 
     public const byte StatusOk = 0, StatusNoAnswer = 1, StatusNack = 2, StatusParity = 3,
         StatusBadFrame = 4, StatusNoSync = 5, StatusBadCommand = 6;
