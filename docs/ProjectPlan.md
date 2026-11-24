@@ -121,9 +121,12 @@ The detailed design, for approval, is in [Design.md](Design.md).
    anywhere.
 2. **ST-LINK clones.** Do the clones behave like a genuine V2 (firmware version, SWIM
    speed)?
-3. **Extra EEPROM.** Is the 640 B EEPROM real on Michael's Things? A one-Thing test in
-   STVP: set the device to STM8S103F3, then write, power-cycle and read back
-   0x4080-0x427F.
+3. **Extra EEPROM.** Do Michael's Things have the S103's 640 B of EEPROM ($4000-$427F)
+   rather than the 128 B the S003's datasheet promises? The Programmer window's **EEPROM
+   size check** finds out on each Thing: it writes a test pattern to $4080-$427F (checking
+   after every block that Wren's 128 bytes are untouched), asks for a power cycle, reads it
+   back and puts the original bytes back. It writes no flash. If every Thing has 640 B,
+   the program settings can move above $4080, and item 6's bigger store costs no settings.
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.
@@ -137,3 +140,11 @@ The detailed design, for approval, is in [Design.md](Design.md).
    2. Can SWIM read RAM while the kernel idles in WFI (NO_ACCESS is documented as set in WFI)?
    3. Does DM_ENFCTR freeze TIM4 (the 1 ms tick) while the CPU is stopped?
    Connect, click **Debug module checks**, and copy the log back.
+6. **The host loader goes, the store grows (after the bench).** Uploading over b0-b7 from
+   a host is never used. Once PicoLink v16 and the current kernel are proven on a Thing,
+   remove it: the kernel's loader (528 bytes) and its PD2-at-start-up check,
+   `HostUpload` in Wren.Script and its tests, and "Uploading from a host" in Bytecode.md.
+   The program store then starts at $9240: 55 blocks instead of 47, so the largest
+   program grows from 3,008 to 3,520 bytes, and `EEREAD`/`EEWRITE` keep 10 setting bytes
+   instead of 26. The FAT's version goes up; installing the kernel carries each block's
+   write count over (old block n is new block n + 8), and the program is uploaded again.
