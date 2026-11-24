@@ -153,7 +153,11 @@ public partial class LinkWindow : Window
             : s.Flash switch
             {
                 FlashContents.Empty => $"The flash is empty.  Locked blocks (UBC): {s.ProtectedBlocks}.",
-                FlashContents.OtherFirmware => $"The flash holds other firmware, not this build of Wren's kernel.  Locked blocks (UBC): {s.ProtectedBlocks}.",
+                FlashContents.OtherFirmware => $"The flash holds other firmware, not Wren's kernel.  Locked blocks (UBC): {s.ProtectedBlocks}.",
+                FlashContents.WrenKernelOtherBuild =>
+                    $"Wren's kernel, another build: Install kernel would rewrite {s.KernelBlocksDiffering} block{(s.KernelBlocksDiffering == 1 ? "" : "s")}.  " +
+                    $"Locked blocks (UBC): {s.ProtectedBlocks}.  Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  " +
+                    $"Uploads: {s.Uploads}.  Most writes to one store block: {s.WriteCounts.Max()}.",
                 _ => $"Wren's kernel (this build).  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
                     $"Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  Uploads: {s.Uploads}.  " +
                     $"Most writes to one store block: {s.WriteCounts.Max()}.",
