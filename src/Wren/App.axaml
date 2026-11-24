@@ -4,6 +4,7 @@
              RequestedThemeVariant="Light">
   <Application.Styles>
     <SimpleTheme />
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Simple/AvaloniaEdit.xaml" />
     <StyleInclude Source="avares://Wren/Styles/Win7.axaml" />
   </Application.Styles>
 </Application>
