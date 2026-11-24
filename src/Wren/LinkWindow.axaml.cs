@@ -104,11 +104,13 @@ public partial class LinkWindow : Window
                 if (opened.Link is PicoLink pico)
                     Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs at entry, {pico.ResetSyncMicroseconds:F1} µs after the reset " +
                         $"(16 is right){(pico.Calibrated ? "; calibrated to it" : "")}.");
-                Log($"SWIM connected; the Thing's CPU is stalled. SWIM_CSR = ${opened.Target.ConnectedCsr:X2}.");
+                Log($"SWIM connected; the Thing's CPU is stalled. SWIM_CSR = ${opened.Target.ConnectedCsr:X2}" +
+                    (opened.Target.WaitedForAccess > 0 ? $", after waiting {opened.Target.WaitedForAccess} ms for the chip to allow memory access." : "."));
                 if (opened.Target.NoAccess)
                 {
-                    const string text = "The Thing refuses memory access (SWIM_CSR's NO_ACCESS bit is set): its read-out protection is on. " +
-                        "Its memory cannot be read, so it cannot be backed up. Installing the kernel needs the protection removed, which erases the chip.";
+                    const string text = "The Thing still refuses memory access after half a second (SWIM_CSR's NO_ACCESS bit stays set): " +
+                        "most likely its read-out protection is on. Then its memory cannot be read or backed up, and installing the kernel " +
+                        "needs the protection removed, which erases the chip.";
                     Log(text);
                     Dispatcher.UIThread.Post(() => StatusText.Text = text);
                     link = opened;

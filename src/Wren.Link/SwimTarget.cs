@@ -19,6 +19,9 @@ public sealed class SwimTarget
 
     public SwimTarget(ITargetLink link) => Link = link;
 
+    /// <summary>How long Connect waited, in milliseconds, for NO_ACCESS to clear.</summary>
+    public int WaitedForAccess { get; private set; }
+
     /// <summary>SWIM_CSR as read at the end of Connect.</summary>
     public byte ConnectedCsr { get; private set; }
 
@@ -38,6 +41,7 @@ public sealed class SwimTarget
     /// </summary>
     public void Connect()
     {
+        WaitedForAccess = 0;
         Link.EnterSwimMode();
         Link.AssertReset();
         Link.EnterSequence();
@@ -52,6 +56,15 @@ public sealed class SwimTarget
             csr = ReadByte(SwimCsr);
             if ((csr & 0x02) != 0) break; // HSIT: high speed is possible
             Link.Sleep(1);
+        }
+        // NO_ACCESS while the chip is still starting up (NRST rising slowly through its
+        // capacitor, option bytes not loaded, HSIT clear) is not yet read-out protection:
+        // give it up to half a second to clear.
+        for (int i = 0; i < 50 && (csr & 0x40) != 0; i++)
+        {
+            Link.Sleep(10);
+            csr = ReadByte(SwimCsr);
+            WaitedForAccess += 10;
         }
         ConnectedCsr = csr;
         Link.ResetSwim();
