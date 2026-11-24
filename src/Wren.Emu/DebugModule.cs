@@ -2,8 +2,8 @@ namespace Wren.Emu;
 
 /// <summary>
 /// The STM8's debug module (UM0470 chapter 4), as far as a debugger over SWIM uses it:
-/// the two breakpoint registers (DM_BKR1/2, $7F90-$7F95), DM_CR1's data-read conditions
-/// (on BK1 or BK2, and BK1 &lt;= address &lt;= BK2), DM_CSR1's flags, DM_CSR2's STALL and
+/// the two breakpoint registers (DM_BKR1/2, $7F90-$7F95), DM_CR1's conditions (a data read
+/// on BK1 or BK2 or in BK1-BK2, and an instruction fetch in BK1-BK2), DM_CSR1's flags, DM_CSR2's STALL and
 /// DM_ENFCTR's freezing of TIM4 and I2C while stalled. It acts only while SWIM is active
 /// (UM0470 4.3.5); a reset with SWIM active leaves the CPU stalled at the reset vector (4.3.1).
 /// </summary>
@@ -15,6 +15,7 @@ public sealed class DebugModule
 
     private readonly byte[] regs = new byte[Size];
     private bool pendingBreak;
+    private bool served;
 
     public DebugModule() => Reset(false);
 
@@ -52,7 +53,11 @@ public sealed class DebugModule
                 break;
             case Csr2:
                 bool stall = (value & Stall) != 0;
-                if (!stall && (regs[Csr2] & Stall) != 0) regs[Csr1] &= 0x41;   // flags clear with STALL
+                if (!stall && (regs[Csr2] & Stall) != 0)
+                {
+                    regs[Csr1] &= 0x41;                                         // flags clear with STALL
+                    served = true;                                              // the instruction it stopped before now runs
+                }
                 regs[Csr2] = (byte)((value & 0x29) | (stall ? Stall : 0));
                 break;
             default:
@@ -79,6 +84,24 @@ public sealed class DebugModule
         if (flags == 0) return;
         regs[Csr1] = (byte)((regs[Csr1] & 0x40) | flags | 0x08);              // BRW: on a read
         pendingBreak = true;
+    }
+
+    /// <summary>
+    /// Before each instruction: an instruction-fetch breakpoint (BC = 001, BIR and BIW clear)
+    /// on its address stalls the CPU before it runs (UM0470 4.9). True when it stalled. The
+    /// instruction the CPU resumes at is not stopped again.
+    /// </summary>
+    public bool BreakBefore(int pc)
+    {
+        if (served)
+        {
+            served = false;
+            return false;
+        }
+        if (!SwimActive || (regs[Cr1] & 0x06) != 0 || ((regs[Cr1] >> 3) & 7) != 0b001 || pc < Bk1 || pc > Bk2) return false;
+        regs[Csr1] = (byte)((regs[Csr1] & 0x40) | Bk1Flag);
+        regs[Csr2] |= Stall;
+        return true;
     }
 
     /// <summary>After each instruction: a data breakpoint stalls the CPU once the instruction ends (UM0470 4.8).</summary>

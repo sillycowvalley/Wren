@@ -226,7 +226,7 @@ public sealed class Stm8Device : IBus
     public void Step()
     {
         int cpuCycles;
-        if (Debug.Stalled)
+        if (Debug.Stalled || (Cpu.State == CpuState.Running && Debug.BreakBefore(Cpu.PC)))
         {
             // Stalled by the debug module: time passes, the CPU does nothing.
             cpuCycles = 16;

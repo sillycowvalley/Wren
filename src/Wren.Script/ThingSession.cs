@@ -13,13 +13,7 @@ public enum SessionStop { TimeUp, Breakpoint, Statement, Fault }
 public sealed class ThingSession
 {
     private readonly int vmNext;
-    private readonly int vpcAddress;
-    private readonly int fpAddress;
-    private readonly int cspAddress;
-    private readonly int cstackTop;
-    private readonly int varsAddress;
-    private readonly int faultAddress;
-    private readonly int eventValueAddress;
+    private readonly ProgramView view;
     private HashSet<int> statementStarts = new();
     private HashSet<int> breakAddresses = new();
     private HashSet<int> handlerStarts = new();
@@ -29,13 +23,7 @@ public sealed class ThingSession
         Kernel = kernel;
         Board = new OledThing(chip);
         vmNext = kernel.Symbol("vm_next");
-        vpcAddress = kernel.Symbol("vpc");
-        fpAddress = kernel.Symbol("fp");
-        cspAddress = kernel.Symbol("csp");
-        cstackTop = kernel.Symbol("CSTACK_TOP");
-        varsAddress = kernel.Symbol("VARS");
-        faultAddress = kernel.Symbol("vm_fault");
-        eventValueAddress = kernel.Symbol("evt_value");
+        view = new ProgramView(kernel);
         // The kernel as Wren installs it on this chip: the development board's 640 bytes of
         // EEPROM keep the program settings at $4080.
         Board.Mcu.Load(KernelInfo.ForEeprom(kernel.Image, chip.EepromSize).Bytes);
@@ -106,7 +94,7 @@ public sealed class ThingSession
 
     // ---- Where the VM is ----
 
-    public int Vpc => Word(vpcAddress);
+    public int Vpc => view.Vpc(Board.Mcu.Read);
 
     /// <summary>True when the CPU is about to run a BASIC instruction (stopped at vm_next).</summary>
     public bool AtVmInstruction => Board.Mcu.Cpu.PC == vmNext;
@@ -118,12 +106,12 @@ public sealed class ThingSession
     public RoutineInfo? CurrentRoutine => CurrentLine > 0 ? Program?.RoutineAt(Vpc) : null;
 
     /// <summary>The program's fault number, 0 while it runs.</summary>
-    public int Fault => Board.Mcu.Read(faultAddress);
+    public int Fault => view.Fault(Board.Mcu.Read);
 
-    public int EventValue => Board.Mcu.Read(eventValueAddress);
+    public int EventValue => view.EventValue(Board.Mcu.Read);
 
     /// <summary>Calls in progress below the current routine.</summary>
-    public int CallDepth => (cstackTop - Word(cspAddress)) / 4;
+    public int CallDepth => view.CallDepth(Board.Mcu.Read);
 
     // ---- Running ----
 
@@ -198,43 +186,8 @@ public sealed class ThingSession
 
     // ---- Variables ----
 
-    public sealed record Variable(string Name, string Value);
-
-    public IEnumerable<Variable> Globals()
-    {
-        if (Program == null) yield break;
-        foreach (var g in Program.Globals)
-        {
-            switch (g.Kind)
-            {
-                case VariableKind.Integer:
-                    yield return new Variable(g.Name, Format(Word(varsAddress + g.Offset)));
-                    break;
-                default:
-                    int shown = Math.Min(g.Length, 8);
-                    var items = Enumerable.Range(0, shown).Select(i => g.Kind == VariableKind.ByteArray
-                        ? Board.Mcu.Read(varsAddress + g.Offset + i).ToString()
-                        : Word(varsAddress + g.Offset + 2 * i).ToString());
-                    yield return new Variable($"{g.Name}({g.Length})", string.Join(", ", items) + (g.Length > shown ? ", ..." : ""));
-                    break;
-            }
-        }
-    }
+    public IEnumerable<Variable> Globals() => Program == null ? Enumerable.Empty<Variable>() : view.Globals(Program, Board.Mcu.Read);
 
     /// <summary>Parameters and locals of the routine at the current statement.</summary>
-    public IEnumerable<Variable> Locals()
-    {
-        var routine = CurrentRoutine;
-        if (routine == null) yield break;
-        int fp = Word(fpAddress);
-        for (int i = 0; i < routine.Locals.Count; i++)
-        {
-            if (routine.Locals[i].StartsWith('(')) continue; // hidden FOR limits
-            yield return new Variable(routine.Locals[i], Format(Word(fp - 2 * i)));
-        }
-    }
-
-    private static string Format(short v) => v is >= 0 and <= 9 ? v.ToString() : $"{v}  (${(ushort)v:X4})";
-
-    private short Word(int address) => (short)((Board.Mcu.Read(address) << 8) | Board.Mcu.Read(address + 1));
+    public IEnumerable<Variable> Locals() => CurrentRoutine is { } routine ? view.Locals(routine, Board.Mcu.Read) : Enumerable.Empty<Variable>();
 }

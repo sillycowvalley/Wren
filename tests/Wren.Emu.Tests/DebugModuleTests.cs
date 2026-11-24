@@ -104,4 +104,22 @@ public class DebugModuleTests
         mcu.Run(0.0001);
         Assert.Equal(b, mcu.Read(0x5346));
     }
+
+    [Fact]
+    public void AnInstructionBreakpointStopsBeforeItOnceAPass()
+    {
+        var mcu = Chip(swim: true);
+        SetBreak(mcu, 0x8083, 0x8083, 0x08);                // BC = 001, no BIR/BIW: instruction fetch
+        mcu.DebugWrite(Csr2, 0x00);
+        mcu.Run(0.0005);
+        Assert.True(mcu.Debug.Stalled);
+        Assert.Equal(0x8083, mcu.Cpu.PC);                   // before the jra
+        mcu.DebugWrite(Csr2, 0x00);                         // resume: the jra runs, then the loop comes round again
+        mcu.Step();
+        Assert.False(mcu.Debug.Stalled);
+        Assert.Equal(0x8080, mcu.Cpu.PC);
+        mcu.Run(0.0005);
+        Assert.True(mcu.Debug.Stalled);
+        Assert.Equal(0x8083, mcu.Cpu.PC);
+    }
 }
