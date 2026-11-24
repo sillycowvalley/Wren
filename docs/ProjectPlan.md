@@ -64,7 +64,7 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    scan, because the Thing's module is mounted rotated 180°. It also turns on pull-ups on
    b0–b7, so inputs left open read 1. Programs reach a Thing over SWIM
    (Wren.Link) or from a host over its own pins (the kernel's loader).
-4. **Wren BASIC (done).** The Thing's own behaviour is about 310 bytes of BASIC.
+4. **Wren BASIC (done).** The Thing's own behaviour is 502 bytes of BASIC.
 5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug
    module, as OpenOCD's STM8 support does).
 
