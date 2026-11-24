@@ -9,8 +9,10 @@
 //
 // It speaks SWIM at low speed (8 MHz SWIM clock: a bit is 22 clocks, 2.75 us; a 1 is low for
 // 2 clocks, a 0 for 20), timed with the core's SysTick, from RAM, with interrupts off while a
-// transfer is on the wire. Wren (src/Wren.Link/PicoLink.cs) sends the requests; the protocol
-// is described there. SWIM itself is described in ST's UM0470.
+// transfer is on the wire. The host's own pulses end with a brief push-pull high, so they
+// stay sharp on a slow line. The target's bits are read 1.7 us in, and a bit edge hidden by
+// a slow rise is predicted from the bit period. Wren (src/Wren.Link/PicoLink.cs) sends the
+// requests; the protocol is described there. SWIM itself is described in ST's UM0470.
 
 #include <hardware/clocks.h>
 #include <hardware/gpio.h>
@@ -22,7 +24,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 4;
+const uint8_t SketchVersion = 5;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -39,7 +41,7 @@ static uint32_t lowCycles;
 
 // Times in CPU cycles, worked out from the clock in setup().
 static uint32_t bitPeriod, shortLow, longLow, sampleAt;
-static uint32_t answerTimeout, bitTimeout, riseTimeout;
+static uint32_t answerTimeout, bitTimeout, riseTimeout, edgeWindow;
 static uint32_t entryLow, entrySlow, entryFast, syncTimeout, afterSync, syncShortest, syncLongest, stuckTimeout, settleTimeout;
 static uint32_t cpuHz;
 
@@ -48,11 +50,30 @@ static uint32_t cycles(uint32_t ns) { return (uint32_t)((uint64_t)cpuHz * ns / 1
 // SysTick counts down from 0xFFFFFF at the CPU clock; now() counts up, modulo 2^24.
 static __force_inline uint32_t now() { return ~systick_hw->cvr & 0xFFFFFF; }
 static __force_inline uint32_t since(uint32_t t) { return (now() - t) & 0xFFFFFF; }
-static __force_inline void waitUntil(uint32_t t, uint32_t c) { while (since(t) < c) { } }
+// Waits until c cycles after t; t may be in the past or (a little) in the future.
+static __force_inline void waitUntil(uint32_t t, uint32_t c) {
+  uint32_t end = t + c;
+  for (;;) {
+    uint32_t ahead = (end - now()) & 0xFFFFFF;
+    if (ahead == 0 || ahead >= 0x800000) return;
+  }
+}
 
 // Open drain: the output value is 0, so enabling the output pulls low and disabling it lets go.
 static __force_inline void driveLow() { sio_hw->gpio_oe_set = SwimMask; }
 static __force_inline void letGo() { sio_hw->gpio_oe_clr = SwimMask; }
+
+// Ends one of the host's own low pulses by driving the line high for a moment before
+// letting go, so the edge is sharp however weak the pull-up (the target never drives
+// while the host is sending).
+static uint32_t boostHigh;
+static __force_inline void letGoSharply() {
+  sio_hw->gpio_set = SwimMask;
+  uint32_t t = now();
+  while (since(t) < boostHigh) { }
+  sio_hw->gpio_oe_clr = SwimMask;
+  sio_hw->gpio_clr = SwimMask;
+}
 static __force_inline bool lineHigh() { return (sio_hw->gpio_in & SwimMask) != 0; }
 
 // Waits for the line to fall; false on timeout. *at is when it was seen low.
@@ -79,7 +100,7 @@ static bool __not_in_flash_func(waitRise)(uint32_t timeout) {
 static void __not_in_flash_func(sendBit)(uint32_t t, int bit) {
   driveLow();
   waitUntil(t, bit ? shortLow : longLow);
-  letGo();
+  letGoSharply();
   waitUntil(t, bitPeriod);
 }
 
@@ -125,13 +146,25 @@ static uint8_t __not_in_flash_func(receiveFrame)(uint8_t *out) {
     int bit = readBit(answerTimeout, &at);
     if (bit < 0) return StatusNoAnswer;
     if (bit != 1) return StatusBadFrame;
+    // Each later bit starts one period after the last. Its falling edge shows only if the
+    // line rose in the 250 ns gap after the previous bit, which a slow pull-up does not
+    // manage after a 0; so take the edge when it is seen near where it is due, and
+    // otherwise count on the period.
     uint32_t value = 0;
+    uint32_t bitStart = at;
     for (int i = 0; i < 9; i++) {
-      if (!waitRise(riseTimeout)) return StatusBadFrame;
-      bit = readBit(bitTimeout, &at);
-      if (bit < 0) return StatusBadFrame;
-      value = (value << 1) | (uint32_t)bit;
+      waitUntil(bitStart, bitPeriod - edgeWindow);
+      uint32_t fell;
+      if (lineHigh()) {
+        if (!waitFall(2 * edgeWindow, &fell)) return StatusBadFrame;
+        bitStart = fell;
+      } else {
+        bitStart += bitPeriod;
+      }
+      waitUntil(bitStart, sampleAt);
+      value = (value << 1) | (lineHigh() ? 1u : 0u);
     }
+    at = bitStart;
     int parity = 0;
     for (int i = 1; i <= 8; i++) parity ^= (value >> i) & 1;
     bool good = parity == (int)(value & 1);
@@ -353,7 +386,9 @@ void setup() {
   bitPeriod = cycles(2750);
   shortLow = cycles(250);
   longLow = cycles(2500);
-  sampleAt = cycles(1125);
+  sampleAt = cycles(1700);  // late in the bit, so a slow rise after a 1 still reads as 1
+  boostHigh = cycles(100);
+  edgeWindow = cycles(600);
   answerTimeout = cycles(2000000); // 2 ms
   bitTimeout = cycles(10000);
   riseTimeout = cycles(5000);

@@ -70,7 +70,7 @@ public sealed class FakePico : Stream
         switch (r[0])
         {
             case PicoLink.Hello:
-                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 4);
+                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 5);
                 return;
             case PicoLink.Reset:
                 ResetHeld = r[1] != 0;
