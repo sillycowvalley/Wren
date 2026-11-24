@@ -41,7 +41,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         bits = new[] { B0, B1, B2, B3, B4, B5, B6, B7 };
-        BoardBox.SelectedIndex = 0;
+        KeyDown += OnWindowKeyDown;
 
         Pd2Button.PropertyChanged += (_, e) =>
         {
@@ -127,8 +127,7 @@ public partial class MainWindow : Window
     private void Open(string file)
     {
         path = file;
-        FileText.Text = Path.GetFileName(file);
-        ToolTip.SetTip(FileText, file);
+        Title = $"{Path.GetFileName(file)} - Wren";
         Watch(file);
         messages.Clear();
         errorLine = 0;
@@ -174,6 +173,65 @@ public partial class MainWindow : Window
         watcher.Renamed += (_, _) => reloadPending = true;
     }
 
+    // ---- Menus ----
+
+    private void OnExit(object? sender, RoutedEventArgs e) => Close();
+
+    /// <summary>The menu shortcuts: F5 run or pause, F10 step, Ctrl+O open, Ctrl+R reload.</summary>
+    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.F5) OnRun(sender, e);
+        else if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.F10) { if (StepMenu.IsEnabled) OnStep(sender, e); }
+        else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.O) OnOpen(sender, e);
+        else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.R) OnReload(sender, e);
+        else return;
+        e.Handled = true;
+    }
+
+    /// <summary>Opens the quick reference (docs/Infographics) in the viewer Windows has for PNGs.</summary>
+    private void OnQuickReference(object? sender, RoutedEventArgs e)
+    {
+        string? found = FindBeside("docs/Infographics/Wren_BASIC_Quick_Reference.png");
+        if (found == null)
+        {
+            messages.Add("The quick reference was not found beside Wren.");
+            UpdateView();
+            return;
+        }
+        Process.Start(new ProcessStartInfo(found) { UseShellExecute = true });
+    }
+
+    private void OnAbout(object? sender, RoutedEventArgs e) => new SplashWindow { IsAbout = true }.ShowDialog(this);
+
+    /// <summary>A file in the repository (looking upward from Wren) or beside Wren.</summary>
+    private static string? FindBeside(string relative)
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir != null)
+        {
+            string candidate = Path.Combine(dir.FullName, relative);
+            if (File.Exists(candidate)) return candidate;
+            dir = dir.Parent;
+        }
+        return null;
+    }
+
+    // ---- A real Thing ----
+
+    private LinkWindow? linkWindow;
+
+    private void OnOpenLink(object? sender, RoutedEventArgs e)
+    {
+        if (linkWindow != null)
+        {
+            linkWindow.Activate();
+            return;
+        }
+        linkWindow = new LinkWindow(kernel, () => session?.Program);
+        linkWindow.Closed += (_, _) => linkWindow = null;
+        linkWindow.Show(this);
+    }
+
     // ---- Running and stepping ----
 
     private void OnRun(object? sender, RoutedEventArgs e)
@@ -192,7 +250,7 @@ public partial class MainWindow : Window
     {
         running = run;
         stepping = false;
-        RunButton.Content = running ? "Pause" : "Run";
+        RunMenu.Header = running ? "_Pause" : "_Run";
         clock.Restart();
     }
 
@@ -246,9 +304,9 @@ public partial class MainWindow : Window
 
     // ---- Board ----
 
-    private void OnBoardChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnBoardChanged(object? sender, RoutedEventArgs e)
     {
-        var chosen = BoardBox.SelectedIndex == 1 ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
+        var chosen = DevBoardMenu.IsChecked ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
         if (chosen == chip) return;
         chip = chosen;
         NewSession();
@@ -330,7 +388,7 @@ public partial class MainWindow : Window
         StatusText.Text = board == null ? "" :
             $"{(running ? "Running" : stepping ? "Stepping: waiting for the next statement" : "Paused")}   " +
             $"{board.Mcu.Seconds:F2} s since reset   OLED {(board.Oled.Lit ? "on" : "off")}";
-        StepButton.IsEnabled = session?.Program != null;
+        StepMenu.IsEnabled = session?.Program != null;
         Oled.Refresh();
     }
 

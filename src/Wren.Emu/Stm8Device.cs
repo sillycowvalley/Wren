@@ -127,6 +127,18 @@ public sealed class Stm8Device : IBus
 
     private int blockStart = -1;
     private int blockBytes;
+    private bool debugAccess;
+
+    /// <summary>
+    /// A write from the debug interface (SWIM), with the CPU stalled: as Write, but block
+    /// programming is allowed, since no CPU code is running from flash.
+    /// </summary>
+    public void DebugWrite(int address, byte value)
+    {
+        debugAccess = true;
+        try { Write(address, value); }
+        finally { debugAccess = false; }
+    }
 
     /// <summary>Names of peripherals the firmware used that Wren does not model.</summary>
     public HashSet<string> UnmodelledPeripherals { get; } = new();
@@ -274,11 +286,7 @@ public sealed class Stm8Device : IBus
         }
         if (address >= EepromStart && address < EepromStart + eeprom.Length)
         {
-            if (FlashControl.TryWrite(program: false))
-            {
-                eeprom[address - EepromStart] = value;
-                EepromWrites[address - EepromStart]++;
-            }
+            WriteEeprom(address - EepromStart, value);
             return;
         }
         if (address >= OptionStart && address < OptionStart + OptionSize)
@@ -325,7 +333,7 @@ public sealed class Stm8Device : IBus
                 FlashControl.Refuse();
                 return;
             }
-            if (Cpu.PC >= FlashStart)
+            if (!debugAccess && Cpu.PC >= FlashStart)
             {
                 Cpu.Fault = "Block programming of flash must run from RAM";
                 return;
@@ -353,6 +361,39 @@ public sealed class Stm8Device : IBus
             FlashBlockCycles[offset / 64]++;
         }
     }
+
+    /// <summary>A write into data EEPROM: byte by byte, or 64-byte blocks in block mode.</summary>
+    private void WriteEeprom(int offset, byte value)
+    {
+        if (!FlashControl.DataUnlocked)
+        {
+            FlashControl.Refuse();
+            return;
+        }
+        if (FlashControl.BlockMode)
+        {
+            int start = offset & ~63;
+            if (start != eepromBlockStart)
+            {
+                eepromBlockStart = start;
+                eepromBlockBytes = 0;
+            }
+            eeprom[offset] = value;
+            EepromWrites[offset]++;
+            if (++eepromBlockBytes == 64)
+            {
+                eepromBlockStart = -1;
+                FlashControl.BlockDone();
+            }
+            return;
+        }
+        FlashControl.TryWrite(program: false);
+        eeprom[offset] = value;
+        EepromWrites[offset]++;
+    }
+
+    private int eepromBlockStart = -1;
+    private int eepromBlockBytes;
 
     private void NoteUnmodelled(int address)
     {

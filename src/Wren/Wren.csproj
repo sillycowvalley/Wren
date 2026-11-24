@@ -15,7 +15,7 @@
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.2.3" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+    <PackageReference Include="Avalonia.Themes.Simple" Version="11.2.3" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.3" />
   </ItemGroup>
 
@@ -32,6 +32,7 @@
     <ProjectReference Include="..\Wren.Asm\Wren.Asm.csproj" />
     <ProjectReference Include="..\Wren.Emu\Wren.Emu.csproj" />
     <ProjectReference Include="..\Wren.Script\Wren.Script.csproj" />
+    <ProjectReference Include="..\Wren.Link\Wren.Link.csproj" />
   </ItemGroup>
 
 </Project>
