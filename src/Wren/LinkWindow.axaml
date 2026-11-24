@@ -14,6 +14,8 @@
         <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect" />
       </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Name="BackupButton" Content="Back up…" Click="OnBackup"
+                ToolTip.Tip="Reads the whole chip (flash, EEPROM, option bytes) into an S-record file; writes nothing to the Thing" />
         <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
                 ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
         <Button Name="UploadButton" Content="Upload program" Click="OnUpload"

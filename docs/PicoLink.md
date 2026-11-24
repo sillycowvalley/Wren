@@ -17,6 +17,8 @@ and a program upload well under one.
 
 ## Wiring
 
+The breadboard cheatsheet: [Infographics/Pico_Programmer_Wiring.png](Infographics/Pico_Programmer_Wiring.png).
+
 | Pico pin | Pico name | To |
 |---|---|---|
 | 4 | GP2 | Thing J2 pin 2 (SWIM), **and** the 1 kΩ resistor's first leg |
@@ -51,8 +53,11 @@ fine at 3.3 V. The Pico's onboard LED lights while it is working.
 2. In Wren, choose **Tools → Programmer…** and click **Find**. The list shows
    **Pico on COMn**.
 3. Choose it and click **Connect**. The log names the sketch's version, and then what the
-   Thing holds.
-4. **Install kernel**, **Upload program** and **Run** work as they do with an ST-LINK.
+   Thing holds: empty, Wren's kernel (this build), or other firmware.
+4. **Back up…** saves the whole chip (flash, EEPROM, option bytes) as an `.s19` file.
+   Connect and Back up only read. Keep the backup of Digicool's firmware on your own
+   machine: it must never go into the repository.
+5. **Install kernel**, **Upload program** and **Run** work as they do with an ST-LINK.
 
 If Connect says the target did not answer, check the 1 kΩ pull-up, that SWIM goes to GP2
 and NRST to GP3, and that the Thing has 3.3 V on VCC.

@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Wren.Link;
 using Wren.Script;
@@ -41,6 +42,7 @@ public partial class LinkWindow : Window
         DisconnectButton.IsEnabled = connected;
         KernelButton.IsEnabled = connected && kernel != null;
         UploadButton.IsEnabled = connected;
+        BackupButton.IsEnabled = connected;
         RunButton.IsEnabled = connected;
         KernelButton.Content = kernelConfirmed ? "Click again to install" : "Install kernel";
     }
@@ -101,12 +103,18 @@ public partial class LinkWindow : Window
 
     private void ShowStatus(ThingLink l)
     {
-        var s = l.Programmer.ReadStatus();
+        var s = l.Programmer.ReadStatus(kernel?.Image);
         string text = s.ReadOutProtected
             ? "Read-out protection is on: the Thing's contents cannot be read. Installing the kernel needs it removed, which erases the chip."
-            : $"Kernel: {(s.HasKernel ? "present" : "none")}.  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
-              $"Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  Uploads: {s.Uploads}.  " +
-              $"Most writes to one store block: {s.WriteCounts.Max()}.";
+            : s.Flash switch
+            {
+                FlashContents.Empty => $"The flash is empty.  Locked blocks (UBC): {s.ProtectedBlocks}.",
+                FlashContents.OtherFirmware => $"The flash holds other firmware, not this build of Wren's kernel.  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
+                    "Back it up before installing the kernel.",
+                _ => $"Wren's kernel (this build).  Locked blocks (UBC): {s.ProtectedBlocks}.  " +
+                    $"Program: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}.  Uploads: {s.Uploads}.  " +
+                    $"Most writes to one store block: {s.WriteCounts.Max()}.",
+            };
         Log(text);
         Dispatcher.UIThread.Post(() => StatusText.Text = text);
     }
@@ -118,6 +126,35 @@ public partial class LinkWindow : Window
         kernelConfirmed = false;
         Log("Disconnected.");
         UpdateButtons();
+    }
+
+    private async void OnBackup(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save a copy of the Thing's flash, EEPROM and option bytes",
+            SuggestedFileName = $"Thing backup {DateTime.Now:yyyy-MM-dd HHmm}.s19",
+            DefaultExtension = "s19",
+            FileTypeChoices = new[] { new FilePickerFileType("S-records") { Patterns = new[] { "*.s19" } } },
+        });
+        string? path = file?.TryGetLocalPath();
+        if (path == null) return;
+        var l = link;
+        await Work("Back up", () =>
+        {
+            l.Programmer.Progress += Log;
+            try
+            {
+                var image = l.Programmer.ReadEverything();
+                File.WriteAllText(path, image.ToSRecords());
+                Log($"Saved {image.Count} bytes to {path}");
+            }
+            finally
+            {
+                l.Programmer.Progress -= Log;
+            }
+        });
     }
 
     private async void OnInstallKernel(object? sender, RoutedEventArgs e)

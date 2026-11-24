@@ -1,3 +1,4 @@
+using Wren.Asm;
 using Wren.Emu;
 using Wren.Script;
 using Xunit;
@@ -57,7 +58,7 @@ public class LinkTests
         int kernelBlocks = (ProgramStore.StoreAddress - 0x8000) / 64;
         Assert.Equal(kernelBlocks, thing.Mcu.ProtectedBlocks);
 
-        var status = link.Programmer.ReadStatus();
+        var status = link.Programmer.ReadStatus(Kernel.Image);
         Assert.True(status.HasKernel);
         Assert.False(status.ReadOutProtected);
         Assert.Equal(0, status.ProgramLength);
@@ -134,5 +135,39 @@ public class LinkTests
         var data = Enumerable.Range(0, 64).Select(i => (byte)(i + 1)).ToArray();
         link.Link.WriteMemory(0x0200, data);              // 8 bytes in the packet, 56 after it
         Assert.Equal(data, Enumerable.Range(0x200, 64).Select(a => thing.Mcu.Read(a)));
+    }
+
+    [Fact]
+    public void OtherFirmwareIsRecognisedAndBackedUpWithoutWriting()
+    {
+        var thing = new OledThing();
+        var other = Enumerable.Range(0, 0x2000).Select(i => new KeyValuePair<int, byte>(0x8000 + i, (byte)(i * 13))).ToList();
+        other[0] = new(0x8000, 0x82);
+        thing.Mcu.Load(other);
+        thing.Mcu.Load(new[] { new KeyValuePair<int, byte>(0x4000, 0x01), new(0x4001, 0x07) }); // looks like a FAT
+        var fake = new FakeStLink(thing.Mcu);
+        var link = new ThingLink(fake);
+        link.Link.Sleep = _ => { };
+        link.Target.Connect();
+        byte[] flashBefore = Enumerable.Range(0x8000, 0x2000).Select(a => thing.Mcu.Read(a)).ToArray();
+
+        var status = link.Programmer.ReadStatus(Kernel.Image);
+        Assert.Equal(FlashContents.OtherFirmware, status.Flash);
+        Assert.Equal(0, status.ProgramLength);
+        Assert.Equal(0, status.WriteCounts.Sum());
+
+        var image = link.Programmer.ReadEverything();
+        Assert.Equal(0x2000 + 128 + 11, image.Count);
+        Assert.Equal(flashBefore, Enumerable.Range(0x8000, 0x2000).Select(a => image[a]));
+        Assert.Equal(0x07, image[0x4001]);
+        Assert.Equal(flashBefore, Enumerable.Range(0x8000, 0x2000).Select(a => thing.Mcu.Read(a)));
+        Assert.Equal(image.Bytes, MemoryImage.Parse(image.ToSRecords()).Bytes);
+    }
+
+    [Fact]
+    public void AnEmptyChipIsReportedAsEmpty()
+    {
+        var (_, _, link) = Connect();
+        Assert.Equal(FlashContents.Empty, link.Programmer.ReadStatus(Kernel.Image).Flash);
     }
 }

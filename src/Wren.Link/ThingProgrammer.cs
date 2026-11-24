@@ -3,14 +3,23 @@ using Wren.Script;
 
 namespace Wren.Link;
 
-/// <summary>What a Thing (or the development board) holds, as read over SWIM.</summary>
+/// <summary>What the flash holds: nothing, Wren's kernel as this build makes it, or other firmware.</summary>
+public enum FlashContents { Empty, WrenKernel, OtherFirmware }
+
+/// <summary>
+/// What a Thing (or the development board) holds, as read over SWIM. The program and the
+/// wear counts come from Wren's FAT, so they are only meaningful under Wren's kernel.
+/// </summary>
 public sealed record ThingStatus(
     bool ReadOutProtected,
     int ProtectedBlocks,
-    bool HasKernel,
+    FlashContents Flash,
     int ProgramLength,
     int Uploads,
-    IReadOnlyList<int> WriteCounts);
+    IReadOnlyList<int> WriteCounts)
+{
+    public bool HasKernel => Flash == FlashContents.WrenKernel;
+}
 
 /// <summary>
 /// Wren's jobs on a real Thing: install the kernel, upload a program through the FAT, read
@@ -22,6 +31,7 @@ public sealed class ThingProgrammer
     public const int OptionRop = 0x4800, OptionUbc = 0x4801, OptionNubc = 0x4802;
     public const int FlashStart = 0x8000;
     public const byte RopOn = 0xAA;
+    public const int FlashEnd = 0xA000, EepromStart = 0x4000, EepromSize = 128, OptionSize = 11;
 
     private readonly SwimTarget target;
 
@@ -32,20 +42,55 @@ public sealed class ThingProgrammer
 
     private void Say(string message) => Progress?.Invoke(message);
 
-    public ThingStatus ReadStatus()
+    /// <summary>
+    /// Reads the option bytes, the flash's reset vector and the FAT; with a kernel image,
+    /// reads the kernel's area too, to tell Wren's kernel from other firmware. Writes nothing.
+    /// </summary>
+    public ThingStatus ReadStatus(MemoryImage? kernel = null)
     {
         byte rop = target.ReadByte(OptionRop);
         byte ubc = target.ReadByte(OptionUbc);
         byte[] reset = target.Read(FlashStart, 4);
+        var flash = reset[0] != 0x82 ? FlashContents.Empty // every STM8 program's reset vector holds INT ($82)
+            : kernel != null && Matches(kernel) ? FlashContents.WrenKernel
+            : kernel != null ? FlashContents.OtherFirmware
+            : FlashContents.WrenKernel; // nothing to compare against: assume Wren's
         byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
-        bool formatted = fat[0] == 1;
+        bool formatted = flash == FlashContents.WrenKernel && fat[0] == 1;
         return new ThingStatus(
             rop == RopOn,
             ubc,
-            reset[0] == 0x82, // the reset vector holds INT
+            flash,
             formatted && fat[1] != ProgramStore.FreeBlock ? (fat[2] << 8) | fat[3] : 0,
             formatted ? (fat[6] << 8) | fat[7] : 0,
-            ProgramStore.WriteCounts(fat));
+            formatted ? ProgramStore.WriteCounts(fat) : new int[ProgramStore.Blocks]);
+    }
+
+    private bool Matches(MemoryImage kernel)
+    {
+        foreach (var (address, data) in kernel.Blocks().Where(b => b.Address >= FlashStart))
+        {
+            if (!target.Read(address, data.Length).AsSpan().SequenceEqual(data)) return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Reads everything the chip holds: the 8 KB of flash, the 128 bytes of EEPROM and the
+    /// option bytes, as an image that can be saved as S-records (which ST Visual Programmer
+    /// loads too). Writes nothing.
+    /// </summary>
+    public MemoryImage ReadEverything()
+    {
+        var image = new MemoryImage();
+        for (int address = FlashStart; address < FlashEnd; address += 1024)
+        {
+            Say($"Reading flash ${address:X4}");
+            image.Write(address, target.Read(address, 1024));
+        }
+        image.Write(EepromStart, target.Read(EepromStart, EepromSize));
+        image.Write(OptionRop, target.Read(OptionRop, OptionSize));
+        return image;
     }
 
     /// <summary>
