@@ -121,9 +121,12 @@ The detailed design, for approval, is in [Design.md](Design.md).
    anywhere.
 2. **ST-LINK clones.** Do the clones behave like a genuine V2 (firmware version, SWIM
    speed)?
-3. **Extra EEPROM.** Is the 640 B EEPROM real on Michael's Things? A one-Thing test in
-   STVP: set the device to STM8S103F3, then write, power-cycle and read back
-   0x4080-0x427F.
+3. **Extra EEPROM.** Do Michael's Things have the S103's 640 B of EEPROM ($4000-$427F)
+   rather than the 128 B the S003's datasheet promises? The Programmer window's **EEPROM
+   size check** finds out on each Thing: it writes a test pattern to $4080-$427F (checking
+   after every block that Wren's 128 bytes are untouched), asks for a power cycle, reads it
+   back and puts the original bytes back. It writes no flash. If every Thing has 640 B,
+   the program settings can move above $4080, and item 6's bigger store costs no settings.
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.

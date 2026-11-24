@@ -21,6 +21,9 @@ public partial class LinkWindow : Window
     private bool hasWrenKernel;
     private WearWindow? wearWindow;
     private string? imageToWrite;
+
+    /// <summary>The EEPROM size check's first half is done: power-cycle, connect, and click again.</summary>
+    private EepromProbe? eepromProbe;
     private readonly WindowLayout layout;
 
     public LinkWindow() : this(null, () => null) { }
@@ -67,6 +70,8 @@ public partial class LinkWindow : Window
         ImageButton.IsEnabled = open;
         WearButton.IsEnabled = open && hasWrenKernel;
         DebugChecksButton.IsEnabled = open && hasWrenKernel && kernel != null;
+        EepromButton.IsEnabled = open;
+        EepromButton.Content = eepromProbe != null ? "EEPROM check: read back" : "EEPROM size check";
         RunButton.IsEnabled = connected;
         UnprotectButton.IsEnabled = connected && link!.Target.NoAccess;
         KernelButton.Content = kernelConfirmed ? "Click again to install" : "Install kernel";
@@ -135,6 +140,7 @@ public partial class LinkWindow : Window
                 }
                 ShowStatus(opened);
                 link = opened;
+                if (eepromProbe != null) Log("The EEPROM size check is waiting: click \"EEPROM check: read back\" now that the Thing has been powered off and on.");
                 SavedSettings.Current.LastProgrammer = device.ToString();
             }
             catch
@@ -277,6 +283,33 @@ public partial class LinkWindow : Window
             wearWindow.Fill(wear);
             wearWindow.Activate();
         }
+    }
+
+    private async void OnEepromCheck(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        var l = link;
+        var probe = eepromProbe;
+        if (probe == null)
+        {
+            EepromProbe? written = null;
+            await Work("EEPROM size check: writing the pattern", () =>
+            {
+                var check = new EepromSizeCheck(l.Target, Log);
+                written = check.WritePattern();
+                if (!written.PatternHeld) check.Restore(written);
+            });
+            eepromProbe = written is { PatternHeld: true } ? written : null;
+        }
+        else
+        {
+            await Work("EEPROM size check: reading back after the power cycle", () =>
+            {
+                new EepromSizeCheck(l.Target, Log).CheckAndRestore(probe);
+            });
+            eepromProbe = null;
+        }
+        UpdateButtons();
     }
 
     /// <summary>Says how to run the debug module checks (from Tools → Debug module checks).</summary>
