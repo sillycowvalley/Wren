@@ -50,8 +50,6 @@ public partial class MainWindow : Window
     private CompiledProgram? built;
     private string builtText = "";
 
-    /// <summary>Set while Ctrl+F5 works on a real Thing.</summary>
-    private bool thingBusy;
 
     private bool running => mode is Mode.Debugging or Mode.RunningFree;
     private bool stepping => mode == Mode.Stepping;
@@ -110,6 +108,16 @@ public partial class MainWindow : Window
                 e.Cancel = true;
                 CloseAfterAsking();
                 return;
+            }
+            if (thing != null)
+            {
+                try
+                {
+                    thing.Stop();
+                    thing.Dispose();
+                }
+                catch (Exception ex) when (Expected(ex)) { }
+                thing = null;
             }
             settings.MainWindow = layout.Placement;
             settings.SidePanelWidth = sideWidth;
@@ -505,7 +513,7 @@ public partial class MainWindow : Window
             linkWindow.Activate();
             return;
         }
-        linkWindow = new LinkWindow(kernel, () => BuildIfNeeded() ? built : null);
+        linkWindow = new LinkWindow(kernel);
         linkWindow.Closed += (_, _) => linkWindow = null;
         linkWindow.Show(this);
     }
@@ -534,19 +542,19 @@ public partial class MainWindow : Window
         return true;
     }
 
-    /// <summary>The Thing target: debugging waits for the debug module checks.</summary>
-    private bool OnThing()
-    {
-        if (Target != RunTarget.Thing) return false;
-        messages.Add("Debugging on the Thing comes once the debug module checks pass (Tools → Debug module checks…). " +
-            "For now Ctrl+F5 uploads the program (only if it changed) and runs it; Debug → Target → Emulator debugs it here.");
-        UpdateView();
-        return true;
-    }
-
     private void OnStartDebugging(object? sender, RoutedEventArgs e)
     {
-        if (OnThing()) return;
+        if (OnThingTarget)
+        {
+            if (mode == Mode.Design) ThingStart(debug: true);
+            else if (mode == Mode.Paused)
+            {
+                SetMode(Mode.Debugging);
+                ThingDo(d => d.Continue());
+            }
+            UpdateView();
+            return;
+        }
         if (mode == Mode.Paused) SetMode(Mode.Debugging);
         else if (mode == Mode.Design && StartEmulator()) SetMode(Mode.Debugging);
         UpdateView();
@@ -554,9 +562,10 @@ public partial class MainWindow : Window
 
     private void OnStartWithoutDebugging(object? sender, RoutedEventArgs e)
     {
-        if (Target == RunTarget.Thing)
+        if (OnThingTarget)
         {
-            UploadAndRunOnThing();
+            if (mode == Mode.Design && !thingBusy) ThingStart(debug: false);
+            UpdateView();
             return;
         }
         if (mode == Mode.Design && StartEmulator()) SetMode(Mode.RunningFree);
@@ -566,6 +575,12 @@ public partial class MainWindow : Window
     private void OnStop(object? sender, RoutedEventArgs e)
     {
         if (mode == Mode.Design) return;
+        if (OnThingTarget)
+        {
+            ThingStop();
+            UpdateView();
+            return;
+        }
         SetMode(Mode.Design);
         shownLine = -1;
         UpdateView();
@@ -574,6 +589,12 @@ public partial class MainWindow : Window
     private void OnRestart(object? sender, RoutedEventArgs e)
     {
         if (mode == Mode.Design) return;
+        if (OnThingTarget)
+        {
+            ThingStop(() => ThingStart(debug: true));
+            UpdateView();
+            return;
+        }
         bool free = mode == Mode.RunningFree;
         SetMode(Mode.Design);
         if (StartEmulator()) SetMode(free ? Mode.RunningFree : Mode.Debugging);
@@ -583,6 +604,13 @@ public partial class MainWindow : Window
     private void OnBreakAll(object? sender, RoutedEventArgs e)
     {
         if (mode != Mode.Debugging && mode != Mode.Stepping) return;
+        if (OnThingTarget)
+        {
+            SetMode(Mode.Stepping);
+            ThingDo(d => d.Pause());
+            UpdateView();
+            return;
+        }
         // Stop at the next statement if one comes soon, else wait there for events.
         SetMode(Mode.Paused);
         session?.Step(0.05);
@@ -597,8 +625,8 @@ public partial class MainWindow : Window
     private void OnRunToCursor(object? sender, RoutedEventArgs e)
     {
         int line = Editor.TextArea.Caret.Line;
-        if (OnThing()) return;
-        if (session?.Program != null && mode != Mode.Design && !session.HasStatement(line))
+        var program = OnThingTarget ? built : session?.Program;
+        if (program != null && mode != Mode.Design && !program.Lines.Any(l => l.Line == line))
         {
             messages.Add($"Line {line} has no statement to stop at.");
             UpdateView();
@@ -614,7 +642,26 @@ public partial class MainWindow : Window
     /// </summary>
     private void BeginStep(StepKind kind)
     {
-        if (OnThing() || session == null) return;
+        if (OnThingTarget)
+        {
+            if (mode == Mode.Design && kind != StepKind.Out)
+                ThingStart(debug: true, stopAtFirst: kind != StepKind.ToCursor, runTo: kind == StepKind.ToCursor ? stepLine : 0);
+            else if (mode == Mode.Paused)
+            {
+                SetMode(Mode.Stepping);
+                int line = stepLine;
+                ThingDo(kind switch
+                {
+                    StepKind.Over => d => d.StepOver(),
+                    StepKind.Out => d => d.StepOut(),
+                    StepKind.ToCursor => d => d.RunToCursor(line),
+                    _ => d => d.StepInto(),
+                });
+            }
+            UpdateView();
+            return;
+        }
+        if (session == null) return;
         if (mode == Mode.Design)
         {
             if (kind == StepKind.Out || !StartEmulator()) { UpdateView(); return; }
@@ -633,14 +680,14 @@ public partial class MainWindow : Window
 
     private void OnReset(object? sender, RoutedEventArgs e)
     {
-        if (session?.Program == null || mode == Mode.Design) return;
+        if (OnThingTarget || session?.Program == null || mode == Mode.Design) return;
         session.Board.Reset();
         if (mode != Mode.RunningFree) SetMode(Mode.Debugging);
     }
 
     private void OnPowerCycle(object? sender, RoutedEventArgs e)
     {
-        if (session?.Program == null || mode == Mode.Design) return;
+        if (OnThingTarget || session?.Program == null || mode == Mode.Design) return;
         session.Board.PowerOn();
         ApplyPins();
         if (mode != Mode.RunningFree) SetMode(Mode.Debugging);
@@ -650,62 +697,13 @@ public partial class MainWindow : Window
     {
         var chosen = ThingTargetMenu.IsChecked ? RunTarget.Thing : RunTarget.Emulator;
         if (chosen == Target) return;
+        if (thing != null) ThingStop();
         SavedSettings.Current.Target = chosen;
         SetMode(Mode.Design);
         messages.Add(chosen == RunTarget.Thing
-            ? "Target: the Thing on the programmer. Ctrl+F5 uploads the program (only if it changed) and runs it."
+            ? "Target: the Thing on the programmer. F5 runs the program there with the debugger, Ctrl+F5 without; it is uploaded only when it changed."
             : "Target: the emulator.");
         UpdateView();
-    }
-
-    /// <summary>
-    /// Ctrl+F5 on the Thing: builds if needed, connects through the programmer used last,
-    /// uploads the program only if the Thing holds something else, and runs it.
-    /// </summary>
-    private async void UploadAndRunOnThing()
-    {
-        if (thingBusy || kernel == null) return;
-        if (!BuildIfNeeded()) return;
-        var program = built!;
-        var k = kernel;
-        string? last = SavedSettings.Current.LastProgrammer;
-        thingBusy = true;
-        messages.Add("Starting the program on the Thing…");
-        UpdateView();
-        void Say(string text) => Dispatcher.UIThread.Post(() =>
-        {
-            messages.Add(text);
-            UpdateView();
-        });
-        try
-        {
-            await Task.Run(() =>
-            {
-                var found = ThingLink.Find(out _);
-                int index = ThingLink.Preferred(found, last);
-                if (index < 0) throw new LinkException("No programmer found. Plug it in, or open Tools → Programmer… to look for it.");
-                using var link = ThingLink.Open(found[index]);
-                Say($"Through {found[index]}.");
-                link.Target.Connect();
-                if (link.Target.NoAccess)
-                    throw new LinkException("The Thing refuses memory access (read-out protection?): see Tools → Programmer….");
-                if (!link.Programmer.ReadStatus(k.Image).HasKernel)
-                    throw new LinkException("The Thing does not run Wren's kernel: install it with Tools → Programmer… first.");
-                link.Programmer.Progress += Say;
-                link.Programmer.UploadIfChanged(program.Image);
-                link.Programmer.Run();
-            });
-            messages.Add("The Thing is running the program.");
-        }
-        catch (Exception ex) when (ex is LinkException or IOException or InvalidOperationException or UnauthorizedAccessException or TimeoutException)
-        {
-            messages.Add($"Could not run it on the Thing: {ex.Message} (If the Programmer window is connected, click Disconnect there first.)");
-        }
-        finally
-        {
-            thingBusy = false;
-            UpdateView();
-        }
     }
 
     private void OnTick(object? sender, EventArgs e)
@@ -716,6 +714,12 @@ public partial class MainWindow : Window
             ReloadFromDisk();
         }
         if (session == null) return;
+        if (OnThingTarget)
+        {
+            ThingTick();
+            clock.Restart();
+            return;
+        }
 
         // Run as much emulated time as real time has passed, at most 50 ms per tick.
         double seconds = Math.Min(clock.Elapsed.TotalSeconds, 0.05);
@@ -810,6 +814,7 @@ public partial class MainWindow : Window
         if (session == null) return;
         if (!session.Breakpoints.Remove(line)) session.Breakpoints.Add(line);
         session.UpdateBreakpoints();
+        ThingBreakpointsChanged();
         shownLine = -1;
         UpdateView();
     }
@@ -825,7 +830,9 @@ public partial class MainWindow : Window
             if (!HexBox.IsFocused) HexBox.Text = board.Inputs.ToString("X2");
         }
 
-        int current = session != null && mode is Mode.Paused or Mode.Stepping ? session.CurrentLine : 0;
+        int current = mode is not (Mode.Paused or Mode.Stepping) ? 0
+            : OnThingTarget ? thingView?.Line ?? 0
+            : session?.CurrentLine ?? 0;
         UpdateSource(current);
         NowText.Text = NowDescription(current);
         VariablesText.Text = VariablesDescription();
@@ -845,7 +852,10 @@ public partial class MainWindow : Window
         string target = Target == RunTarget.Thing ? (thingBusy ? "Target: Thing (busy)" : "Target: Thing") : "Target: emulator";
         StatusText.Text = board == null ? "" :
             $"{state}   {target}" + (OutOfDate && (Editor.Text ?? "").Length > 0 ? "   Edited since the last build" : "") +
-            (mode == Mode.Design ? "" : $"   {board.Mcu.Seconds:F2} s since reset   OLED {(board.Oled.Lit ? "on" : "off")}");
+            (mode == Mode.Design || OnThingTarget ? "" : $"   {board.Mcu.Seconds:F2} s since reset   OLED {(board.Oled.Lit ? "on" : "off")}");
+        ThingNote.IsVisible = OnThingTarget;
+        BoardPanel.Opacity = OnThingTarget ? 0.45 : 1;
+        BoardPanel.IsEnabled = !OnThingTarget;
 
         bool emulator = Target == RunTarget.Emulator;
         StartMenu.Header = mode == Mode.Paused ? "_Continue" : "_Start Debugging";
@@ -854,9 +864,9 @@ public partial class MainWindow : Window
         StopMenu.IsEnabled = mode != Mode.Design;
         RestartMenu.IsEnabled = mode != Mode.Design;
         BreakMenu.IsEnabled = mode is Mode.Debugging or Mode.Stepping;
-        StepIntoMenu.IsEnabled = StepOverMenu.IsEnabled = RunToCursorMenu.IsEnabled = emulator && mode is Mode.Design or Mode.Paused;
-        StepOutMenu.IsEnabled = emulator && mode == Mode.Paused;
-        ResetMenu.IsEnabled = PowerMenu.IsEnabled = mode != Mode.Design;
+        StepIntoMenu.IsEnabled = StepOverMenu.IsEnabled = RunToCursorMenu.IsEnabled = !thingBusy && mode is Mode.Design or Mode.Paused;
+        StepOutMenu.IsEnabled = !thingBusy && mode == Mode.Paused;
+        ResetMenu.IsEnabled = PowerMenu.IsEnabled = emulator && mode != Mode.Design;
         Oled.Refresh();
     }
 
@@ -878,8 +888,9 @@ public partial class MainWindow : Window
         if (session == null) return "";
         if (mode == Mode.Design)
             return errorLine > 0 ? "The program has errors: see Messages." :
-                Target == RunTarget.Thing ? "Not running here. Ctrl+F5 runs the program on the Thing." :
+                OnThingTarget ? (thingBusy ? "Talking to the Thing…" : "Not running on the Thing. F5 runs it there with the debugger, F10 or F11 stops at the first statement, Ctrl+F5 runs it without.") :
                 "Not running. F5 starts debugging, F10 or F11 starts and stops at the first statement, Ctrl+F5 runs without debugging.";
+        if (OnThingTarget) return ThingNow(current);
         if (session.Program == null) return "No program.";
         int fault = session.Fault;
         if (fault != 0)
@@ -900,6 +911,7 @@ public partial class MainWindow : Window
 
     private string VariablesDescription()
     {
+        if (OnThingTarget) return mode == Mode.Design ? "" : ThingVariables();
         if (session?.Program == null || mode == Mode.Design) return "";
         var lines = session.Globals().Select(v => $"{v.Name} = {v.Value}").ToList();
         if (lines.Count == 0) lines.Add("(no global variables)");
@@ -920,6 +932,9 @@ public partial class MainWindow : Window
     private string StoreDescription()
     {
         if (session == null) return "";
+        if (OnThingTarget)
+            return (built == null ? "" : $"Program: {built.Image.Length} bytes in {built.Blocks} of {ProgramStore.Blocks} blocks.\n") +
+                "The Thing's own wear: Tools → Programmer…, Wear report.";
         var fat = session.ReadFat();
         var counts = ProgramStore.WriteCounts(fat);
         int uploads = ProgramStore.IsFormatted(fat) ? (fat[6] << 8) | fat[7] : 0;

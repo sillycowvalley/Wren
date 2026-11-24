@@ -66,7 +66,7 @@ public sealed class DebugModuleChecks
 
         target.WriteByte(DmEnfctr, 0xFF);
         target.WriteByte(DmCr1, 0x00);
-        log("Done. The CPU is left stalled, the debug module's settings back as they were. Click Run to start the Thing.");
+        log("Done. The CPU is left stalled, the debug module's settings back as they were. Disconnect (or close this window) and the Thing runs.");
         return new DebugModuleFindings(breakpoint, live, stall, freeze);
     }
 

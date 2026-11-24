@@ -16,8 +16,9 @@ SWIM are ST's names, used here to describe compatibility.
   debugging, Shift+F5 stops, F9 toggles a breakpoint, F11, F10 and Shift+F11 step into,
   over and out, Ctrl+F10 runs to the cursor. **Debug → Target** chooses where: the
   emulated OLED Thing (the OLED, the inputs and pins, the current line, variables and the
-  flash write counts), or a real Thing on the programmer, where Ctrl+F5 uploads the
-  program only if it changed and runs it. A program saved from another editor reloads
+  flash write counts), or a real Thing on the programmer, where the same keys upload the
+  program only if it changed, run it and debug it on the chip (two breakpoints at a time).
+  **Tools → Programmer…** sets a Thing up. A program saved from another editor reloads
   by itself.
 - **Wren BASIC**: the Thing's language. Programs react to events (`ON CHANGE`,
   `ON LATCH PD3 RISING WHILE PD2 LOW`, `ON EVERY 100` ...) and draw with statements

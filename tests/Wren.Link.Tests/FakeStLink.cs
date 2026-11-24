@@ -14,7 +14,6 @@ public sealed class FakeStLink : IUsbPipe
     private int pendingAddress;
     private int pendingBytes;
     private byte swimCsr;
-    private byte dmCsr2;
 
     public FakeStLink(Stm8Device device) => Device = device;
 
@@ -130,7 +129,11 @@ public sealed class FakeStLink : IUsbPipe
                 HighSpeed = c[2] != 0;
                 break;
             case StLink.SwimGenRst:
-                if ((swimCsr & 0x04) != 0) Device.Reset();
+                if ((swimCsr & 0x20) != 0)                                  // SWIM_DM: SRST resets the chip
+                {
+                    if ((swimCsr & 0x04) != 0) { swimCsr = 0; Device.Debug.SwimActive = false; }   // RST: SWIM leaves too
+                    Device.Reset();
+                }
                 break;
             case StLink.SwimWriteMem:
             {
@@ -161,14 +164,16 @@ public sealed class FakeStLink : IUsbPipe
     private byte ReadTarget(int address) => address switch
     {
         SwimTarget.SwimCsr => swimCsr,
-        SwimTarget.DmCsr2 => dmCsr2,
         _ => Device.Read(address),
     };
 
     private void WriteTarget(int address, byte value)
     {
-        if (address == SwimTarget.SwimCsr) swimCsr = (byte)((value & ~0x02) | (swimCsr & 0x02)); // HSIT is read-only
-        else if (address == SwimTarget.DmCsr2) dmCsr2 = value;
+        if (address == SwimTarget.SwimCsr)
+        {
+            swimCsr = (byte)((value & ~0x02) | (swimCsr & 0x02)); // HSIT is read-only
+            Device.Debug.SwimActive = (swimCsr & 0x20) != 0;
+        }
         else Device.DebugWrite(address, value);
     }
 }

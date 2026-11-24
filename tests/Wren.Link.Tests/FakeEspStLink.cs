@@ -13,7 +13,6 @@ public sealed class FakeEspStLink : Stream
     private readonly List<byte> request = new();
     private readonly Queue<byte> replies = new();
     private byte swimCsr;
-    private byte dmCsr2;
 
     public FakeEspStLink(Stm8Device device) => Device = device;
 
@@ -89,7 +88,11 @@ public sealed class FakeEspStLink : Stream
                 return;
             case EspStLink.Srst:
                 Srsts++;
-                if ((swimCsr & 0x24) == 0x24) Device.Reset(); // SWIM_DM and RST set
+                if ((swimCsr & 0x20) != 0)                                  // SWIM_DM: SRST resets the chip
+                {
+                    if ((swimCsr & 0x04) != 0) { swimCsr = 0; Device.Debug.SwimActive = false; }   // RST: SWIM leaves too
+                    Device.Reset();
+                }
                 Reply(r[0], EspStLink.Success);
                 return;
             case EspStLink.Read:
@@ -121,14 +124,16 @@ public sealed class FakeEspStLink : Stream
     private byte ReadTarget(int address) => address switch
     {
         SwimTarget.SwimCsr => swimCsr,
-        SwimTarget.DmCsr2 => dmCsr2,
         _ => Device.Read(address),
     };
 
     private void WriteTarget(int address, byte value)
     {
-        if (address == SwimTarget.SwimCsr) swimCsr = (byte)((value & ~0x42) | (swimCsr & 0x42)); // HSIT and NO_ACCESS are read-only
-        else if (address == SwimTarget.DmCsr2) dmCsr2 = value;
+        if (address == SwimTarget.SwimCsr)
+        {
+            swimCsr = (byte)((value & ~0x42) | (swimCsr & 0x42)); // HSIT and NO_ACCESS are read-only
+            Device.Debug.SwimActive = (swimCsr & 0x20) != 0;
+        }
         else
         {
             Device.DebugWrite(address, value);

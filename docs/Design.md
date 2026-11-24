@@ -279,6 +279,10 @@ refuses an overlap; a test checks the store at $9280).
   debugger: stepping by statement, line breakpoints, globals and locals.
 - **Wren** shows the program with the current line, breakpoints, variables, the running
   handler and its `VALUE`, and the store's write counts. The assembly level stays hidden.
+- **Wren.Link**'s `ThingDebugger` does the same on a real Thing over SWIM, with the chip's
+  debug module (UM0470): data-read breakpoints on a line's first bytecode, an instruction
+  breakpoint on `vm_next` for stepping, and RAM read while the CPU is stalled. `ProgramView`
+  reads a program's state from memory for both.
 - **Wren.Emu** models block programming and the UBC lock, so uploads and kernel installs
   through the simulated programmers are tested end to end, including an old Thing's
   program surviving the kernel update.

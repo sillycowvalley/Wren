@@ -97,7 +97,7 @@ public static class ProgramStore
     {
         var blocks = new List<int>();
         if (!IsFormatted(fat)) return blocks;
-        int block = fat[1];
+        int block = fat![1];
         while (block < Blocks && blocks.Count < Blocks && !blocks.Contains(block))
         {
             blocks.Add(block);

@@ -12,7 +12,6 @@ public sealed class FakePico : Stream
     private readonly List<byte> request = new();
     private readonly Queue<byte> replies = new();
     private byte swimCsr;
-    private byte dmCsr2;
 
     public FakePico(Stm8Device device) => Device = device;
 
@@ -79,6 +78,7 @@ public sealed class FakePico : Stream
                 return;
             case PicoLink.Release:
                 ResetHeld = false;
+                Device.Debug.SwimActive = false;
                 Entered = false;
                 Reply(r[0], PicoLink.StatusOk);
                 return;
@@ -90,7 +90,14 @@ public sealed class FakePico : Stream
                 return;
             case PicoLink.Srst:
                 Srsts++;
-                if (swimStatus == PicoLink.StatusOk && (swimCsr & 0x04) != 0) Device.Reset();
+                if (swimStatus == PicoLink.StatusOk)
+                {
+                    if ((swimCsr & 0x20) != 0)                                          // SWIM_DM: SRST resets the chip
+                    {
+                        if ((swimCsr & 0x04) != 0) { swimCsr = 0; Device.Debug.SwimActive = false; }   // RST: SWIM leaves too
+                        Device.Reset();
+                    }
+                }
                 Reply(r[0], swimStatus);
                 return;
             case PicoLink.Read:
@@ -120,14 +127,16 @@ public sealed class FakePico : Stream
     private byte ReadTarget(int address) => address switch
     {
         SwimTarget.SwimCsr => swimCsr,
-        SwimTarget.DmCsr2 => dmCsr2,
         _ => Device.Read(address),
     };
 
     private void WriteTarget(int address, byte value)
     {
-        if (address == SwimTarget.SwimCsr) swimCsr = (byte)((value & ~0x02) | (swimCsr & 0x02));
-        else if (address == SwimTarget.DmCsr2) dmCsr2 = value;
+        if (address == SwimTarget.SwimCsr)
+        {
+            swimCsr = (byte)((value & ~0x02) | (swimCsr & 0x02));
+            Device.Debug.SwimActive = (swimCsr & 0x20) != 0;
+        }
         else Device.DebugWrite(address, value);
     }
 
