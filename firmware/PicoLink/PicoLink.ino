@@ -26,7 +26,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 10;
+const uint8_t SketchVersion = 11;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -310,17 +310,19 @@ static bool __not_in_flash_func(catchSync)(uint32_t released, uint32_t *length, 
 
 // A sync pulse measured whole sets the target's bit timing: 128 SWIM clocks long, a target
 // bit is 22 of them, sampled at 11. Only a plausible pulse (12 to 24 us; 16 is right) counts.
-static void calibrate(uint32_t syncCycles) {
-  if (syncCycles < cycles(12000) || syncCycles > cycles(24000)) return;
+static uint32_t calibrateShortest, calibrateLongest, traceWindow;
+static void __not_in_flash_func(calibrate)(uint32_t syncCycles) {
+  if (syncCycles < calibrateShortest || syncCycles > calibrateLongest) return;
   targetPeriod = syncCycles * 22 / 128;
   sampleAt = syncCycles * 11 / 128;
   edgeWindow = syncCycles * 5 / 128;
 }
 
-static void resetCalibration() {
-  targetPeriod = cycles(2750);
-  sampleAt = cycles(1375);
-  edgeWindow = cycles(625);
+static uint32_t defaultPeriod, defaultSampleAt, defaultEdgeWindow;
+static void __not_in_flash_func(resetCalibration)() {
+  targetPeriod = defaultPeriod;
+  sampleAt = defaultSampleAt;
+  edgeWindow = defaultEdgeWindow;
 }
 
 static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles, bool *clean) {
@@ -388,10 +390,23 @@ static uint8_t __not_in_flash_func(resetComms)(uint32_t *syncCycles, bool *clean
 // takes to rise once let go during the entry (ns, 0xFFFF for never), then the entry sequence with NRST low
 // and every edge for 300 us after it: the level at release, the count of edges (16 at most)
 // and each edge's time after release in units of 100 ns.
+// Traces record raw cycle counts and convert them after: the conversion needs 64-bit
+// division, a library routine that lives in flash, and code fetched from flash stalls for
+// microseconds on a cache miss, which would bend the very timing being recorded.
 const int MaxEdges = 16;
 static uint8_t edgeCount;
 static uint8_t levelAtRelease;
-static uint16_t edges[MaxEdges];
+static uint32_t edges[MaxEdges];
+
+static uint16_t tenthsOfMicroseconds(uint32_t c) {
+  uint64_t v = (uint64_t)c * 10000000ull / cpuHz;
+  return v > 0xFFFF ? 0xFFFF : (uint16_t)v;
+}
+
+static uint16_t hundredthsOfMicroseconds(uint32_t c) {
+  uint64_t v = (uint64_t)c * 100000000ull / cpuHz;
+  return v > 0xFFFF ? 0xFFFF : (uint16_t)v;
+}
 
 static void __not_in_flash_func(traceEntry)() {
   uint32_t saved = save_and_disable_interrupts();
@@ -400,11 +415,11 @@ static void __not_in_flash_func(traceEntry)() {
   bool level = lineHigh();
   levelAtRelease = level ? 1 : 0;
   edgeCount = 0;
-  uint32_t window = cycles(300000);
+  uint32_t window = traceWindow;
   while (since(released) < window && edgeCount < MaxEdges) {
     if (lineHigh() != level) {
       level = !level;
-      edges[edgeCount++] = (uint16_t)((uint64_t)since(released) * 10000000ull / cpuHz);
+      edges[edgeCount++] = since(released);
     }
   }
   restore_interrupts(saved);
@@ -417,33 +432,41 @@ static void __not_in_flash_func(traceEntry)() {
 // was measured whole, the level when recording began, the count of edges (64 at most) and
 // each edge's time in units of 10 ns (2 bytes each).
 const int MaxTraceEdges = 64;
-static uint16_t traceEdges[MaxTraceEdges];
+static uint32_t traceEdges[MaxTraceEdges];
+
+// Records edges for `window` cycles from now; returns the count, *level the starting level.
+static uint8_t __not_in_flash_func(recordEdges)(uint32_t *out, int max, uint32_t window, uint8_t *level) {
+  uint32_t start = now();
+  bool high = lineHigh();
+  *level = high ? 1 : 0;
+  uint8_t count = 0;
+  while (since(start) < window && count < max) {
+    if (lineHigh() != high) {
+      high = !high;
+      out[count++] = since(start);
+    }
+  }
+  return count;
+}
+
+static uint8_t __not_in_flash_func(headerThenRecord)(uint32_t address, uint8_t *frame, uint8_t *level, uint8_t *count, uint32_t window) {
+  uint32_t saved = save_and_disable_interrupts();
+  uint8_t status = sendHeader(SwimRotf, 1, address);
+  *frame = failedFrame;
+  *count = 0;
+  if (status == StatusOk) *count = recordEdges(traceEdges, MaxTraceEdges, window, level);
+  restore_interrupts(saved);
+  return status;
+}
 
 static void readTrace(uint32_t address) {
   uint32_t syncCycles = 0;
   bool clean = false;
   uint8_t resetStatus = resetComms(&syncCycles, &clean);
-  uint32_t saved = save_and_disable_interrupts();
   uint8_t status = resetStatus;
   uint8_t frame = 0;
   uint8_t level = 0, count = 0;
-  if (status == StatusOk) {
-    status = sendHeader(SwimRotf, 1, address);
-    frame = failedFrame;
-  }
-  if (status == StatusOk) {
-    uint32_t start = now();
-    bool high = lineHigh();
-    level = high ? 1 : 0;
-    uint32_t window = cycles(80000);
-    while (since(start) < window && count < MaxTraceEdges) {
-      if (lineHigh() != high) {
-        high = !high;
-        traceEdges[count++] = (uint16_t)((uint64_t)since(start) * 100000000ull / cpuHz);
-      }
-    }
-  }
-  restore_interrupts(saved);
+  if (status == StatusOk) status = headerThenRecord(address, &frame, &level, &count, cycles(80000));
   uint32_t ignored;
   bool alsoIgnored;
   resetComms(&ignored, &alsoIgnored);
@@ -457,8 +480,9 @@ static void readTrace(uint32_t address) {
   Serial.write(level);
   Serial.write(count);
   for (int i = 0; i < count; i++) {
-    Serial.write((uint8_t)(traceEdges[i] >> 8));
-    Serial.write((uint8_t)traceEdges[i]);
+    uint16_t v = hundredthsOfMicroseconds(traceEdges[i]);
+    Serial.write((uint8_t)(v >> 8));
+    Serial.write((uint8_t)v);
   }
 }
 
@@ -468,7 +492,33 @@ static void readTrace(uint32_t address) {
 // reset. Data: the reset's sync (ns, 2 bytes), the level when recording began, the count of
 // edges (96 at most) and each edge's time from the frame's start in units of 10 ns.
 const int MaxFrameEdges = 96;
-static uint16_t frameEdges[MaxFrameEdges];
+static uint32_t frameEdges[MaxFrameEdges];
+
+static uint8_t __not_in_flash_func(sendFrameRecording)(const int *bits, uint32_t end, uint8_t *level) {
+  uint32_t saved = save_and_disable_interrupts();
+  uint32_t start = now();
+  bool high = lineHigh();
+  *level = high ? 1 : 0;
+  uint8_t count = 0;
+  int step = 0;           // 0: drive low next; 1: drive high next; 2: let go next
+  int bit = 0;
+  uint32_t due = 0;       // when the next step is due, in cycles from start
+  for (;;) {
+    uint32_t t = since(start);
+    if (t >= end) break;
+    if (bit < 5 && t >= due) {
+      if (step == 0) { driveLow(); due = bit * hostPeriod + (bits[bit] ? shortLow : longLow); step = 1; }
+      else if (step == 1) { sio_hw->gpio_set = SwimMask; due += boostHigh; step = 2; }
+      else { sio_hw->gpio_oe_clr = SwimMask; sio_hw->gpio_clr = SwimMask; bit++; due = bit * hostPeriod; step = 0; }
+    }
+    if (lineHigh() != high) {
+      high = !high;
+      if (count < MaxFrameEdges) frameEdges[count++] = t;
+    }
+  }
+  restore_interrupts(saved);
+  return count;
+}
 
 static void frameTrace(uint8_t command) {
   uint32_t syncCycles = 0;
@@ -480,29 +530,8 @@ static void frameTrace(uint8_t command) {
   int parity = 0;
   for (int i = 0; i < 3; i++) { bits[1 + i] = (command >> (2 - i)) & 1; parity ^= bits[1 + i]; }
   bits[4] = parity;
-  uint32_t saved = save_and_disable_interrupts();
-  uint32_t start = now();
-  bool high = lineHigh();
-  uint8_t level = high ? 1 : 0;
-  uint8_t count = 0;
-  int step = 0;           // 0: drive low next; 1: drive high next; 2: let go next
-  int bit = 0;
-  uint32_t due = 0;       // when the next step is due, in cycles from start
-  uint32_t end = 5 * hostPeriod + cycles(300000);
-  for (;;) {
-    uint32_t t = since(start);
-    if (t >= end) break;
-    if (bit < 5 && t >= due) {
-      if (step == 0) { driveLow(); due = bit * hostPeriod + (bits[bit] ? shortLow : longLow); step = 1; }
-      else if (step == 1) { sio_hw->gpio_set = SwimMask; due += boostHigh; step = 2; }
-      else { sio_hw->gpio_oe_clr = SwimMask; sio_hw->gpio_clr = SwimMask; bit++; due = bit * hostPeriod; step = 0; }
-    }
-    if (lineHigh() != high) {
-      high = !high;
-      if (count < MaxFrameEdges) frameEdges[count++] = (uint16_t)((uint64_t)t * 100000000ull / cpuHz);
-    }
-  }
-  restore_interrupts(saved);
+  uint8_t level = 0;
+  uint8_t count = sendFrameRecording(bits, 5 * hostPeriod + cycles(300000), &level);
   uint32_t ignored;
   bool alsoIgnored;
   resetComms(&ignored, &alsoIgnored);
@@ -513,8 +542,9 @@ static void frameTrace(uint8_t command) {
   Serial.write(level);
   Serial.write(count);
   for (int i = 0; i < count; i++) {
-    Serial.write((uint8_t)(frameEdges[i] >> 8));
-    Serial.write((uint8_t)frameEdges[i]);
+    uint16_t v = hundredthsOfMicroseconds(frameEdges[i]);
+    Serial.write((uint8_t)(v >> 8));
+    Serial.write((uint8_t)v);
   }
 }
 
@@ -542,8 +572,9 @@ static void lineCheck() {
   Serial.write(levelAtRelease);
   Serial.write(edgeCount);
   for (int i = 0; i < edgeCount; i++) {
-    Serial.write((uint8_t)(edges[i] >> 8));
-    Serial.write((uint8_t)edges[i]);
+    uint16_t v = tenthsOfMicroseconds(edges[i]);
+    Serial.write((uint8_t)(v >> 8));
+    Serial.write((uint8_t)v);
   }
 }
 
@@ -585,8 +616,14 @@ void setup() {
   hostPeriod = cycles(2750);
   shortLow = cycles(220);
   longLow = cycles(2000);
+  defaultPeriod = cycles(2750);
+  defaultSampleAt = cycles(1375);
+  defaultEdgeWindow = cycles(625);
   resetCalibration();
   commResetLow = cycles(25000);
+  calibrateShortest = cycles(12000);
+  calibrateLongest = cycles(24000);
+  traceWindow = cycles(300000);
   boostHigh = cycles(100);
   interFrameGap = cycles(250);
   answerTimeout = cycles(2000000); // 2 ms
