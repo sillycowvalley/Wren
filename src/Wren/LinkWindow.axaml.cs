@@ -18,6 +18,7 @@ public partial class LinkWindow : Window
     private bool kernelConfirmed;
     private bool unprotectConfirmed;
     private bool factoryConfirmed;
+    private bool hasWrenKernel;
     private string? imageToWrite;
     private readonly WindowLayout layout;
 
@@ -59,6 +60,7 @@ public partial class LinkWindow : Window
         UploadButton.IsEnabled = open;
         FactoryButton.IsEnabled = connected;
         ImageButton.IsEnabled = open;
+        WearButton.IsEnabled = open && hasWrenKernel;
         RunButton.IsEnabled = connected;
         UnprotectButton.IsEnabled = connected && link!.Target.NoAccess;
         KernelButton.Content = kernelConfirmed ? "Click again to install" : "Install kernel";
@@ -140,6 +142,7 @@ public partial class LinkWindow : Window
     private void ShowStatus(ThingLink l)
     {
         var s = l.Programmer.ReadStatus(kernel?.Image);
+        hasWrenKernel = s.HasKernel;
         string text = s.ReadOutProtected
             ? "Read-out protection is on: the Thing's contents cannot be read. Installing the kernel needs it removed, which erases the chip."
             : s.Flash switch
@@ -161,6 +164,7 @@ public partial class LinkWindow : Window
         kernelConfirmed = false;
         unprotectConfirmed = false;
         factoryConfirmed = false;
+        hasWrenKernel = false;
         imageToWrite = null;
         Log("Disconnected.");
         UpdateButtons();
@@ -243,6 +247,15 @@ public partial class LinkWindow : Window
         string? folder = Kernel.FindFirmwareFolder(AppContext.BaseDirectory);
         string? path = folder == null ? null : Path.Combine(folder, "digicool", "8-bit_oled_thing_v1.1.s19");
         return path != null && File.Exists(path) ? path : null;
+    }
+
+    private async void OnWearReport(object? sender, RoutedEventArgs e)
+    {
+        if (link == null) return;
+        var l = link;
+        StoreWear? wear = null;
+        await Work("Wear report", () => wear = l.Programmer.ReadWear());
+        if (wear != null) new WearWindow(wear).Show(this);
     }
 
     private async void OnRestoreFactory(object? sender, RoutedEventArgs e)

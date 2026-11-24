@@ -25,6 +25,8 @@
       <StackPanel Orientation="Horizontal" Spacing="6">
         <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"
                 ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as the Thing's factory firmware) like Install kernel: only blocks that differ, then checked. Leaves read-out protection off." />
+        <Button Name="WearButton" Content="Wear report…" Click="OnWearReport"
+                ToolTip.Tip="Shows the writes the Thing has recorded for each of its 47 program-store blocks; reads only" />
         <Button Name="UnprotectButton" Content="Remove protection" Click="OnRemoveProtection"
                 ToolTip.Tip="Turns read-out protection off. The chip erases all its flash and EEPROM as it does so." />
       </StackPanel>

@@ -89,6 +89,20 @@ public static class ProgramStore
     }
 
     /// <summary>Write counts per block from a FAT, or zeros for an unformatted one.</summary>
+    /// <summary>The store blocks the current program occupies, in order; empty when there is none.</summary>
+    public static IReadOnlyList<int> ProgramBlocks(byte[]? fat)
+    {
+        var blocks = new List<int>();
+        if (fat == null || fat.Length < FatSize || fat[0] != 1) return blocks;
+        int block = fat[1];
+        while (block < Blocks && blocks.Count < Blocks && !blocks.Contains(block))
+        {
+            blocks.Add(block);
+            block = fat[ChainOffset + block];
+        }
+        return blocks;
+    }
+
     public static int[] WriteCounts(byte[]? fat)
     {
         var counts = new int[Blocks];

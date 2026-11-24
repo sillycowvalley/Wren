@@ -3,6 +3,9 @@ using Wren.Script;
 
 namespace Wren.Link;
 
+/// <summary>The program store's wear, read from a Thing's program table.</summary>
+public sealed record StoreWear(IReadOnlyList<int> WriteCounts, IReadOnlyList<int> ProgramBlocks, int Uploads, int ProgramLength);
+
 /// <summary>What the flash holds: nothing, Wren's kernel as this build makes it, or other firmware.</summary>
 public enum FlashContents { Empty, WrenKernel, OtherFirmware }
 
@@ -41,6 +44,22 @@ public sealed class ThingProgrammer
     public event Action<string>? Progress;
 
     private void Say(string message) => Progress?.Invoke(message);
+
+    /// <summary>
+    /// The program store's wear, as the Thing's own program table records it: the writes to
+    /// each of the 47 store blocks, the blocks the current program occupies, and the number of
+    /// uploads. Only meaningful under Wren's kernel. Reads only.
+    /// </summary>
+    public StoreWear ReadWear()
+    {
+        byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
+        bool formatted = fat[0] == 1;
+        return new StoreWear(
+            formatted ? ProgramStore.WriteCounts(fat) : new int[ProgramStore.Blocks],
+            ProgramStore.ProgramBlocks(fat),
+            formatted ? (fat[6] << 8) | fat[7] : 0,
+            formatted && fat[1] != ProgramStore.FreeBlock ? (fat[2] << 8) | fat[3] : 0);
+    }
 
     /// <summary>
     /// Reads the option bytes, the flash's reset vector and the FAT; with a kernel image,

@@ -163,6 +163,24 @@ public class EspStLinkTests
     }
 
     [Fact]
+    public void ReadsTheProgramStoresWearFromTheThing()
+    {
+        var (_, _, link) = Connect();
+        link.Programmer.InstallKernel(Kernel.Image);
+        var big = Compiler.Compile("DIM a\nON START\n" + string.Concat(Enumerable.Repeat(" a = a + 1234\n", 30)) + "END ON\n");
+        Assert.True(big.Success);
+        for (int i = 0; i < 3; i++) link.Programmer.UploadProgram(big.Image);
+
+        var wear = link.Programmer.ReadWear();
+        Assert.Equal(3, wear.Uploads);
+        Assert.Equal(big.Image.Length, wear.ProgramLength);
+        int blocksPerUpload = (big.Image.Length + 63) / 64;
+        Assert.Equal(blocksPerUpload, wear.ProgramBlocks.Count);
+        Assert.Equal(3 * blocksPerUpload, wear.WriteCounts.Sum());
+        Assert.All(wear.ProgramBlocks, b => Assert.True(wear.WriteCounts[b] >= 1));
+    }
+
+    [Fact]
     public void ADeviceThatDoesNotAnswerIsNotAProgrammer()
     {
         var link = new EspStLink(new FakeEspStLink(new OledThing().Mcu) { Silent = true });
