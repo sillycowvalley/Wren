@@ -51,7 +51,7 @@ public class StoreTests
     {
         // Wear the low blocks so a 3-block program lands on scattered ones.
         var fat = new byte[ProgramStore.FatSize];
-        fat[0] = 1;
+        fat[0] = ProgramStore.FatVersion;
         for (int b = 0; b < ProgramStore.Blocks; b++) fat[ProgramStore.CountsOffset + b] = (byte)(b % 3 == 0 ? 0 : 5);
         var body = string.Concat(Enumerable.Range(0, 40).Select(i => $" a = a + {i}\n"));
         var program = Run.Compile($"DIM a\nON START\n{body}END ON\n");
@@ -96,5 +96,27 @@ public class StoreTests
         thing.Mcu.Run(0.05);
         Assert.True(thing.Oled.Lit);
         Assert.Contains('#', thing.Oled.PanelText());
+    }
+
+    [Fact]
+    public void AVersion1TableMovesToTheNewLayoutWithItsProgram()
+    {
+        // Version 1: 47 blocks at $9440, 26 setting bytes. A program in old blocks 3 then 5.
+        var v1 = new byte[ProgramStore.FatSize];
+        v1[0] = 1; v1[1] = 3; v1[2] = 0; v1[3] = 100; v1[4] = 0x12; v1[5] = 0x34; v1[6] = 0; v1[7] = 9;
+        for (int b = 0; b < 47; b++) { v1[8 + b] = ProgramStore.FreeBlock; v1[55 + b] = (byte)(b + 1); }
+        v1[8 + 3] = 5; v1[8 + 5] = ProgramStore.LastBlock;
+        for (int i = 0; i < 26; i++) v1[102 + i] = (byte)(0xA0 + i);
+
+        var v2 = ProgramStore.MigrateVersion1(v1)!;
+        Assert.Equal(ProgramStore.FatVersion, v2[0]);
+        Assert.Equal(new[] { 10, 12 }, ProgramStore.ProgramBlocks(v2));        // n + 7: the same addresses
+        Assert.Equal(0x9440 + 3 * 64, ProgramStore.StoreAddress + 10 * 64);
+        Assert.Equal(new byte[] { 0, 100, 0x12, 0x34, 0, 9 }, v2[2..8]);
+        var counts = ProgramStore.WriteCounts(v2);
+        Assert.Equal(new int[7], counts[..7]);                                   // the old kernel's blocks
+        Assert.Equal(Enumerable.Range(1, 47), counts[7..]);
+        Assert.Equal(Enumerable.Range(0xA0, ProgramStore.SettingsSize).Select(b => (byte)b), v2[ProgramStore.SettingsOffset..]);
+        Assert.Null(ProgramStore.MigrateVersion1(v2));
     }
 }

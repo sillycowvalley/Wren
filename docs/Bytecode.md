@@ -29,48 +29,46 @@ Event numbers: 0 START, 1 CHANGE, 2 PINS, 3-7 LATCH, 8-12 PRESS, 13-17 RELEASE
 
 ## The FAT (EEPROM)
 
-The program store is the last 47 blocks of flash, $9440-$9FFF. Block n is at
-$9440 + 64 n.
+The program store is the last 54 blocks of flash, $9280-$9FFF. Block n is at
+$9280 + 64 n.
 
 | Address | Bytes | Contents |
 |---|---|---|
-| $4000 | 1 | FAT version: 1 |
-| $4001 | 1 | First block of the program (0-46), $FF for none |
+| $4000 | 1 | FAT version: 2 |
+| $4001 | 1 | First block of the program (0-53), $FF for none |
 | $4002 | 2 | Program length in bytes |
 | $4004 | 2 | CRC-16/CCITT (start $FFFF, polynomial $1021) of the program |
 | $4006 | 2 | Upload count |
-| $4008 | 47 | Next block for each block (0-46), $FE last, $FF free |
-| $4037 | 47 | Times each block has been written |
-| $4066 | 26 | Program settings (`EEREAD`, `EEWRITE`, n = 0-25) |
+| $4008 | 54 | Next block for each block (0-53), $FE last, $FF free |
+| $403E | 54 | Times each block has been written |
+| $4074 | 12 | Program settings on a 128-byte EEPROM (`EEREAD`, `EEWRITE`, n = 0-11) |
 
-## Uploading from a host
+On a Thing with a 640-byte EEPROM the program settings are $4080-$427F instead (n =
+0-511); the kernel's info block says which. FAT version 1 was the 47-block store at
+$9440 (with 26 setting bytes from $4066); Install kernel rewrites a version 1 table as
+version 2, the program in place: old block n is new block n + 7.
 
-A host (the Reggie, a Teensy) can upload a program over the Thing's own pins, without
-SWIM. `HostUpload` in Wren.Script builds the frame; `firmware/kernel/Loader.inc` takes it.
+The kernel image also sets the UBC option byte to 74 blocks, so firmware can never
+write the kernel ($8000-$927F); only a SWIM programmer can.
 
-1. Hold PD2 low while the Thing starts (power on or NRST). It shows "Upload" and 0
-   instead of running its program. Release PD2 once it does: the kernel only looks at
-   PD2 at start-up.
-2. Send the frame one byte at a time: put the byte on b0-b7, then pull PD3 low and let
-   it go high. The byte is read at the falling edge. Allow 20 µs a byte.
-3. After every 64th program byte, and after the last one, wait 25 ms while the Thing
-   writes a flash block and shows how many bytes it has.
+## The kernel info block
 
-| Bytes | Contents |
-|---|---|
-| 4 | "WREN" (anything before it is ignored) |
-| 2 | Program length, high byte first: 1 to 3008 |
-| n | The program image |
-| 2 | CRC-16/CCITT of the program, high byte first |
+Sixteen bytes at $9270, the end of the kernel's last block, which Wren reads on Connect.
+Wren fills in bytes 11-15 for each Thing as it installs the kernel, after checking the
+Thing's EEPROM.
 
-The blocks go to the least-written blocks the current program does not use, so a
-failed upload leaves it in place. Only when the CRC checks out is the FAT written
-(chain, write counts, then the header from the end, FAT_FIRST next to last); then the
-new program starts at once. A bad length or CRC shows "Failed" until the Thing is reset,
-and the previous program runs again after that reset.
-
-The kernel image also sets the UBC option byte to 81 blocks, so firmware can never
-write the kernel ($8000-$943F); only a SWIM programmer can.
+| Offset | Bytes | Contents |
+|---|---|---|
+| 0 | 4 | "WREN" |
+| 4 | 1 | The block's format: 1 |
+| 5 | 1 | Kernel version: 2 |
+| 6 | 1 | Board: 1 the OLED Thing, 2 the LED Thing |
+| 7 | 1 | FAT version: 2 |
+| 8 | 2 | Program store address: $9280 |
+| 10 | 1 | Program store blocks: 54 |
+| 11 | 1 | The Thing's EEPROM in 64-byte units: 2 (128 bytes) or 10 (640) |
+| 12 | 2 | Where the program settings start in EEPROM: $4074 or $4080 |
+| 14 | 2 | How many setting bytes there are: 12 or 512 |
 
 ## Opcodes
 
@@ -130,6 +128,7 @@ Stack effects are written before -- after; the top of the stack is on the right.
 | $72 | MAX | | a b -- r |
 | $73 | LOST | | -- events lost |
 | $74 | FLIP | | f -- (non-zero: the picture upside down) |
+| $75 | PULLUPS | | mask -- (bit n set: bn pulled up; clear: floating) |
 
 Opcodes from $30 are dispatched through one table in the kernel, so they stay
 contiguous: a new opcode goes on the end.

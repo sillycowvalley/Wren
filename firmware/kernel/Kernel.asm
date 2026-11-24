@@ -1,6 +1,6 @@
 ; Wren kernel for the OLED Thing (STM8S003F3) and the STM8S103F3 development board.
 ;
-; Start-up, the program loader (FAT in EEPROM), the event queue and its interrupts,
+; Start-up, loading the program (FAT in EEPROM), the event queue and its interrupts,
 ; and the dispatcher that runs event handlers on the VM. See docs/Design.md and
 ; docs/Bytecode.md.
 ;
@@ -11,22 +11,28 @@
 
         relax                       ; JP and CALL become JRA and CALLR where the target is near
 
-KERNEL_VERSION  equ 1
+KERNEL_VERSION  equ 2
+BOARD_OLED      equ 1           ; the board this kernel drives (the info block's board byte)
 
 ; ---- Memory ----
 
-STORE       equ $9440       ; program store: 64-byte blocks from here to the end of flash
-STORE_BLOCKS equ ($A000-STORE)/64   ; 47
+STORE       equ $9280       ; program store: 64-byte blocks from here to the end of flash
+STORE_BLOCKS equ ($A000-STORE)/64   ; 54
+INFO        equ STORE-16    ; the kernel info block, read by Wren (docs/Bytecode.md)
+INFO_EEPROM equ INFO+11     ; 1  the Thing's EEPROM in 64-byte units (2: 128 bytes, 10: 640)
+INFO_SETTINGS equ INFO+12   ; 2  where the program settings (EEREAD/EEWRITE) are in EEPROM
+INFO_SETSIZE equ INFO+14    ; 2  how many setting bytes there are
 
 FAT         equ $4000
+FAT_FORMAT  equ 2           ; the FAT's version byte for this store
 FAT_VERSION equ FAT+0
 FAT_FIRST   equ FAT+1
 FAT_LENGTH  equ FAT+2
 FAT_CRC     equ FAT+4
 FAT_CHAIN   equ FAT+8                       ; next block, one byte per block
 FAT_COUNTS  equ FAT_CHAIN+STORE_BLOCKS      ; write counts, one byte per block
-SETTINGS    equ FAT_COUNTS+STORE_BLOCKS     ; program settings to the end of the EEPROM
-SETTINGS_SIZE equ FAT+128-SETTINGS
+SETTINGS    equ FAT_COUNTS+STORE_BLOCKS     ; program settings in a 128-byte EEPROM: the rest of it
+SETTINGS_SIZE equ FAT+128-SETTINGS          ; 12 (a 640-byte EEPROM keeps them at $4080: 512)
 
 VSTACK_LOW  equ $0080       ; VM value stack, grows down from $0100
 VSTACK_TOP  equ $0100
@@ -217,9 +223,6 @@ clear_ram:
         call oled_init
         call gfx_cls
 
-        btjt PD_IDR,#2,start_program
-        jp loader                   ; PD2 held low at start-up: upload a program
-start_program:
         call load_program
         jrc no_program
 
@@ -305,7 +308,7 @@ draw_message:
 ; Carry set when there is no valid program.
 load_program:
         ld a,FAT_VERSION
-        cp a,#1
+        cp a,#FAT_FORMAT
         jrne load_bad_near
         clr blocks
         ldw y,#MAP_TOP
@@ -891,7 +894,6 @@ vm_error:
         include "Vm.inc"
         include "Graphics.inc"
         include "Oled.inc"
-        include "Loader.inc"
         include "Fonts.inc"
 
 ; ---- Kept at the end, so that the code before them did not move ----
@@ -958,3 +960,18 @@ queue_unlock:
         ret
 
 kernel_end:
+
+; ---- The kernel info block, at a fixed address below the store ----
+; Wren reads it on Connect, and fills in the EEPROM bytes for each Thing as it installs
+; the kernel. See docs/Bytecode.md.
+        org INFO
+        dc.b "WREN"                 ; +0
+        dc.b 1                      ; +4  the info block's format
+        dc.b KERNEL_VERSION         ; +5
+        dc.b BOARD_OLED             ; +6
+        dc.b FAT_FORMAT             ; +7
+        dc.w STORE                  ; +8
+        dc.b STORE_BLOCKS           ; +10
+        dc.b 2                      ; +11 EEPROM: 2 x 64 = 128 bytes (Wren writes 10 for 640)
+        dc.w SETTINGS               ; +12 settings in EEPROM
+        dc.w SETTINGS_SIZE          ; +14

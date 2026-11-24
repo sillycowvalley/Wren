@@ -1,0 +1,2776 @@
+; Disassembly of Digicool Things' 8-bit_oled_thing_v1.1.s19: the 8-bit OLED Thing v1.1's factory firmware.
+; Digicool's work, here with Greg's permission; not covered by Wren's MIT licence.
+;
+; Compiled C (an ST Visual Develop "Release" build, Cosmic's .sm8 output) with ST's Standard
+; Peripheral Library linked in. Disassembled with ucsim 0.6.4 (sstm8) by following the code
+; from the interrupt vectors through every call, jump and branch; code nothing reaches is
+; decoded too and marked "never called"; tables are shown as bytes. Register names are from
+; firmware/include/stm8s003.inc. The comments come from reading the code and running the
+; image in Wren's emulator; docs/OledThing.md describes the behaviour.
+
+; ---- Interrupt vectors ----
+    8000  82 00 8C CB    int    reset                   ; reset
+    8004  82 00 9E 7D    int    unused_irq              ; TRAP
+    8008  82 00 9E 7D    int    unused_irq              ; IRQ 0
+    800C  82 00 9E 7D    int    unused_irq              ; IRQ 1
+    8010  82 00 9E 7D    int    unused_irq              ; IRQ 2
+    8014  82 00 9E 7D    int    unused_irq              ; IRQ 3
+    8018  82 00 9E 7D    int    unused_irq              ; IRQ 4
+    801C  82 00 9E 7D    int    unused_irq              ; IRQ 5
+    8020  82 00 8F 3D    int    exti_port_d             ; IRQ 6
+    8024  82 00 9E 7D    int    unused_irq              ; IRQ 7
+    8028  82 00 9E 7D    int    unused_irq              ; IRQ 8
+    802C  82 00 9E 7D    int    unused_irq              ; IRQ 9
+    8030  82 00 9E 7D    int    unused_irq              ; IRQ 10
+    8034  82 00 9E 7D    int    unused_irq              ; IRQ 11
+    8038  82 00 9E 7D    int    unused_irq              ; IRQ 12
+    803C  82 00 9E 7D    int    unused_irq              ; IRQ 13
+    8040  82 00 9E 7D    int    unused_irq              ; IRQ 14
+    8044  82 00 9E 7D    int    unused_irq              ; IRQ 15
+    8048  82 00 9E 7D    int    unused_irq              ; IRQ 16
+    804C  82 00 9E 7D    int    unused_irq              ; IRQ 17
+    8050  82 00 9E 7D    int    unused_irq              ; IRQ 18
+    8054  82 00 9E 7D    int    unused_irq              ; IRQ 19
+    8058  82 00 9E 7D    int    unused_irq              ; IRQ 20
+    805C  82 00 9E 7D    int    unused_irq              ; IRQ 21
+    8060  82 00 9E 7D    int    unused_irq              ; IRQ 22
+    8064  82 00 9E 7D    int    unused_irq              ; IRQ 23
+    8068  82 00 9E 7D    int    unused_irq              ; IRQ 24
+    806C  82 00 9E 7D    int    unused_irq              ; IRQ 25
+    8070  82 00 9E 7D    int    unused_irq              ; IRQ 26
+    8074  82 00 9E 7D    int    unused_irq              ; IRQ 27
+    8078  82 00 9E 7D    int    unused_irq              ; IRQ 28
+    807C  82 00 9E 7D    int    unused_irq              ; IRQ 29
+
+; constants never used
+    8080  .db $00, $03, $0D, $40, $00, $78, $10, $20, $10, $20, $40, $08, $10, $20, $40, $80
+    8090  .db $02, $04, $08, $04, $08
+
+; bit cell, 0 (outline), bits-only view: 7 x 32 in OLED RAM order
+    8095  .db $F0, $FF, $FF, $0F, $10, $00, $00, $08, $10, $00, $00, $08, $10, $00, $00, $08
+    80A5  .db $10, $00, $00, $08, $10, $00, $00, $08, $F0, $FF, $FF, $0F
+
+; bit cell, 1 (filled), bits-only view
+    80B1  .db $F0, $FF, $FF, $0F, $F0, $FF, $FF, $0F, $F0, $FF, $FF, $0F, $F0, $FF, $FF, $0F
+    80C1  .db $F0, $FF, $FF, $0F, $F0, $FF, $FF, $0F, $F0, $FF, $FF, $0F
+
+; bit cell, 0 (outline), combined view: 7 x 8
+    80CD  .db $FF, $81, $81, $81, $81, $81, $FF
+
+; bit cell, 1 (filled), combined view
+    80D4  .db $FF, $FF, $FF, $FF, $FF, $FF, $FF
+
+; the normal hex font: 16 glyphs (0-9, A-F) of 42 bytes, about 12 x 18 pixels in 14 x 24 cells
+    80DB  .db $00, $00, $00, $00, $7F, $E0, $01, $FF, $F8, $03, $FF, $FC, $07, $80, $1E, $07
+    80EB  .db $00, $0E, $07, $00, $0E, $07, $00, $0E, $07, $00, $0E, $07, $80, $1E, $03, $FF
+    80FB  .db $FC, $01, $FF, $F8, $00, $7F, $E0, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    810B  .db $00, $01, $C0, $00, $01, $C0, $00, $00, $E0, $00, $00, $70, $00, $00, $78, $07
+    811B  .db $FF, $FC, $07, $FF, $FE, $07, $FF, $FE, $00, $00, $00, $00, $00, $00, $00, $00
+    812B  .db $00, $00, $00, $00, $00, $00, $00, $07, $80, $70, $07, $C0, $7C, $07, $E0, $7C
+    813B  .db $07, $F0, $1E, $07, $78, $0E, $07, $38, $0E, $07, $1C, $0E, $07, $0E, $0E, $07
+    814B  .db $0F, $1E, $07, $07, $FC, $07, $03, $FC, $06, $00, $F0, $00, $00, $00, $00, $00
+    815B  .db $00, $00, $F0, $30, $01, $F0, $38, $03, $E0, $3C, $07, $80, $1E, $07, $00, $0E
+    816B  .db $07, $03, $0E, $07, $07, $0E, $07, $87, $9E, $07, $CF, $FE, $03, $FF, $FC, $01
+    817B  .db $FC, $F8, $00, $78, $00, $00, $00, $00, $00, $00, $00, $00, $78, $00, $00, $7C
+    818B  .db $00, $00, $7F, $00, $00, $67, $80, $00, $61, $E0, $00, $60, $F0, $00, $60, $3C
+    819B  .db $07, $FF, $FE, $07, $FF, $FE, $07, $FF, $FC, $00, $60, $00, $00, $60, $00, $00
+    81AB  .db $00, $00, $00, $00, $00, $01, $C0, $00, $03, $C7, $FE, $03, $C7, $FE, $07, $87
+    81BB  .db $FE, $07, $03, $8E, $07, $03, $8E, $07, $03, $8E, $07, $03, $8E, $07, $87, $8E
+    81CB  .db $03, $FF, $0E, $01, $FE, $0E, $00, $7C, $06, $00, $00, $00, $00, $00, $00, $00
+    81DB  .db $7F, $E0, $01, $FF, $F8, $03, $FF, $FC, $03, $8E, $3C, $07, $07, $0E, $07, $07
+    81EB  .db $0E, $07, $07, $0E, $07, $07, $0E, $07, $8F, $1E, $03, $FE, $3C, $01, $FC, $38
+    81FB  .db $00, $F8, $00, $00, $00, $00, $00, $00, $00, $00, $00, $06, $00, $00, $0E, $00
+    820B  .db $00, $0E, $07, $E0, $0E, $07, $FC, $0E, $03, $FF, $0E, $00, $3F, $8E, $00, $03
+    821B  .db $EE, $00, $00, $FE, $00, $00, $7E, $00, $00, $1E, $00, $00, $0E, $00, $00, $00
+    822B  .db $00, $00, $00, $00, $F8, $00, $01, $FC, $F8, $03, $FF, $FC, $07, $87, $FE, $07
+    823B  .db $03, $9E, $07, $03, $0E, $07, $03, $0E, $07, $03, $9E, $07, $87, $FE, $03, $FF
+    824B  .db $FC, $01, $FC, $F8, $00, $F8, $00, $00, $00, $00, $00, $00, $00, $00, $01, $F0
+    825B  .db $01, $C3, $F8, $03, $C7, $FC, $07, $8F, $1E, $07, $0E, $0E, $07, $0E, $0E, $07
+    826B  .db $0E, $0E, $07, $0E, $0E, $03, $C7, $1C, $03, $FF, $FC, $01, $FF, $F8, $00, $7F
+    827B  .db $E0, $00, $00, $00, $07, $00, $00, $07, $E0, $00, $03, $FC, $00, $00, $FF, $80
+    828B  .db $00, $7F, $E0, $00, $63, $F8, $00, $60, $7C, $00, $60, $7C, $00, $67, $F8, $00
+    829B  .db $7F, $E0, $00, $FF, $00, $07, $FC, $00, $07, $E0, $00, $07, $00, $00, $00, $00
+    82AB  .db $00, $07, $FF, $FC, $07, $FF, $FC, $07, $FF, $FC, $06, $06, $0C, $06, $06, $0C
+    82BB  .db $06, $06, $0C, $06, $06, $0C, $06, $06, $1C, $07, $0F, $FC, $07, $FF, $F8, $03
+    82CB  .db $F9, $F0, $01, $F0, $00, $00, $00, $00, $00, $3F, $80, $00, $FF, $E0, $01, $FF
+    82DB  .db $F0, $03, $C0, $F8, $07, $80, $3C, $07, $00, $1C, $06, $00, $0C, $06, $00, $0C
+    82EB  .db $07, $00, $1C, $07, $80, $3C, $03, $C0, $78, $01, $F0, $F0, $00, $F0, $E0, $00
+    82FB  .db $00, $00, $00, $00, $00, $07, $FF, $FC, $07, $FF, $FC, $07, $FF, $FC, $06, $00
+    830B  .db $0C, $06, $00, $0C, $06, $00, $0C, $07, $00, $1C, $07, $80, $3C, $03, $C0, $78
+    831B  .db $03, $FF, $F8, $00, $FF, $E0, $00, $3F, $80, $00, $00, $00, $00, $00, $00, $00
+    832B  .db $00, $00, $07, $FF, $FC, $07, $FF, $FC, $07, $FF, $FC, $06, $06, $0C, $06, $06
+    833B  .db $0C, $06, $06, $0C, $06, $06, $0C, $06, $06, $0C, $06, $06, $0C, $06, $06, $0C
+    834B  .db $06, $00, $0C, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $07
+    835B  .db $FF, $FC, $07, $FF, $FC, $07, $FF, $FC, $00, $06, $0C, $00, $06, $0C, $00, $06
+    836B  .db $0C, $00, $06, $0C, $00, $06, $0C, $00, $06, $0C, $00, $00, $0C, $00, $00, $00
+
+; the big hex font (BAR low): 16 glyphs of 96 bytes, about 17 x 24 pixels in 24 x 32 cells
+    837B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $07, $FE, $00
+    838B  .db $00, $3F, $FF, $C0, $00, $7F, $FF, $E0, $00, $FF, $FF, $F0, $01, $F8, $01, $F8
+    839B  .db $03, $E0, $00, $7C, $03, $C0, $00, $3C, $03, $C0, $00, $3C, $03, $C0, $00, $3C
+    83AB  .db $03, $C0, $00, $3C, $03, $E0, $00, $7C, $01, $F8, $01, $F8, $01, $FF, $FF, $F8
+    83BB  .db $00, $FF, $FF, $F0, $00, $7F, $FF, $E0, $00, $1F, $FF, $80, $00, $01, $F8, $00
+    83CB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    83DB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    83EB  .db $00, $00, $00, $80, $03, $C0, $07, $C0, $03, $C0, $07, $C0, $03, $C0, $03, $E0
+    83FB  .db $03, $C0, $03, $E0, $03, $C0, $01, $F0, $03, $FF, $FF, $F8, $03, $FF, $FF, $FC
+    840B  .db $03, $FF, $FF, $FC, $03, $FF, $FF, $FC, $03, $FF, $FF, $FC, $03, $C0, $00, $00
+    841B  .db $03, $C0, $00, $00, $03, $C0, $00, $00, $03, $C0, $00, $00, $03, $C0, $00, $00
+    842B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    843B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $20
+    844B  .db $03, $E0, $00, $70, $03, $F8, $00, $F8, $03, $FC, $00, $78, $03, $FE, $00, $78
+    845B  .db $03, $FF, $00, $3C, $03, $DF, $80, $3C, $03, $C7, $C0, $3C, $03, $C3, $E0, $3C
+    846B  .db $03, $C3, $F0, $3C, $03, $C1, $F8, $7C, $03, $C0, $FF, $F8, $03, $C0, $7F, $F8
+    847B  .db $03, $C0, $3F, $F0, $03, $C0, $1F, $E0, $03, $C0, $07, $C0, $03, $C0, $00, $00
+    848B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    849B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    84AB  .db $01, $C0, $00, $10, $01, $E0, $00, $78, $01, $E0, $00, $78, $03, $C0, $78, $7C
+    84BB  .db $03, $C0, $78, $3C, $03, $C0, $78, $3C, $03, $C0, $78, $3C, $03, $C0, $78, $3C
+    84CB  .db $03, $E0, $FC, $7C, $03, $F1, $FF, $FC, $01, $FF, $FF, $F8, $01, $FF, $EF, $F8
+    84DB  .db $00, $FF, $EF, $F0, $00, $7F, $C3, $C0, $00, $1F, $00, $00, $00, $00, $00, $00
+    84EB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    84FB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $0F, $80, $00
+    850B  .db $00, $0F, $C0, $00, $00, $0F, $F0, $00, $00, $0F, $F8, $00, $00, $0F, $FE, $00
+    851B  .db $00, $0F, $3F, $00, $00, $0F, $1F, $80, $00, $0F, $07, $E0, $00, $0F, $03, $F0
+    852B  .db $00, $0F, $00, $F8, $03, $FF, $FF, $FC, $03, $FF, $FF, $FC, $03, $FF, $FF, $FC
+    853B  .db $03, $FF, $FF, $FC, $03, $FF, $FF, $FC, $00, $0F, $00, $00, $00, $0F, $00, $00
+    854B  .db $00, $0F, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    855B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $01, $80, $00, $00
+    856B  .db $01, $E0, $00, $00, $03, $E0, $3E, $00, $03, $C0, $3F, $FC, $03, $C0, $3F, $FC
+    857B  .db $03, $C0, $3F, $FC, $03, $C0, $3F, $FC, $03, $C0, $7C, $3C, $03, $C0, $7C, $3C
+    858B  .db $03, $E0, $7C, $3C, $01, $F0, $F8, $3C, $01, $FF, $F8, $3C, $01, $FF, $F0, $3C
+    859B  .db $00, $FF, $F0, $3C, $00, $7F, $E0, $3C, $00, $1F, $80, $00, $00, $00, $00, $00
+    85AB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    85BB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    85CB  .db $00, $0F, $F0, $00, $00, $7F, $FE, $00, $00, $FF, $FF, $80, $01, $FF, $FF, $C0
+    85DB  .db $01, $FF, $FF, $E0, $03, $F0, $7B, $F0, $03, $C0, $79, $F0, $03, $C0, $78, $F8
+    85EB  .db $03, $C0, $78, $78, $03, $E0, $F8, $7C, $03, $FF, $F8, $3C, $01, $FF, $F8, $3C
+    85FB  .db $00, $FF, $F0, $3C, $00, $7F, $E0, $3C, $00, $1F, $80, $00, $00, $00, $00, $00
+    860B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    861B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    862B  .db $00, $00, $00, $3C, $00, $00, $00, $3C, $00, $00, $00, $3C, $03, $C0, $00, $3C
+    863B  .db $03, $FC, $00, $3C, $03, $FF, $80, $3C, $03, $FF, $E0, $3C, $03, $FF, $F8, $3C
+    864B  .db $00, $3F, $FE, $3C, $00, $03, $FF, $BC, $00, $00, $7F, $FC, $00, $00, $0F, $FC
+    865B  .db $00, $00, $03, $FC, $00, $00, $00, $FC, $00, $00, $00, $7C, $00, $00, $00, $00
+    866B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    867B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $3E, $00, $00
+    868B  .db $00, $FF, $8F, $E0, $00, $FF, $DF, $F0, $01, $FF, $DF, $F8, $01, $E1, $FF, $F8
+    869B  .db $03, $E0, $FC, $7C, $03, $C0, $78, $3C, $03, $C0, $78, $3C, $03, $C0, $F0, $3C
+    86AB  .db $03, $C0, $F0, $3C, $03, $C0, $F8, $3C, $03, $E1, $FC, $7C, $01, $E3, $FF, $F8
+    86BB  .db $01, $FF, $DF, $F8, $00, $FF, $8F, $F0, $00, $7F, $03, $C0, $00, $3E, $00, $00
+    86CB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    86DB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    86EB  .db $00, $00, $1F, $80, $03, $C0, $7F, $E0, $03, $C0, $FF, $F0, $03, $C0, $FF, $F8
+    86FB  .db $03, $C1, $FF, $F8, $03, $E1, $F0, $7C, $01, $E1, $E0, $3C, $01, $E1, $E0, $3C
+    870B  .db $00, $F1, $E0, $3C, $00, $F9, $E0, $7C, $00, $7D, $E0, $F8, $00, $3F, $FF, $F8
+    871B  .db $00, $1F, $FF, $F0, $00, $0F, $FF, $E0, $00, $03, $FF, $80, $00, $00, $00, $00
+    872B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    873B  .db $00, $00, $00, $00, $00, $00, $00, $00, $01, $80, $00, $00, $01, $F8, $00, $00
+    874B  .db $01, $FF, $00, $00, $01, $FF, $F0, $00, $01, $FF, $FE, $00, $00, $FF, $FF, $C0
+    875B  .db $00, $07, $FF, $F8, $00, $07, $BF, $FE, $00, $07, $83, $FE, $00, $07, $80, $3E
+    876B  .db $00, $07, $81, $FE, $00, $07, $9F, $FE, $00, $07, $FF, $FE, $00, $7F, $FF, $E0
+    877B  .db $01, $FF, $FF, $00, $01, $FF, $F8, $00, $01, $FF, $80, $00, $01, $F8, $00, $00
+    878B  .db $01, $80, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    879B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    87AB  .db $01, $FF, $FF, $FC, $03, $FF, $FF, $FC, $03, $FF, $FF, $FC, $03, $FF, $FF, $FC
+    87BB  .db $03, $FF, $FF, $FC, $03, $C0, $F0, $3C, $03, $C0, $F0, $3C, $03, $C0, $F0, $3C
+    87CB  .db $03, $C0, $F0, $3C, $03, $C0, $F8, $7C, $03, $E1, $FF, $F8, $01, $FF, $FF, $F8
+    87DB  .db $01, $FF, $DF, $F8, $00, $FF, $CF, $F0, $00, $7F, $87, $C0, $00, $3F, $00, $00
+    87EB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    87FB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $03, $FE, $00
+    880B  .db $00, $0F, $FF, $C0, $00, $3F, $FF, $E0, $00, $7F, $FF, $F0, $00, $7F, $FF, $F8
+    881B  .db $00, $FE, $01, $FC, $00, $F8, $00, $7C, $01, $F0, $00, $3E, $01, $E0, $00, $1E
+    882B  .db $01, $E0, $00, $1E, $01, $E0, $00, $1E, $01, $E0, $00, $1E, $01, $E0, $00, $1E
+    883B  .db $01, $E0, $00, $3E, $00, $F0, $00, $3C, $00, $F8, $00, $7C, $00, $60, $00, $18
+    884B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    885B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    886B  .db $01, $FF, $FF, $FE, $01, $FF, $FF, $FE, $01, $FF, $FF, $FE, $01, $FF, $FF, $FE
+    887B  .db $01, $FF, $FF, $FE, $01, $E0, $00, $1E, $01, $E0, $00, $1E, $01, $E0, $00, $1E
+    888B  .db $01, $F0, $00, $3E, $00, $F8, $00, $7C, $00, $FE, $01, $FC, $00, $7F, $FF, $FC
+    889B  .db $00, $7F, $FF, $F8, $00, $3F, $FF, $F0, $00, $0F, $FF, $C0, $00, $01, $FF, $00
+    88AB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    88BB  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    88CB  .db $00, $00, $00, $00, $01, $FF, $FF, $FE, $01, $FF, $FF, $FE, $01, $FF, $FF, $FE
+    88DB  .db $01, $FF, $FF, $FE, $01, $FF, $FF, $FE, $01, $E0, $3C, $1E, $01, $E0, $3C, $1E
+    88EB  .db $01, $E0, $3C, $1E, $01, $E0, $3C, $1E, $01, $E0, $3C, $1E, $01, $E0, $3C, $1E
+    88FB  .db $01, $E0, $3C, $1E, $01, $E0, $3C, $1E, $01, $E0, $00, $1E, $01, $E0, $00, $00
+    890B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    891B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+    892B  .db $01, $FF, $FF, $FE, $01, $FF, $FF, $FE, $01, $FF, $FF, $FE, $01, $FF, $FF, $FE
+    893B  .db $01, $FF, $FF, $FE, $00, $00, $78, $1E, $00, $00, $78, $1E, $00, $00, $78, $1E
+    894B  .db $00, $00, $78, $1E, $00, $00, $78, $1E, $00, $00, $78, $1E, $00, $00, $78, $1E
+    895B  .db $00, $00, $78, $1E, $00, $00, $78, $1E, $00, $00, $00, $1E, $00, $00, $00, $00
+    896B  .db $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+
+; the die's faces: 6 bitmaps of 128 bytes, 32 x 32, a rounded box with 4 x 4 pips
+    897B  .db $F0, $FF, $FF, $0F, $0C, $00, $00, $30, $02, $00, $00, $40, $02, $00, $00, $40
+    898B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    899B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    89AB  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $80, $01, $80, $01, $C0, $03, $80
+    89BB  .db $01, $C0, $03, $80, $01, $80, $01, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    89CB  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    89DB  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    89EB  .db $02, $00, $00, $40, $02, $00, $00, $40, $0C, $00, $00, $30, $F0, $FF, $FF, $0F
+    89FB  .db $F0, $FF, $FF, $0F, $0C, $00, $00, $30, $02, $00, $00, $40, $02, $00, $00, $40
+    8A0B  .db $01, $00, $00, $80, $C1, $00, $00, $80, $E1, $01, $00, $80, $E1, $01, $00, $80
+    8A1B  .db $C1, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8A2B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8A3B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8A4B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $83
+    8A5B  .db $01, $00, $80, $87, $01, $00, $80, $87, $01, $00, $00, $83, $01, $00, $00, $80
+    8A6B  .db $02, $00, $00, $40, $02, $00, $00, $40, $0C, $00, $00, $30, $F0, $FF, $FF, $0F
+    8A7B  .db $F0, $FF, $FF, $0F, $0C, $00, $00, $30, $02, $00, $00, $40, $02, $00, $00, $40
+    8A8B  .db $01, $00, $00, $80, $01, $00, $00, $83, $01, $00, $80, $87, $01, $00, $80, $87
+    8A9B  .db $01, $00, $00, $83, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8AAB  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $80, $01, $80, $01, $C0, $03, $80
+    8ABB  .db $01, $C0, $03, $80, $01, $80, $01, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8ACB  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $C1, $00, $00, $80
+    8ADB  .db $E1, $01, $00, $80, $E1, $01, $00, $80, $C1, $00, $00, $80, $01, $00, $00, $80
+    8AEB  .db $02, $00, $00, $40, $02, $00, $00, $40, $0C, $00, $00, $30, $F0, $FF, $FF, $0F
+    8AFB  .db $F0, $FF, $FF, $0F, $0C, $00, $00, $30, $02, $00, $00, $40, $02, $00, $00, $40
+    8B0B  .db $01, $00, $00, $80, $C1, $00, $00, $83, $E1, $01, $80, $87, $E1, $01, $80, $87
+    8B1B  .db $C1, $00, $00, $83, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8B2B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8B3B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8B4B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $C1, $00, $00, $83
+    8B5B  .db $E1, $01, $80, $87, $E1, $01, $80, $87, $C1, $00, $00, $83, $01, $00, $00, $80
+    8B6B  .db $02, $00, $00, $40, $02, $00, $00, $40, $0C, $00, $00, $30, $F0, $FF, $FF, $0F
+    8B7B  .db $F0, $FF, $FF, $0F, $0C, $00, $00, $30, $02, $00, $00, $40, $02, $00, $00, $40
+    8B8B  .db $01, $00, $00, $80, $C1, $00, $00, $83, $E1, $01, $80, $87, $E1, $01, $80, $87
+    8B9B  .db $C1, $00, $00, $83, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8BAB  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $80, $01, $80, $01, $C0, $03, $80
+    8BBB  .db $01, $C0, $03, $80, $01, $80, $01, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8BCB  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $C1, $00, $00, $83
+    8BDB  .db $E1, $01, $80, $87, $E1, $01, $80, $87, $C1, $00, $00, $83, $01, $00, $00, $80
+    8BEB  .db $02, $00, $00, $40, $02, $00, $00, $40, $0C, $00, $00, $30, $F0, $FF, $FF, $0F
+    8BFB  .db $F0, $FF, $FF, $0F, $0C, $00, $00, $30, $02, $00, $00, $40, $02, $00, $00, $40
+    8C0B  .db $01, $00, $00, $80, $C1, $80, $01, $83, $E1, $C1, $83, $87, $E1, $C1, $83, $87
+    8C1B  .db $C1, $80, $01, $83, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8C2B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8C3B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80
+    8C4B  .db $01, $00, $00, $80, $01, $00, $00, $80, $01, $00, $00, $80, $C1, $80, $01, $83
+    8C5B  .db $E1, $C1, $83, $87, $E1, $C1, $83, $87, $C1, $80, $01, $83, $01, $00, $00, $80
+    8C6B  .db $02, $00, $00, $40, $02, $00, $00, $40, $0C, $00, $00, $30, $F0, $FF, $FF, $0F
+
+; I2C constants
+    8C7B  .db $00, $0F, $42, $40, $00, $01, $86, $A1, $00, $0F, $42, $40, $01, $02, $04, $08
+
+; constants
+    8C8B  .db $01, $02, $04, $08, $0A, $10, $14, $28
+
+; Cosmic's start-up descriptor: what the start-up copies to RAM
+    8C93  .db $8C, $A0, $62, $00, $00, $8C, $CA, $62, $00, $34, $8C, $CB, $00
+
+; the start-up copy's source: RAM $00-$2A at start (pin descriptors, then variables)
+    8CA0  .db $50, $05, $50, $0F, $50, $0F, $50, $0F, $50, $0A, $50, $0A, $50, $0A, $50, $0A
+    8CB0  .db $50, $0A, $50, $00, $50, $00, $50, $00, $50, $0F, $50, $0F, $00, $00, $00, $00
+    8CC0  .db $00, $00, $00, $00, $00, $80, $00, $00, $00, $00, $00
+
+; Cosmic's C start-up: stack at $03FF, copy the initialised data from $8CA0 to
+; RAM, clear the rest, call main.
+reset:
+    8CCB  AE 03 FF       ldw    X,#RAM_END                 
+    8CCE  94             ldw    SP,X                       
+    8CCF  90 CE 8C 93    ldw    Y,$8C93                    
+    8CD3  AE 8C 95       ldw    X,#$8C95                   
+L_8CD6:
+    8CD6  F6             ld     A,(X)                      
+    8CD7  27 25          jreq   L_8CFE                     
+    8CD9  A5 60          bcp    A,#$60                     
+    8CDB  27 17          jreq   L_8CF4                     
+    8CDD  BF 2E          ldw    $2E,X                      
+    8CDF  EE 03          ldw    X,($3,X)                   
+    8CE1  BF 31          ldw    $31,X                      
+    8CE3  BE 2E          ldw    X,$2E                      
+    8CE5  EE 01          ldw    X,($1,X)                   
+L_8CE7:
+    8CE7  90 F6          ld     A,(Y)                      
+    8CE9  F7             ld     (X),A                      
+    8CEA  5C             incw   X                          
+    8CEB  90 5C          incw   Y                          
+    8CED  90 B3 31       cpw    Y,$31                      
+    8CF0  26 F5          jrne   L_8CE7                     
+    8CF2  BE 2E          ldw    X,$2E                      
+L_8CF4:
+    8CF4  90 93          ldw    Y,X                        
+    8CF6  90 EE 03       ldw    Y,($3,Y)                   
+    8CF9  1C 00 05       addw   X,#$5                      
+    8CFC  20 D8          jra    L_8CD6                     
+L_8CFE:
+    8CFE  AE 00 2A       ldw    X,#$2A                     
+    8D01  20 02          jra    L_8D05                     
+L_8D03:
+    8D03  F7             ld     (X),A                      
+    8D04  5C             incw   X                          
+L_8D05:
+    8D05  A3 00 34       cpw    X,#$34                     
+    8D08  26 F9          jrne   L_8D03                     
+    8D0A  AE 01 00       ldw    X,#$100                    
+    8D0D  20 02          jra    L_8D11                     
+L_8D0F:
+    8D0F  F7             ld     (X),A                      
+    8D10  5C             incw   X                          
+L_8D11:
+    8D11  A3 01 00       cpw    X,#$100                    
+    8D14  26 F9          jrne   L_8D0F                     
+    8D16  CD 8E 05       call   sub_8E05                   
+L_8D19:
+    8D19  20 FE          jra    L_8D19                     
+
+; ---- never called ----
+
+; ST library (never called).
+EXTI_DeInit:
+    8D1B  72 5F 50 A0    clr    EXTI_CR1                   
+    8D1F  72 5F 50 A1    clr    EXTI_CR2                   
+    8D23  81             ret                               
+sub_8D24:
+    8D24  89             pushw  X                          
+    8D25  9E             ld     A,XH                       
+    8D26  4D             tnz    A                          
+    8D27  27 0E          jreq   L_8D37                     
+    8D29  4A             dec    A                          
+    8D2A  27 1A          jreq   L_8D46                     
+    8D2C  4A             dec    A                          
+    8D2D  27 25          jreq   L_8D54                     
+    8D2F  4A             dec    A                          
+    8D30  27 31          jreq   L_8D63                     
+    8D32  4A             dec    A                          
+    8D33  27 45          jreq   L_8D7A                     
+    8D35  20 53          jra    L_8D8A                     
+L_8D37:
+    8D37  C6 50 A0       ld     A,EXTI_CR1                 
+    8D3A  A4 FC          and    A,#$FC                     
+    8D3C  C7 50 A0       ld     EXTI_CR1,A                 
+    8D3F  C6 50 A0       ld     A,EXTI_CR1                 
+    8D42  1A 02          or     A,($2,SP)                  
+    8D44  20 2F          jra    L_8D75                     
+L_8D46:
+    8D46  C6 50 A0       ld     A,EXTI_CR1                 
+    8D49  A4 F3          and    A,#$F3                     
+    8D4B  C7 50 A0       ld     EXTI_CR1,A                 
+    8D4E  7B 02          ld     A,($2,SP)                  
+    8D50  48             sla    A                          
+    8D51  48             sla    A                          
+    8D52  20 1E          jra    L_8D72                     
+L_8D54:
+    8D54  C6 50 A0       ld     A,EXTI_CR1                 
+    8D57  A4 CF          and    A,#$CF                     
+    8D59  C7 50 A0       ld     EXTI_CR1,A                 
+    8D5C  7B 02          ld     A,($2,SP)                  
+    8D5E  97             ld     XL,A                       
+    8D5F  A6 10          ld     A,#$10                     
+    8D61  20 0D          jra    L_8D70                     
+L_8D63:
+    8D63  C6 50 A0       ld     A,EXTI_CR1                 
+    8D66  A4 3F          and    A,#$3F                     
+    8D68  C7 50 A0       ld     EXTI_CR1,A                 
+    8D6B  7B 02          ld     A,($2,SP)                  
+    8D6D  97             ld     XL,A                       
+    8D6E  A6 40          ld     A,#$40                     
+L_8D70:
+    8D70  42             mul    X,A                        
+    8D71  9F             ld     A,XL                       
+L_8D72:
+    8D72  CA 50 A0       or     A,EXTI_CR1                 
+L_8D75:
+    8D75  C7 50 A0       ld     EXTI_CR1,A                 
+    8D78  20 10          jra    L_8D8A                     
+L_8D7A:
+    8D7A  C6 50 A1       ld     A,EXTI_CR2                 
+    8D7D  A4 FC          and    A,#$FC                     
+    8D7F  C7 50 A1       ld     EXTI_CR2,A                 
+    8D82  C6 50 A1       ld     A,EXTI_CR2                 
+    8D85  1A 02          or     A,($2,SP)                  
+    8D87  C7 50 A1       ld     EXTI_CR2,A                 
+L_8D8A:
+    8D8A  85             popw   X                          
+    8D8B  81             ret                               
+
+; ---- never called ----
+    8D8C  72 15 50 A1    bres   EXTI_CR2,#2                
+    8D90  CA 50 A1       or     A,EXTI_CR2                 
+    8D93  C7 50 A1       ld     EXTI_CR2,A                 
+    8D96  81             ret                               
+    8D97  88             push   A                          
+    8D98  0F 01          clr    ($1,SP)                    
+    8D9A  4D             tnz    A                          
+    8D9B  27 10          jreq   $8DAD                      
+    8D9D  4A             dec    A                          
+    8D9E  27 12          jreq   $8DB2                      
+    8DA0  4A             dec    A                          
+    8DA1  27 18          jreq   $8DBB                      
+    8DA3  4A             dec    A                          
+    8DA4  27 1B          jreq   $8DC1                      
+    8DA6  4A             dec    A                          
+    8DA7  27 22          jreq   $8DCB                      
+    8DA9  7B 01          ld     A,($1,SP)                  
+    8DAB  20 23          jra    $8DD0                      
+    8DAD  C6 50 A0       ld     A,EXTI_CR1                 
+    8DB0  20 1C          jra    $8DCE                      
+    8DB2  C6 50 A0       ld     A,EXTI_CR1                 
+    8DB5  A4 0C          and    A,#$C                      
+    8DB7  44             srl    A                          
+    8DB8  44             srl    A                          
+    8DB9  20 15          jra    $8DD0                      
+    8DBB  C6 50 A0       ld     A,EXTI_CR1                 
+    8DBE  4E             swap   A                          
+    8DBF  20 0D          jra    $8DCE                      
+    8DC1  C6 50 A0       ld     A,EXTI_CR1                 
+    8DC4  4E             swap   A                          
+    8DC5  A4 0C          and    A,#$C                      
+    8DC7  44             srl    A                          
+    8DC8  44             srl    A                          
+    8DC9  20 03          jra    $8DCE                      
+    8DCB  C6 50 A1       ld     A,EXTI_CR2                 
+    8DCE  A4 03          and    A,#$3                      
+    8DD0  5B 01          add    SP,#$1                     
+    8DD2  81             ret                               
+    8DD3  C6 50 A1       ld     A,EXTI_CR2                 
+    8DD6  A4 04          and    A,#$4                      
+    8DD8  81             ret                               
+
+; The random state, RAM $25-$26, to $8000.
+random_init:
+    8DD9  BE 25          ldw    X,$25                      
+    8DDB  9F             ld     A,XL                       
+    8DDC  4E             swap   A                          
+    8DDD  48             sla    A                          
+    8DDE  A4 E0          and    A,#$E0                     
+    8DE0  5F             clrw   X                          
+    8DE1  95             ld     XH,A                       
+    8DE2  01             rrwa   X                          
+    8DE3  B8 26          xor    A,$26                      
+    8DE5  01             rrwa   X                          
+    8DE6  B8 25          xor    A,$25                      
+    8DE8  01             rrwa   X                          
+    8DE9  BF 25          ldw    $25,X                      
+    8DEB  4F             clr    A                          
+    8DEC  01             rrwa   X                          
+    8DED  54             srlw   X                          
+    8DEE  01             rrwa   X                          
+    8DEF  B8 26          xor    A,$26                      
+    8DF1  01             rrwa   X                          
+    8DF2  B8 25          xor    A,$25                      
+    8DF4  01             rrwa   X                          
+    8DF5  BF 25          ldw    $25,X                      
+    8DF7  4F             clr    A                          
+    8DF8  02             rlwa   X                          
+    8DF9  44             srl    A                          
+    8DFA  56             rrcw   X                          
+    8DFB  01             rrwa   X                          
+    8DFC  B8 26          xor    A,$26                      
+    8DFE  01             rrwa   X                          
+    8DFF  B8 25          xor    A,$25                      
+    8E01  01             rrwa   X                          
+    8E02  BF 25          ldw    $25,X                      
+    8E04  81             ret                               
+sub_8E05:
+    8E05  A6 08          ld     A,#$8                      
+    8E07  CD 9A A3       call   CLK_HSIPrescalerConfig     
+    8E0A  A6 80          ld     A,#$80                     
+    8E0C  CD 9A FD       call   CLK_SYSCLKConfig           
+    8E0F  AE 50 00       ldw    X,#PA_ODR                  
+    8E12  CD 98 9A       call   GPIO_DeInit                
+    8E15  AE 50 05       ldw    X,#PB_ODR                  
+    8E18  CD 98 9A       call   GPIO_DeInit                
+    8E1B  AE 50 0A       ldw    X,#PC_ODR                  
+    8E1E  CD 98 9A       call   GPIO_DeInit                
+    8E21  AE 50 0F       ldw    X,#PD_ODR                  
+    8E24  CD 98 9A       call   GPIO_DeInit                
+    8E27  CD 8F AB       call   oled_init                  
+    8E2A  CD 93 8D       call   setup_b_inputs             
+    8E2D  CD 93 F3       call   setup_pd3                  
+    8E30  AE 03 02       ldw    X,#$302                    
+    8E33  CD 8D 24       call   sub_8D24                   
+    8E36  9A             rim                               ; interrupts on: only port D (PD3) can interrupt
+    8E37  CD 94 26       call   read_b                     
+
+; One pass about every 37 us: read the mode pins (RAM $21; HEX PA1, BAR PA2,
+; INV PA3), read b0-b7 unless held or latched, redraw what changed. No debounce.
+main_loop:
+    8E3A  CD 94 87       call   read_mode                  
+    8E3D  B6 21          ld     A,$21                      
+    8E3F  B1 22          cp     A,$22                      
+    8E41  72 06 00 34 03 btjt   $34,#3,dice                
+    8E46  CC 8E F3       jp     normal_views               
+
+; Dice Roll (HEX and BAR both low): entering it shows a 6; any b input low rolls,
+; faces every ~115 ms while held, then slowing down: 4 faces ~117 ms apart, 3 ~226 ms
+; apart, a blank, the final face ~1.53 s after release. Never the same face twice.
+dice:
+    8E49  27 28          jreq   L_8E73                     
+    8E4B  CD 93 8D       call   setup_b_inputs             
+    8E4E  5F             clrw   X                          
+    8E4F  BF 1E          ldw    $1E,X                      
+    8E51  3F 29          clr    $29                        
+    8E53  72 01 00 34 05 btjf   $34,#0,L_8E5D              
+    8E58  AE A7 00       ldw    X,#$A700                   
+    8E5B  20 03          jra    L_8E60                     
+L_8E5D:
+    8E5D  AE A6 00       ldw    X,#$A600                   
+L_8E60:
+    8E60  CD 90 2B       call   oled_command               
+    8E63  4F             clr    A                          
+    8E64  CD 90 74       call   sub_9074                   
+    8E67  72 1D 00 34    bres   $34,#6                     
+    8E6B  A6 05          ld     A,#$5                      
+    8E6D  CD 92 F5       call   draw_face                  
+    8E70  45 21 22       mov    $22,$21                    
+L_8E73:
+    8E73  72 0D 00 34 68 btjf   $34,#6,dice_idle           
+    8E78  BE 1E          ldw    X,$1E                      
+    8E7A  B6 29          ld     A,$29                      
+    8E7C  44             srl    A                          
+    8E7D  44             srl    A                          
+    8E7E  A0 04          sub    A,#$4                      
+    8E80  40             neg    A                          
+    8E81  27 04          jreq   L_8E87                     
+L_8E83:
+    8E83  58             slaw   X                          
+    8E84  4A             dec    A                          
+    8E85  26 FC          jrne   L_8E83                     
+L_8E87:
+    8E87  A3 00 00       cpw    X,#$0                      
+    8E8A  27 03          jreq   L_8E8F                     
+    8E8C  CC 8F 32       jp     random_step                
+L_8E8F:
+    8E8F  B6 29          ld     A,$29                      
+    8E91  A1 0A          cp     A,#$A                      
+    8E93  24 45          jruge  L_8EDA                     
+    8E95  CD 94 26       call   read_b                     
+    8E98  B6 23          ld     A,$23                      
+    8E9A  4C             inc    A                          
+    8E9B  26 04          jrne   L_8EA1                     
+    8E9D  3C 29          inc    $29                        
+    8E9F  20 02          jra    L_8EA3                     
+L_8EA1:
+    8EA1  3F 29          clr    $29                        
+L_8EA3:
+    8EA3  B6 29          ld     A,$29                      
+    8EA5  A1 08          cp     A,#$8                      
+    8EA7  24 20          jruge  L_8EC9                     
+    8EA9  45 27 28       mov    $28,$27                    
+    8EAC  20 13          jra    L_8EC1                     
+L_8EAE:
+    8EAE  CD 8D D9       call   random_init                
+    8EB1  B6 26          ld     A,$26                      
+    8EB3  4E             swap   A                          
+    8EB4  A4 0E          and    A,#$E                      
+    8EB6  44             srl    A                          
+    8EB7  B7 27          ld     $27,A                      
+    8EB9  A1 06          cp     A,#$6                      
+    8EBB  27 F1          jreq   L_8EAE                     
+    8EBD  A1 07          cp     A,#$7                      
+    8EBF  27 ED          jreq   L_8EAE                     
+L_8EC1:
+    8EC1  B6 28          ld     A,$28                      
+    8EC3  B1 27          cp     A,$27                      
+    8EC5  27 E7          jreq   L_8EAE                     
+    8EC7  B6 29          ld     A,$29                      
+L_8EC9:
+    8EC9  A1 08          cp     A,#$8                      
+    8ECB  26 06          jrne   L_8ED3                     
+    8ECD  4F             clr    A                          
+    8ECE  CD 90 74       call   sub_9074                   
+    8ED1  20 5F          jra    random_step                
+L_8ED3:
+    8ED3  B6 27          ld     A,$27                      
+    8ED5  CD 92 F5       call   draw_face                  
+    8ED8  20 58          jra    random_step                
+L_8EDA:
+    8EDA  72 1D 00 34    bres   $34,#6                     
+    8EDE  20 52          jra    random_step                
+
+; While not rolling: b0-b7 read (with pull-ups); any input low starts a roll.
+dice_idle:
+    8EE0  CD 94 26       call   read_b                     
+    8EE3  B6 23          ld     A,$23                      
+    8EE5  4C             inc    A                          
+    8EE6  27 4A          jreq   random_step                
+    8EE8  72 1C 00 34    bset   $34,#6                     
+    8EEC  5F             clrw   X                          
+    8EED  BF 1E          ldw    $1E,X                      
+    8EEF  3F 29          clr    $29                        
+    8EF1  20 3F          jra    random_step                
+
+; A mode change: b0-b7 pull-ups off, inverse on or off (A6/A7), clear, then the
+; view drawn. Otherwise b0-b7 read (if live) and redrawn when they changed.
+normal_views:
+    8EF3  27 1A          jreq   L_8F0F                     
+    8EF5  CD 93 8D       call   setup_b_inputs             
+    8EF8  5F             clrw   X                          
+    8EF9  BF 1E          ldw    $1E,X                      
+    8EFB  72 01 00 34 05 btjf   $34,#0,L_8F05              
+    8F00  AE A7 00       ldw    X,#$A700                   
+    8F03  20 03          jra    L_8F08                     
+L_8F05:
+    8F05  AE A6 00       ldw    X,#$A600                   
+L_8F08:
+    8F08  CD 90 2B       call   oled_command               
+    8F0B  4F             clr    A                          
+    8F0C  CD 90 74       call   sub_9074                   
+L_8F0F:
+    8F0F  72 09 00 34 03 btjf   $34,#4,L_8F17              
+    8F14  CD 94 26       call   read_b                     
+L_8F17:
+    8F17  B6 23          ld     A,$23                      
+    8F19  B1 24          cp     A,$24                      
+    8F1B  26 06          jrne   L_8F23                     
+    8F1D  B6 21          ld     A,$21                      
+    8F1F  B1 22          cp     A,$22                      
+    8F21  27 0F          jreq   random_step                
+L_8F23:
+    8F23  B6 21          ld     A,$21                      
+    8F25  B1 22          cp     A,$22                      
+    8F27  27 03          jreq   L_8F2C                     
+    8F29  45 21 22       mov    $22,$21                    
+L_8F2C:
+    8F2C  CD 95 08       call   redraw                     
+    8F2F  45 23 24       mov    $24,$23                    
+
+; xorshift16 (x ^= x<<13; x ^= x>>9; x ^= x<<7), once per pass in every mode.
+random_step:
+    8F32  CD 8D D9       call   random_init                
+    8F35  BE 1E          ldw    X,$1E                      
+    8F37  5C             incw   X                          
+    8F38  BF 1E          ldw    $1E,X                      
+    8F3A  CC 8E 3A       jp     main_loop                  
+
+; PD3 falling edge (the only interrupt): b0-b7 latched into RAM $23 and the
+; latched flag set. Only a reset clears it; every later edge latches again.
+exti_port_d:
+    8F3D  8A             push   CC                         
+    8F3E  84             pop    A                          
+    8F3F  A4 BF          and    A,#$BF                     
+    8F41  88             push   A                          
+    8F42  86             pop    CC                         
+    8F43  3B 00 30       push   $30                        
+    8F46  BE 2E          ldw    X,$2E                      
+    8F48  89             pushw  X                          
+    8F49  3B 00 33       push   $33                        
+    8F4C  BE 31          ldw    X,$31                      
+    8F4E  89             pushw  X                          
+    8F4F  CD 94 26       call   read_b                     
+    8F52  72 1A 00 34    bset   $34,#5                     
+    8F56  85             popw   X                          
+    8F57  BF 31          ldw    $31,X                      
+    8F59  32 00 33       pop    $33                        
+    8F5C  85             popw   X                          
+    8F5D  BF 2E          ldw    $2E,X                      
+    8F5F  32 00 30       pop    $30                        
+    8F62  80             iret                              
+
+; I2C at about 205 kHz (fast mode, 8 MHz input clock).
+i2c_setup:
+    8F63  88             push   A                          
+    8F64  CD 9B 3A       call   sub_9B3A                   
+    8F67  AE 8C 7B       ldw    X,#$8C7B                   
+    8F6A  CD 9C DA       call   sub_9CDA                   
+    8F6D  B6 2D          ld     A,$2D                      
+    8F6F  6B 01          ld     ($1,SP),A                  
+    8F71  CD 95 BE       call   sub_95BE                   
+    8F74  7B 01          ld     A,($1,SP)                  
+    8F76  88             push   A                          
+    8F77  4B 00          push   #$0                        
+    8F79  4B 01          push   #$1                        
+    8F7B  4B 00          push   #$0                        
+    8F7D  AE 00 78       ldw    X,#$78                     
+    8F80  89             pushw  X                          
+    8F81  AE 0D 40       ldw    X,#$D40                    
+    8F84  89             pushw  X                          
+    8F85  AE 00 03       ldw    X,#$3                      
+    8F88  89             pushw  X                          
+    8F89  CD 95 E3       call   I2C_Init                   
+    8F8C  5B 0A          add    SP,#$A                     
+    8F8E  A6 01          ld     A,#$1                      
+    8F90  CD 96 FF       call   sub_96FF                   
+    8F93  84             pop    A                          
+    8F94  81             ret                               
+
+; PB4/PB5 as open-drain fast outputs before the I2C takes them.
+gpio_open_drain:
+    8F95  4B B0          push   #$B0                       
+    8F97  4B 10          push   #$10                       
+    8F99  BE 00          ldw    X,$0                       
+    8F9B  CD 98 A2       call   GPIO_Init                  
+    8F9E  85             popw   X                          
+    8F9F  4B B0          push   #$B0                       
+    8FA1  4B 20          push   #$20                       
+    8FA3  BE 00          ldw    X,$0                       
+    8FA5  CD 98 A2       call   GPIO_Init                  
+    8FA8  85             popw   X                          
+    8FA9  20 B8          jra    i2c_setup                  
+
+; The SSD1315's set-up, one command per I2C transaction: off, mux 64, offset 0,
+; start line 0, A1/C8 (remapped for the rotated mounting), COM pins, contrast 255,
+; RAM display, normal, clock, precharge, VCOMH, vertical addressing, charge pump on,
+; clear, on.
+oled_init:
+    8FAB  AD E8          callr  gpio_open_drain            
+    8FAD  AE AE 00       ldw    X,#$AE00                   
+    8FB0  AD 79          callr  oled_command               
+    8FB2  AE A8 00       ldw    X,#$A800                   
+    8FB5  AD 74          callr  oled_command               
+    8FB7  AE 3F 00       ldw    X,#$3F00                   
+    8FBA  AD 6F          callr  oled_command               
+    8FBC  AE D3 00       ldw    X,#$D300                   
+    8FBF  AD 6A          callr  oled_command               
+    8FC1  5F             clrw   X                          
+    8FC2  AD 67          callr  oled_command               
+    8FC4  AE 40 00       ldw    X,#EEPROM                  
+    8FC7  AD 62          callr  oled_command               
+    8FC9  AE A1 00       ldw    X,#$A100                   
+    8FCC  AD 5D          callr  oled_command               
+    8FCE  AE C8 00       ldw    X,#$C800                   
+    8FD1  AD 58          callr  oled_command               
+    8FD3  AE DA 00       ldw    X,#$DA00                   
+    8FD6  AD 53          callr  oled_command               
+    8FD8  AE 12 00       ldw    X,#$1200                   
+    8FDB  AD 4E          callr  oled_command               
+    8FDD  AE 81 00       ldw    X,#$8100                   
+    8FE0  AD 49          callr  oled_command               
+    8FE2  AE FF 00       ldw    X,#$FF00                   
+    8FE5  AD 44          callr  oled_command               
+    8FE7  AE A4 00       ldw    X,#$A400                   
+    8FEA  AD 3F          callr  oled_command               
+    8FEC  AE A6 00       ldw    X,#$A600                   
+    8FEF  AD 3A          callr  oled_command               
+    8FF1  AE D5 00       ldw    X,#$D500                   
+    8FF4  AD 35          callr  oled_command               
+    8FF6  AE 80 00       ldw    X,#$8000                   
+    8FF9  AD 30          callr  oled_command               
+    8FFB  AE D9 00       ldw    X,#$D900                   
+    8FFE  AD 2B          callr  oled_command               
+    9000  AE 25 00       ldw    X,#$2500                   
+    9003  AD 26          callr  oled_command               
+    9005  AE DB 00       ldw    X,#$DB00                   
+    9008  AD 21          callr  oled_command               
+    900A  AE 20 00       ldw    X,#$2000                   
+    900D  AD 1C          callr  oled_command               
+    900F  AE 20 00       ldw    X,#$2000                   
+    9012  AD 17          callr  oled_command               
+    9014  AE 01 00       ldw    X,#$100                    
+    9017  AD 12          callr  oled_command               
+    9019  AE 8D 00       ldw    X,#$8D00                   
+    901C  AD 0D          callr  oled_command               
+    901E  AE 14 00       ldw    X,#$1400                   
+    9021  AD 08          callr  oled_command               
+    9023  4F             clr    A                          
+    9024  AD 4E          callr  sub_9074                   
+    9026  AE AF 00       ldw    X,#$AF00                   
+    9029  20 00          jra    oled_command               
+
+; START, $78, control byte $00, the command, STOP.
+oled_command:
+    902B  89             pushw  X                          
+L_902C:
+    902C  AE 03 02       ldw    X,#$302                    
+    902F  CD 98 10       call   sub_9810                   
+    9032  4D             tnz    A                          
+    9033  26 F7          jrne   L_902C                     
+    9035  4C             inc    A                          
+    9036  CD 97 19       call   sub_9719                   
+L_9039:
+    9039  AE 03 01       ldw    X,#$301                    
+    903C  CD 97 A0       call   I2C_CheckEvent             
+    903F  4D             tnz    A                          
+    9040  27 F7          jreq   L_9039                     
+    9042  AE 78 00       ldw    X,#$7800                   
+    9045  CD 97 8E       call   sub_978E                   
+L_9048:
+    9048  AE 07 82       ldw    X,#$782                    
+    904B  CD 97 A0       call   I2C_CheckEvent             
+    904E  4D             tnz    A                          
+    904F  27 F7          jreq   L_9048                     
+    9051  7B 02          ld     A,($2,SP)                  
+    9053  CD 97 9C       call   sub_979C                   
+L_9056:
+    9056  AE 07 80       ldw    X,#$780                    
+    9059  CD 97 A0       call   I2C_CheckEvent             
+    905C  4D             tnz    A                          
+    905D  27 F7          jreq   L_9056                     
+    905F  7B 01          ld     A,($1,SP)                  
+    9061  CD 97 9C       call   sub_979C                   
+L_9064:
+    9064  AE 07 84       ldw    X,#$784                    
+    9067  CD 97 A0       call   I2C_CheckEvent             
+    906A  4D             tnz    A                          
+    906B  27 F7          jreq   L_9064                     
+    906D  A6 01          ld     A,#$1                      
+    906F  CD 97 26       call   sub_9726                   
+    9072  85             popw   X                          
+    9073  81             ret                               
+sub_9074:
+    9074  88             push   A                          
+    9075  52 04          sub    SP,#$4                     
+    9077  AE 21 00       ldw    X,#$2100                   
+    907A  AD AF          callr  oled_command               
+    907C  AE 20 00       ldw    X,#$2000                   
+    907F  AD AA          callr  oled_command               
+    9081  AE 5F 00       ldw    X,#$5F00                   
+    9084  AD A5          callr  oled_command               
+    9086  AE 22 00       ldw    X,#$2200                   
+    9089  AD A0          callr  oled_command               
+    908B  AE 04 00       ldw    X,#$400                    
+    908E  AD 9B          callr  oled_command               
+    9090  AE 07 00       ldw    X,#$700                    
+    9093  AD 96          callr  oled_command               
+    9095  A6 01          ld     A,#$1                      
+    9097  CD 97 19       call   sub_9719                   
+L_909A:
+    909A  AE 03 01       ldw    X,#$301                    
+    909D  CD 97 A0       call   I2C_CheckEvent             
+    90A0  4D             tnz    A                          
+    90A1  27 F7          jreq   L_909A                     
+    90A3  AE 78 00       ldw    X,#$7800                   
+    90A6  CD 97 8E       call   sub_978E                   
+L_90A9:
+    90A9  AE 07 82       ldw    X,#$782                    
+    90AC  CD 97 A0       call   I2C_CheckEvent             
+    90AF  4D             tnz    A                          
+    90B0  27 F7          jreq   L_90A9                     
+    90B2  A6 60          ld     A,#$60                     
+    90B4  CD 97 9C       call   sub_979C                   
+L_90B7:
+    90B7  AE 07 80       ldw    X,#$780                    
+    90BA  CD 97 A0       call   I2C_CheckEvent             
+    90BD  4D             tnz    A                          
+    90BE  27 F7          jreq   L_90B7                     
+    90C0  5F             clrw   X                          
+    90C1  1F 03          ldw    ($3,SP),X                  
+
+; When INV is low the clear complements its last 4 bytes, so the panel's
+; rightmost column stays dark in every inverted view.
+clear_inverse_quirk:
+    90C3  5F             clrw   X                          
+    90C4  72 00 00 34 00 btjt   $34,#0,L_90C9              
+L_90C9:
+    90C9  59             rlcw   X                          
+    90CA  1F 01          ldw    ($1,SP),X                  
+    90CC  1E 03          ldw    X,($3,SP)                  
+    90CE  A3 00 FC       cpw    X,#$FC                     
+    90D1  26 05          jrne   L_90D8                     
+    90D3  AE 00 01       ldw    X,#$1                      
+    90D6  20 01          jra    L_90D9                     
+L_90D8:
+    90D8  5F             clrw   X                          
+L_90D9:
+    90D9  01             rrwa   X                          
+    90DA  14 02          and    A,($2,SP)                  
+    90DC  01             rrwa   X                          
+    90DD  14 01          and    A,($1,SP)                  
+    90DF  01             rrwa   X                          
+    90E0  5D             tnzw   X                          
+    90E1  27 02          jreq   L_90E5                     
+    90E3  03 05          cpl    ($5,SP)                    
+L_90E5:
+    90E5  7B 05          ld     A,($5,SP)                  
+    90E7  CD 97 9C       call   sub_979C                   
+L_90EA:
+    90EA  AE 07 84       ldw    X,#$784                    
+    90ED  CD 97 A0       call   I2C_CheckEvent             
+    90F0  4D             tnz    A                          
+    90F1  27 F7          jreq   L_90EA                     
+    90F3  1E 03          ldw    X,($3,SP)                  
+    90F5  5C             incw   X                          
+    90F6  1F 03          ldw    ($3,SP),X                  
+    90F8  A3 01 00       cpw    X,#$100                    
+    90FB  25 C6          jrult  clear_inverse_quirk        
+    90FD  A6 01          ld     A,#$1                      
+    90FF  CD 97 26       call   sub_9726                   
+    9102  5B 05          add    SP,#$5                     
+    9104  81             ret                               
+sub_9105:
+    9105  89             pushw  X                          
+    9106  89             pushw  X                          
+    9107  72 03 00 34 04 btjf   $34,#1,L_9110              
+    910C  A6 1C          ld     A,#$1C                     
+    910E  20 02          jra    L_9112                     
+L_9110:
+    9110  A6 07          ld     A,#$7                      
+L_9112:
+    9112  6B 01          ld     ($1,SP),A                  
+    9114  7B 03          ld     A,($3,SP)                  
+    9116  A4 07          and    A,#$7                      
+    9118  A0 07          sub    A,#$7                      
+    911A  40             neg    A                          
+    911B  48             sla    A                          
+    911C  48             sla    A                          
+    911D  48             sla    A                          
+    911E  6B 03          ld     ($3,SP),A                  
+    9120  AE 21 00       ldw    X,#$2100                   
+    9123  CD 90 2B       call   oled_command               
+    9126  7B 03          ld     A,($3,SP)                  
+    9128  AB 20          add    A,#$20                     
+    912A  5F             clrw   X                          
+    912B  95             ld     XH,A                       
+    912C  CD 90 2B       call   oled_command               
+    912F  7B 03          ld     A,($3,SP)                  
+    9131  AB 26          add    A,#$26                     
+    9133  5F             clrw   X                          
+    9134  95             ld     XH,A                       
+    9135  CD 90 2B       call   oled_command               
+    9138  AE 22 00       ldw    X,#$2200                   
+    913B  CD 90 2B       call   oled_command               
+    913E  72 03 00 34 05 btjf   $34,#1,L_9148              
+    9143  AE 04 00       ldw    X,#$400                    
+    9146  20 03          jra    L_914B                     
+L_9148:
+    9148  AE 07 00       ldw    X,#$700                    
+L_914B:
+    914B  CD 90 2B       call   oled_command               
+    914E  AE 07 00       ldw    X,#$700                    
+    9151  CD 90 2B       call   oled_command               
+    9154  A6 01          ld     A,#$1                      
+    9156  CD 97 19       call   sub_9719                   
+L_9159:
+    9159  AE 03 01       ldw    X,#$301                    
+    915C  CD 97 A0       call   I2C_CheckEvent             
+    915F  4D             tnz    A                          
+    9160  27 F7          jreq   L_9159                     
+    9162  AE 78 00       ldw    X,#$7800                   
+    9165  CD 97 8E       call   sub_978E                   
+L_9168:
+    9168  AE 07 82       ldw    X,#$782                    
+    916B  CD 97 A0       call   I2C_CheckEvent             
+    916E  4D             tnz    A                          
+    916F  27 F7          jreq   L_9168                     
+    9171  A6 60          ld     A,#$60                     
+    9173  CD 97 9C       call   sub_979C                   
+L_9176:
+    9176  AE 07 80       ldw    X,#$780                    
+    9179  CD 97 A0       call   I2C_CheckEvent             
+    917C  4D             tnz    A                          
+    917D  27 F7          jreq   L_9176                     
+    917F  0F 02          clr    ($2,SP)                    
+    9181  20 47          jra    L_91CA                     
+L_9183:
+    9183  7B 04          ld     A,($4,SP)                  
+    9185  4A             dec    A                          
+    9186  26 1B          jrne   L_91A3                     
+    9188  7B 02          ld     A,($2,SP)                  
+    918A  5F             clrw   X                          
+    918B  4D             tnz    A                          
+    918C  72 03 00 34 09 btjf   $34,#1,L_919A              
+    9191  2A 01          jrpl   L_9194                     
+    9193  53             cplw   X                          
+L_9194:
+    9194  97             ld     XL,A                       
+    9195  D6 80 B1       ld     A,($80B1,X)                
+    9198  20 22          jra    L_91BC                     
+L_919A:
+    919A  2A 01          jrpl   L_919D                     
+    919C  53             cplw   X                          
+L_919D:
+    919D  97             ld     XL,A                       
+    919E  D6 80 D4       ld     A,($80D4,X)                
+    91A1  20 19          jra    L_91BC                     
+L_91A3:
+    91A3  7B 02          ld     A,($2,SP)                  
+    91A5  5F             clrw   X                          
+    91A6  4D             tnz    A                          
+    91A7  72 03 00 34 09 btjf   $34,#1,L_91B5              
+    91AC  2A 01          jrpl   L_91AF                     
+    91AE  53             cplw   X                          
+L_91AF:
+    91AF  97             ld     XL,A                       
+    91B0  D6 80 95       ld     A,($8095,X)                
+    91B3  20 07          jra    L_91BC                     
+L_91B5:
+    91B5  2A 01          jrpl   L_91B8                     
+    91B7  53             cplw   X                          
+L_91B8:
+    91B8  97             ld     XL,A                       
+    91B9  D6 80 CD       ld     A,($80CD,X)                
+L_91BC:
+    91BC  CD 97 9C       call   sub_979C                   
+L_91BF:
+    91BF  AE 07 84       ldw    X,#$784                    
+    91C2  CD 97 A0       call   I2C_CheckEvent             
+    91C5  4D             tnz    A                          
+    91C6  27 F7          jreq   L_91BF                     
+    91C8  0C 02          inc    ($2,SP)                    
+L_91CA:
+    91CA  7B 02          ld     A,($2,SP)                  
+    91CC  11 01          cp     A,($1,SP)                  
+    91CE  2F B3          jrslt  L_9183                     
+    91D0  A6 01          ld     A,#$1                      
+    91D2  CD 97 26       call   sub_9726                   
+    91D5  5B 04          add    SP,#$4                     
+    91D7  81             ret                               
+sub_91D8:
+    91D8  89             pushw  X                          
+    91D9  52 06          sub    SP,#$6                     
+    91DB  5F             clrw   X                          
+    91DC  1F 03          ldw    ($3,SP),X                  
+    91DE  0F 05          clr    ($5,SP)                    
+    91E0  20 13          jra    L_91F5                     
+L_91E2:
+    91E2  1E 03          ldw    X,($3,SP)                  
+    91E4  72 05 00 34 05 btjf   $34,#2,L_91EE              
+    91E9  1C 00 60       addw   X,#$60                     
+    91EC  20 03          jra    L_91F1                     
+L_91EE:
+    91EE  1C 00 2A       addw   X,#$2A                     
+L_91F1:
+    91F1  1F 03          ldw    ($3,SP),X                  
+    91F3  0C 05          inc    ($5,SP)                    
+L_91F5:
+    91F5  7B 05          ld     A,($5,SP)                  
+    91F7  5F             clrw   X                          
+    91F8  4D             tnz    A                          
+    91F9  2A 01          jrpl   L_91FC                     
+    91FB  53             cplw   X                          
+L_91FC:
+    91FC  97             ld     XL,A                       
+    91FD  7B 07          ld     A,($7,SP)                  
+    91FF  90 5F          clrw   Y                          
+    9201  90 97          ld     YL,A                       
+    9203  90 BF 31       ldw    $31,Y                      
+    9206  B3 31          cpw    X,$31                      
+    9208  2F D8          jrslt  L_91E2                     
+    920A  AE 21 00       ldw    X,#$2100                   
+    920D  CD 90 2B       call   oled_command               
+    9210  7B 08          ld     A,($8,SP)                  
+    9212  5F             clrw   X                          
+    9213  95             ld     XH,A                       
+    9214  CD 90 2B       call   oled_command               
+    9217  7B 08          ld     A,($8,SP)                  
+    9219  72 05 00 34 04 btjf   $34,#2,L_9222              
+    921E  AB 17          add    A,#$17                     
+    9220  20 02          jra    L_9224                     
+L_9222:
+    9222  AB 0D          add    A,#$D                      
+L_9224:
+    9224  5F             clrw   X                          
+    9225  95             ld     XH,A                       
+    9226  CD 90 2B       call   oled_command               
+    9229  AE 22 00       ldw    X,#$2200                   
+    922C  CD 90 2B       call   oled_command               
+    922F  AE 04 00       ldw    X,#$400                    
+    9232  CD 90 2B       call   oled_command               
+    9235  72 05 00 34 05 btjf   $34,#2,L_923F              
+    923A  AE 07 00       ldw    X,#$700                    
+    923D  20 03          jra    L_9242                     
+L_923F:
+    923F  AE 06 00       ldw    X,#$600                    
+L_9242:
+    9242  CD 90 2B       call   oled_command               
+    9245  A6 01          ld     A,#$1                      
+    9247  CD 97 19       call   sub_9719                   
+L_924A:
+    924A  AE 03 01       ldw    X,#$301                    
+    924D  CD 97 A0       call   I2C_CheckEvent             
+    9250  4D             tnz    A                          
+    9251  27 F7          jreq   L_924A                     
+    9253  AE 78 00       ldw    X,#$7800                   
+    9256  CD 97 8E       call   sub_978E                   
+L_9259:
+    9259  AE 07 82       ldw    X,#$782                    
+    925C  CD 97 A0       call   I2C_CheckEvent             
+    925F  4D             tnz    A                          
+    9260  27 F7          jreq   L_9259                     
+    9262  A6 60          ld     A,#$60                     
+    9264  CD 97 9C       call   sub_979C                   
+L_9267:
+    9267  AE 07 80       ldw    X,#$780                    
+    926A  CD 97 A0       call   I2C_CheckEvent             
+    926D  4D             tnz    A                          
+    926E  27 F7          jreq   L_9267                     
+    9270  72 05 00 34 43 btjf   $34,#2,L_92B8              
+    9275  0F 05          clr    ($5,SP)                    
+L_9277:
+    9277  A6 03          ld     A,#$3                      
+    9279  6B 06          ld     ($6,SP),A                  
+L_927B:
+    927B  5F             clrw   X                          
+    927C  4D             tnz    A                          
+    927D  2A 01          jrpl   L_9280                     
+    927F  53             cplw   X                          
+L_9280:
+    9280  97             ld     XL,A                       
+    9281  1F 01          ldw    ($1,SP),X                  
+    9283  5F             clrw   X                          
+    9284  7B 05          ld     A,($5,SP)                  
+    9286  4D             tnz    A                          
+    9287  2A 01          jrpl   L_928A                     
+    9289  53             cplw   X                          
+L_928A:
+    928A  97             ld     XL,A                       
+    928B  72 FB 03       addw   X,($3,SP)                  
+    928E  72 FB 01       addw   X,($1,SP)                  
+    9291  D6 83 7B       ld     A,($837B,X)                
+    9294  CD 97 9C       call   sub_979C                   
+L_9297:
+    9297  AE 07 84       ldw    X,#$784                    
+    929A  CD 97 A0       call   I2C_CheckEvent             
+    929D  4D             tnz    A                          
+    929E  27 F7          jreq   L_9297                     
+    92A0  0A 06          dec    ($6,SP)                    
+    92A2  7B 06          ld     A,($6,SP)                  
+    92A4  2A D5          jrpl   L_927B                     
+    92A6  7B 05          ld     A,($5,SP)                  
+    92A8  AB 04          add    A,#$4                      
+    92AA  6B 05          ld     ($5,SP),A                  
+    92AC  A1 60          cp     A,#$60                     
+    92AE  2F C7          jrslt  L_9277                     
+L_92B0:
+    92B0  A6 01          ld     A,#$1                      
+    92B2  CD 97 26       call   sub_9726                   
+    92B5  5B 08          add    SP,#$8                     
+    92B7  81             ret                               
+L_92B8:
+    92B8  0F 05          clr    ($5,SP)                    
+L_92BA:
+    92BA  A6 02          ld     A,#$2                      
+    92BC  6B 06          ld     ($6,SP),A                  
+L_92BE:
+    92BE  5F             clrw   X                          
+    92BF  4D             tnz    A                          
+    92C0  2A 01          jrpl   L_92C3                     
+    92C2  53             cplw   X                          
+L_92C3:
+    92C3  97             ld     XL,A                       
+    92C4  1F 01          ldw    ($1,SP),X                  
+    92C6  5F             clrw   X                          
+    92C7  7B 05          ld     A,($5,SP)                  
+    92C9  4D             tnz    A                          
+    92CA  2A 01          jrpl   L_92CD                     
+    92CC  53             cplw   X                          
+L_92CD:
+    92CD  97             ld     XL,A                       
+    92CE  72 FB 03       addw   X,($3,SP)                  
+    92D1  72 FB 01       addw   X,($1,SP)                  
+    92D4  D6 80 DB       ld     A,($80DB,X)                
+    92D7  CD 97 9C       call   sub_979C                   
+L_92DA:
+    92DA  AE 07 84       ldw    X,#$784                    
+    92DD  CD 97 A0       call   I2C_CheckEvent             
+    92E0  4D             tnz    A                          
+    92E1  27 F7          jreq   L_92DA                     
+    92E3  0A 06          dec    ($6,SP)                    
+    92E5  7B 06          ld     A,($6,SP)                  
+    92E7  2A D5          jrpl   L_92BE                     
+    92E9  7B 05          ld     A,($5,SP)                  
+    92EB  AB 03          add    A,#$3                      
+    92ED  6B 05          ld     ($5,SP),A                  
+    92EF  A1 2A          cp     A,#$2A                     
+    92F1  2F C7          jrslt  L_92BA                     
+    92F3  20 BB          jra    L_92B0                     
+
+; Draw die face A (0-5 = 1-6 pips) at x 16-47.
+draw_face:
+    92F5  88             push   A                          
+    92F6  52 04          sub    SP,#$4                     
+    92F8  5F             clrw   X                          
+    92F9  1F 01          ldw    ($1,SP),X                  
+    92FB  20 0A          jra    L_9307                     
+L_92FD:
+    92FD  1E 01          ldw    X,($1,SP)                  
+    92FF  1C 00 80       addw   X,#$80                     
+    9302  1F 01          ldw    ($1,SP),X                  
+    9304  1E 03          ldw    X,($3,SP)                  
+    9306  5C             incw   X                          
+L_9307:
+    9307  1F 03          ldw    ($3,SP),X                  
+    9309  5F             clrw   X                          
+    930A  7B 05          ld     A,($5,SP)                  
+    930C  97             ld     XL,A                       
+    930D  BF 2E          ldw    $2E,X                      
+    930F  1E 03          ldw    X,($3,SP)                  
+    9311  B3 2E          cpw    X,$2E                      
+    9313  2F E8          jrslt  L_92FD                     
+    9315  AE 21 00       ldw    X,#$2100                   
+    9318  CD 90 2B       call   oled_command               
+    931B  AE 30 00       ldw    X,#$3000                   
+    931E  CD 90 2B       call   oled_command               
+    9321  AE 4F 00       ldw    X,#$4F00                   
+    9324  CD 90 2B       call   oled_command               
+    9327  AE 22 00       ldw    X,#$2200                   
+    932A  CD 90 2B       call   oled_command               
+    932D  AE 04 00       ldw    X,#$400                    
+    9330  CD 90 2B       call   oled_command               
+    9333  AE 07 00       ldw    X,#$700                    
+    9336  CD 90 2B       call   oled_command               
+    9339  A6 01          ld     A,#$1                      
+    933B  CD 97 19       call   sub_9719                   
+L_933E:
+    933E  AE 03 01       ldw    X,#$301                    
+    9341  CD 97 A0       call   I2C_CheckEvent             
+    9344  4D             tnz    A                          
+    9345  27 F7          jreq   L_933E                     
+    9347  AE 78 00       ldw    X,#$7800                   
+    934A  CD 97 8E       call   sub_978E                   
+L_934D:
+    934D  AE 07 82       ldw    X,#$782                    
+    9350  CD 97 A0       call   I2C_CheckEvent             
+    9353  4D             tnz    A                          
+    9354  27 F7          jreq   L_934D                     
+    9356  A6 60          ld     A,#$60                     
+    9358  CD 97 9C       call   sub_979C                   
+L_935B:
+    935B  AE 07 80       ldw    X,#$780                    
+    935E  CD 97 A0       call   I2C_CheckEvent             
+    9361  4D             tnz    A                          
+    9362  27 F7          jreq   L_935B                     
+    9364  5F             clrw   X                          
+    9365  1F 03          ldw    ($3,SP),X                  
+L_9367:
+    9367  1E 01          ldw    X,($1,SP)                  
+    9369  72 FB 03       addw   X,($3,SP)                  
+    936C  D6 89 7B       ld     A,($897B,X)                
+    936F  CD 97 9C       call   sub_979C                   
+L_9372:
+    9372  AE 07 84       ldw    X,#$784                    
+    9375  CD 97 A0       call   I2C_CheckEvent             
+    9378  4D             tnz    A                          
+    9379  27 F7          jreq   L_9372                     
+    937B  1E 03          ldw    X,($3,SP)                  
+    937D  5C             incw   X                          
+    937E  1F 03          ldw    ($3,SP),X                  
+    9380  A3 00 80       cpw    X,#$80                     
+    9383  2F E2          jrslt  L_9367                     
+    9385  A6 01          ld     A,#$1                      
+    9387  CD 97 26       call   sub_9726                   
+    938A  5B 05          add    SP,#$5                     
+    938C  81             ret                               
+
+; b0-b7: floating inputs in the normal views, pull-up inputs in Dice.
+setup_b_inputs:
+    938D  88             push   A                          
+    938E  0F 01          clr    ($1,SP)                    
+    9390  72 07 00 34 04 btjf   $34,#3,L_9399              
+    9395  A6 40          ld     A,#$40                     
+    9397  6B 01          ld     ($1,SP),A                  
+L_9399:
+    9399  7B 01          ld     A,($1,SP)                  
+    939B  88             push   A                          
+    939C  4B 80          push   #$80                       
+    939E  BE 10          ldw    X,$10                      
+    93A0  CD 98 A2       call   GPIO_Init                  
+    93A3  85             popw   X                          
+    93A4  7B 01          ld     A,($1,SP)                  
+    93A6  88             push   A                          
+    93A7  4B 40          push   #$40                       
+    93A9  BE 0E          ldw    X,$E                       
+    93AB  CD 98 A2       call   GPIO_Init                  
+    93AE  85             popw   X                          
+    93AF  7B 01          ld     A,($1,SP)                  
+    93B1  88             push   A                          
+    93B2  4B 20          push   #$20                       
+    93B4  BE 0C          ldw    X,$C                       
+    93B6  CD 98 A2       call   GPIO_Init                  
+    93B9  85             popw   X                          
+    93BA  7B 01          ld     A,($1,SP)                  
+    93BC  88             push   A                          
+    93BD  4B 10          push   #$10                       
+    93BF  BE 0A          ldw    X,$A                       
+    93C1  CD 98 A2       call   GPIO_Init                  
+    93C4  85             popw   X                          
+    93C5  7B 01          ld     A,($1,SP)                  
+    93C7  88             push   A                          
+    93C8  4B 08          push   #$8                        
+    93CA  BE 08          ldw    X,$8                       
+    93CC  CD 98 A2       call   GPIO_Init                  
+    93CF  85             popw   X                          
+    93D0  7B 01          ld     A,($1,SP)                  
+    93D2  88             push   A                          
+    93D3  4B 40          push   #$40                       
+    93D5  BE 06          ldw    X,$6                       
+    93D7  CD 98 A2       call   GPIO_Init                  
+    93DA  85             popw   X                          
+    93DB  7B 01          ld     A,($1,SP)                  
+    93DD  88             push   A                          
+    93DE  4B 20          push   #$20                       
+    93E0  BE 04          ldw    X,$4                       
+    93E2  CD 98 A2       call   GPIO_Init                  
+    93E5  85             popw   X                          
+    93E6  7B 01          ld     A,($1,SP)                  
+    93E8  88             push   A                          
+    93E9  4B 10          push   #$10                       
+    93EB  BE 02          ldw    X,$2                       
+    93ED  CD 98 A2       call   GPIO_Init                  
+    93F0  5B 03          add    SP,#$3                     
+    93F2  81             ret                               
+
+; PD3 pull-up input with its interrupt (falling edge).
+setup_pd3:
+    93F3  4B 40          push   #$40                       
+    93F5  4B 02          push   #$2                        
+    93F7  BE 12          ldw    X,$12                      
+    93F9  CD 98 A2       call   GPIO_Init                  
+    93FC  85             popw   X                          
+    93FD  4B 40          push   #$40                       
+    93FF  4B 04          push   #$4                        
+    9401  BE 14          ldw    X,$14                      
+    9403  CD 98 A2       call   GPIO_Init                  
+    9406  85             popw   X                          
+    9407  4B 40          push   #$40                       
+    9409  4B 08          push   #$8                        
+    940B  BE 16          ldw    X,$16                      
+    940D  CD 98 A2       call   GPIO_Init                  
+    9410  85             popw   X                          
+    9411  4B 40          push   #$40                       
+    9413  4B 04          push   #$4                        
+    9415  BE 18          ldw    X,$18                      
+    9417  CD 98 A2       call   GPIO_Init                  
+    941A  85             popw   X                          
+    941B  4B 60          push   #$60                       
+    941D  4B 08          push   #$8                        
+    941F  BE 1A          ldw    X,$1A                      
+    9421  CD 98 A2       call   GPIO_Init                  
+    9424  85             popw   X                          
+    9425  81             ret                               
+
+; b0-b7 into RAM $23.
+read_b:
+    9426  3F 23          clr    $23                        
+    9428  BE 10          ldw    X,$10                      
+    942A  E6 01          ld     A,($1,X)                   
+    942C  2A 04          jrpl   L_9432                     
+    942E  72 10 00 23    bset   $23,#0                     
+L_9432:
+    9432  BE 0E          ldw    X,$E                       
+    9434  E6 01          ld     A,($1,X)                   
+    9436  A5 40          bcp    A,#$40                     
+    9438  27 04          jreq   L_943E                     
+    943A  72 12 00 23    bset   $23,#1                     
+L_943E:
+    943E  BE 0C          ldw    X,$C                       
+    9440  E6 01          ld     A,($1,X)                   
+    9442  A5 20          bcp    A,#$20                     
+    9444  27 04          jreq   L_944A                     
+    9446  72 14 00 23    bset   $23,#2                     
+L_944A:
+    944A  BE 0A          ldw    X,$A                       
+    944C  E6 01          ld     A,($1,X)                   
+    944E  A5 10          bcp    A,#$10                     
+    9450  27 04          jreq   L_9456                     
+    9452  72 16 00 23    bset   $23,#3                     
+L_9456:
+    9456  BE 08          ldw    X,$8                       
+    9458  E6 01          ld     A,($1,X)                   
+    945A  A5 08          bcp    A,#$8                      
+    945C  27 04          jreq   L_9462                     
+    945E  72 18 00 23    bset   $23,#4                     
+L_9462:
+    9462  BE 06          ldw    X,$6                       
+    9464  E6 01          ld     A,($1,X)                   
+    9466  A5 40          bcp    A,#$40                     
+    9468  27 04          jreq   L_946E                     
+    946A  72 1A 00 23    bset   $23,#5                     
+L_946E:
+    946E  BE 04          ldw    X,$4                       
+    9470  E6 01          ld     A,($1,X)                   
+    9472  A5 20          bcp    A,#$20                     
+    9474  27 04          jreq   L_947A                     
+    9476  72 1C 00 23    bset   $23,#6                     
+L_947A:
+    947A  BE 02          ldw    X,$2                       
+    947C  E6 01          ld     A,($1,X)                   
+    947E  A5 10          bcp    A,#$10                     
+    9480  27 04          jreq   L_9486                     
+    9482  72 1E 00 23    bset   $23,#7                     
+L_9486:
+    9486  81             ret                               
+
+; The mode pins into RAM $21 and the view flags (RAM $34); live (read b0-b7)
+; when PD2 is high and nothing is latched.
+read_mode:
+    9487  3F 21          clr    $21                        
+    9489  BE 12          ldw    X,$12                      
+    948B  E6 01          ld     A,($1,X)                   
+    948D  A5 02          bcp    A,#$2                      
+    948F  27 04          jreq   L_9495                     
+    9491  72 10 00 21    bset   $21,#0                     
+L_9495:
+    9495  BE 14          ldw    X,$14                      
+    9497  E6 01          ld     A,($1,X)                   
+    9499  A5 04          bcp    A,#$4                      
+    949B  27 04          jreq   L_94A1                     
+    949D  72 12 00 21    bset   $21,#1                     
+L_94A1:
+    94A1  BE 16          ldw    X,$16                      
+    94A3  E6 01          ld     A,($1,X)                   
+    94A5  A5 08          bcp    A,#$8                      
+    94A7  27 04          jreq   L_94AD                     
+    94A9  72 14 00 21    bset   $21,#2                     
+L_94AD:
+    94AD  B6 21          ld     A,$21                      
+    94AF  A4 03          and    A,#$3                      
+    94B1  4A             dec    A                          
+    94B2  26 06          jrne   L_94BA                     
+    94B4  72 14 00 34    bset   $34,#2                     
+    94B8  20 04          jra    L_94BE                     
+L_94BA:
+    94BA  72 15 00 34    bres   $34,#2                     
+L_94BE:
+    94BE  B6 21          ld     A,$21                      
+    94C0  A4 03          and    A,#$3                      
+    94C2  A1 02          cp     A,#$2                      
+    94C4  26 06          jrne   L_94CC                     
+    94C6  72 12 00 34    bset   $34,#1                     
+    94CA  20 04          jra    L_94D0                     
+L_94CC:
+    94CC  72 13 00 34    bres   $34,#1                     
+L_94D0:
+    94D0  72 04 00 21 06 btjt   $21,#2,L_94DB              
+    94D5  72 10 00 34    bset   $34,#0                     
+    94D9  20 04          jra    L_94DF                     
+L_94DB:
+    94DB  72 11 00 34    bres   $34,#0                     
+L_94DF:
+    94DF  B6 21          ld     A,$21                      
+    94E1  A5 03          bcp    A,#$3                      
+    94E3  26 06          jrne   L_94EB                     
+    94E5  72 16 00 34    bset   $34,#3                     
+    94E9  20 04          jra    L_94EF                     
+L_94EB:
+    94EB  72 17 00 34    bres   $34,#3                     
+L_94EF:
+    94EF  72 0B 00 34 02 btjf   $34,#5,L_94F6              
+    94F4  20 0D          jra    L_9503                     
+L_94F6:
+    94F6  BE 18          ldw    X,$18                      
+    94F8  E6 01          ld     A,($1,X)                   
+    94FA  A5 04          bcp    A,#$4                      
+    94FC  27 05          jreq   L_9503                     
+    94FE  72 18 00 34    bset   $34,#4                     
+    9502  81             ret                               
+L_9503:
+    9503  72 19 00 34    bres   $34,#4                     
+    9507  81             ret                               
+
+; Draw the current view for RAM $23, over the old picture without clearing.
+redraw:
+    9508  72 05 00 34 17 btjf   $34,#2,L_9524              
+    950D  B6 23          ld     A,$23                      
+    950F  4E             swap   A                          
+    9510  A4 0F          and    A,#$F                      
+    9512  AE 00 26       ldw    X,#$26                     
+    9515  95             ld     XH,A                       
+    9516  CD 91 D8       call   sub_91D8                   
+    9519  B6 23          ld     A,$23                      
+    951B  A4 0F          and    A,#$F                      
+    951D  AE 00 41       ldw    X,#$41                     
+    9520  95             ld     XH,A                       
+    9521  CC 91 D8       jp     sub_91D8                   
+L_9524:
+    9524  72 02 00 34 17 btjt   $34,#1,L_9540              
+    9529  B6 23          ld     A,$23                      
+    952B  4E             swap   A                          
+    952C  A4 0F          and    A,#$F                      
+    952E  AE 00 2F       ldw    X,#$2F                     
+    9531  95             ld     XH,A                       
+    9532  CD 91 D8       call   sub_91D8                   
+    9535  B6 23          ld     A,$23                      
+    9537  A4 0F          and    A,#$F                      
+    9539  AE 00 42       ldw    X,#$42                     
+    953C  95             ld     XH,A                       
+    953D  CD 91 D8       call   sub_91D8                   
+L_9540:
+    9540  72 01 00 23 05 btjf   $23,#0,L_954A              
+    9545  AE 00 01       ldw    X,#$1                      
+    9548  20 01          jra    L_954B                     
+L_954A:
+    954A  5F             clrw   X                          
+L_954B:
+    954B  CD 91 05       call   sub_9105                   
+    954E  72 03 00 23 05 btjf   $23,#1,L_9558              
+    9553  AE 01 01       ldw    X,#$101                    
+    9556  20 03          jra    L_955B                     
+L_9558:
+    9558  AE 01 00       ldw    X,#$100                    
+L_955B:
+    955B  CD 91 05       call   sub_9105                   
+    955E  72 05 00 23 05 btjf   $23,#2,L_9568              
+    9563  AE 02 01       ldw    X,#$201                    
+    9566  20 03          jra    L_956B                     
+L_9568:
+    9568  AE 02 00       ldw    X,#$200                    
+L_956B:
+    956B  CD 91 05       call   sub_9105                   
+    956E  72 07 00 23 05 btjf   $23,#3,L_9578              
+    9573  AE 03 01       ldw    X,#$301                    
+    9576  20 03          jra    L_957B                     
+L_9578:
+    9578  AE 03 00       ldw    X,#$300                    
+L_957B:
+    957B  CD 91 05       call   sub_9105                   
+    957E  72 09 00 23 05 btjf   $23,#4,L_9588              
+    9583  AE 04 01       ldw    X,#$401                    
+    9586  20 03          jra    L_958B                     
+L_9588:
+    9588  AE 04 00       ldw    X,#$400                    
+L_958B:
+    958B  CD 91 05       call   sub_9105                   
+    958E  72 0B 00 23 05 btjf   $23,#5,L_9598              
+    9593  AE 05 01       ldw    X,#$501                    
+    9596  20 03          jra    L_959B                     
+L_9598:
+    9598  AE 05 00       ldw    X,#$500                    
+L_959B:
+    959B  CD 91 05       call   sub_9105                   
+    959E  72 0D 00 23 05 btjf   $23,#6,L_95A8              
+    95A3  AE 06 01       ldw    X,#$601                    
+    95A6  20 03          jra    L_95AB                     
+L_95A8:
+    95A8  AE 06 00       ldw    X,#$600                    
+L_95AB:
+    95AB  CD 91 05       call   sub_9105                   
+    95AE  72 0F 00 23 05 btjf   $23,#7,L_95B8              
+    95B3  AE 07 01       ldw    X,#$701                    
+    95B6  20 03          jra    L_95BB                     
+L_95B8:
+    95B8  AE 07 00       ldw    X,#$700                    
+L_95BB:
+    95BB  CC 91 05       jp     sub_9105                   
+sub_95BE:
+    95BE  72 5F 52 10    clr    I2C_CR1                    
+    95C2  72 5F 52 11    clr    I2C_CR2                    
+    95C6  72 5F 52 12    clr    I2C_FREQR                  
+    95CA  72 5F 52 13    clr    I2C_OARL                   
+    95CE  72 5F 52 14    clr    I2C_OARH                   
+    95D2  72 5F 52 1A    clr    I2C_ITR                    
+    95D6  72 5F 52 1B    clr    I2C_CCRL                   
+    95DA  72 5F 52 1C    clr    I2C_CCRH                   
+    95DE  35 02 52 1D    mov    I2C_TRISER,#$2             
+    95E2  81             ret                               
+
+; ST library.
+I2C_Init:
+    95E3  52 09          sub    SP,#$9                     
+    95E5  0F 07          clr    ($7,SP)                    
+    95E7  C6 52 12       ld     A,I2C_FREQR                
+    95EA  A4 C0          and    A,#$C0                     
+    95EC  C7 52 12       ld     I2C_FREQR,A                
+    95EF  C6 52 12       ld     A,I2C_FREQR                
+    95F2  1A 15          or     A,($15,SP)                 
+    95F4  C7 52 12       ld     I2C_FREQR,A                
+    95F7  72 11 52 10    bres   I2C_CR1,#0                 
+    95FB  C6 52 1C       ld     A,I2C_CCRH                 
+    95FE  A4 30          and    A,#$30                     
+    9600  C7 52 1C       ld     I2C_CCRH,A                 
+    9603  72 5F 52 1B    clr    I2C_CCRL                   
+    9607  96             ldw    X,SP                       
+    9608  1C 00 0C       addw   X,#$C                      
+    960B  CD 9C C8       call   sub_9CC8                   
+    960E  AE 8C 7F       ldw    X,#$8C7F                   
+    9611  CD 9C 1D       call   sub_9C1D                   
+    9614  25 7C          jrult  L_9692                     
+    9616  A6 80          ld     A,#$80                     
+    9618  6B 07          ld     ($7,SP),A                  
+    961A  96             ldw    X,SP                       
+    961B  0D 12          tnz    ($12,SP)                   
+    961D  26 2B          jrne   L_964A                     
+    961F  1C 00 0C       addw   X,#$C                      
+    9622  CD 9C C8       call   sub_9CC8                   
+    9625  A6 03          ld     A,#$3                      
+    9627  CD 9E 3E       call   sub_9E3E                   
+    962A  96             ldw    X,SP                       
+    962B  5C             incw   X                          
+    962C  CD 9E 01       call   sub_9E01                   
+    962F  7B 15          ld     A,($15,SP)                 
+    9631  B7 2D          ld     $2D,A                      
+    9633  3F 2C          clr    $2C                        
+    9635  3F 2B          clr    $2B                        
+    9637  3F 2A          clr    $2A                        
+    9639  AE 8C 83       ldw    X,#$8C83                   
+    963C  CD 9C 3D       call   sub_9C3D                   
+    963F  96             ldw    X,SP                       
+    9640  5C             incw   X                          
+    9641  CD 9C DA       call   sub_9CDA                   
+    9644  BE 2C          ldw    X,$2C                      
+    9646  1F 08          ldw    ($8,SP),X                  
+    9648  20 2F          jra    L_9679                     
+L_964A:
+    964A  1C 00 0C       addw   X,#$C                      
+    964D  CD 9C C8       call   sub_9CC8                   
+    9650  A6 19          ld     A,#$19                     
+    9652  CD 9E 3E       call   sub_9E3E                   
+    9655  96             ldw    X,SP                       
+    9656  5C             incw   X                          
+    9657  CD 9E 01       call   sub_9E01                   
+    965A  7B 15          ld     A,($15,SP)                 
+    965C  B7 2D          ld     $2D,A                      
+    965E  3F 2C          clr    $2C                        
+    9660  3F 2B          clr    $2B                        
+    9662  3F 2A          clr    $2A                        
+    9664  AE 8C 83       ldw    X,#$8C83                   
+    9667  CD 9C 3D       call   sub_9C3D                   
+    966A  96             ldw    X,SP                       
+    966B  5C             incw   X                          
+    966C  CD 9C DA       call   sub_9CDA                   
+    966F  BE 2C          ldw    X,$2C                      
+    9671  1F 08          ldw    ($8,SP),X                  
+    9673  7B 07          ld     A,($7,SP)                  
+    9675  AA 40          or     A,#$40                     
+    9677  6B 07          ld     ($7,SP),A                  
+L_9679:
+    9679  1E 08          ldw    X,($8,SP)                  
+    967B  26 03          jrne   L_9680                     
+    967D  5C             incw   X                          
+    967E  1F 08          ldw    ($8,SP),X                  
+L_9680:
+    9680  7B 15          ld     A,($15,SP)                 
+    9682  97             ld     XL,A                       
+    9683  A6 03          ld     A,#$3                      
+    9685  42             mul    X,A                        
+    9686  A6 0A          ld     A,#$A                      
+    9688  CD 9E 19       call   sub_9E19                   
+    968B  5C             incw   X                          
+    968C  1F 05          ldw    ($5,SP),X                  
+    968E  7B 06          ld     A,($6,SP)                  
+    9690  20 38          jra    L_96CA                     
+L_9692:
+    9692  96             ldw    X,SP                       
+    9693  1C 00 0C       addw   X,#$C                      
+    9696  CD 9C C8       call   sub_9CC8                   
+    9699  38 2D          sla    $2D                        
+    969B  39 2C          rlc    $2C                        
+    969D  39 2B          rlc    $2B                        
+    969F  96             ldw    X,SP                       
+    96A0  39 2A          rlc    $2A                        
+    96A2  5C             incw   X                          
+    96A3  CD 9E 01       call   sub_9E01                   
+    96A6  7B 15          ld     A,($15,SP)                 
+    96A8  B7 2D          ld     $2D,A                      
+    96AA  3F 2C          clr    $2C                        
+    96AC  3F 2B          clr    $2B                        
+    96AE  3F 2A          clr    $2A                        
+    96B0  AE 8C 83       ldw    X,#$8C83                   
+    96B3  CD 9C 3D       call   sub_9C3D                   
+    96B6  96             ldw    X,SP                       
+    96B7  5C             incw   X                          
+    96B8  CD 9C DA       call   sub_9CDA                   
+    96BB  BE 2C          ldw    X,$2C                      
+    96BD  A3 00 04       cpw    X,#$4                      
+    96C0  24 03          jruge  L_96C5                     
+    96C2  AE 00 04       ldw    X,#$4                      
+L_96C5:
+    96C5  1F 08          ldw    ($8,SP),X                  
+    96C7  7B 15          ld     A,($15,SP)                 
+    96C9  4C             inc    A                          
+L_96CA:
+    96CA  C7 52 1D       ld     I2C_TRISER,A               
+    96CD  7B 09          ld     A,($9,SP)                  
+    96CF  C7 52 1B       ld     I2C_CCRL,A                 
+    96D2  7B 08          ld     A,($8,SP)                  
+    96D4  A4 0F          and    A,#$F                      
+    96D6  1A 07          or     A,($7,SP)                  
+    96D8  C7 52 1C       ld     I2C_CCRH,A                 
+    96DB  72 10 52 10    bset   I2C_CR1,#0                 
+    96DF  7B 13          ld     A,($13,SP)                 
+    96E1  AD 6A          callr  sub_974D                   
+    96E3  7B 11          ld     A,($11,SP)                 
+    96E5  C7 52 13       ld     I2C_OARL,A                 
+    96E8  1E 10          ldw    X,($10,SP)                 
+    96EA  4F             clr    A                          
+    96EB  01             rrwa   X                          
+    96EC  48             sla    A                          
+    96ED  01             rrwa   X                          
+    96EE  49             rlc    A                          
+    96EF  A4 06          and    A,#$6                      
+    96F1  6B 04          ld     ($4,SP),A                  
+    96F3  7B 14          ld     A,($14,SP)                 
+    96F5  AA 40          or     A,#$40                     
+    96F7  1A 04          or     A,($4,SP)                  
+    96F9  C7 52 14       ld     I2C_OARH,A                 
+    96FC  5B 09          add    SP,#$9                     
+    96FE  81             ret                               
+sub_96FF:
+    96FF  4D             tnz    A                          
+    9700  27 05          jreq   L_9707                     
+    9702  72 10 52 10    bset   I2C_CR1,#0                 
+    9706  81             ret                               
+L_9707:
+    9707  72 11 52 10    bres   I2C_CR1,#0                 
+    970B  81             ret                               
+
+; ---- never called ----
+    970C  4D             tnz    A                          
+    970D  27 05          jreq   $9714                      
+    970F  72 1C 52 10    bset   I2C_CR1,#6                 
+    9713  81             ret                               
+    9714  72 1D 52 10    bres   I2C_CR1,#6                 
+    9718  81             ret                               
+sub_9719:
+    9719  4D             tnz    A                          
+    971A  27 05          jreq   L_9721                     
+    971C  72 10 52 11    bset   I2C_CR2,#0                 
+    9720  81             ret                               
+L_9721:
+    9721  72 11 52 11    bres   I2C_CR2,#0                 
+    9725  81             ret                               
+sub_9726:
+    9726  4D             tnz    A                          
+    9727  27 05          jreq   L_972E                     
+    9729  72 12 52 11    bset   I2C_CR2,#1                 
+    972D  81             ret                               
+L_972E:
+    972E  72 13 52 11    bres   I2C_CR2,#1                 
+    9732  81             ret                               
+
+; ---- never called ----
+    9733  4D             tnz    A                          
+    9734  27 05          jreq   $973B                      
+    9736  72 1E 52 11    bset   I2C_CR2,#7                 
+    973A  81             ret                               
+    973B  72 1F 52 11    bres   I2C_CR2,#7                 
+    973F  81             ret                               
+    9740  4D             tnz    A                          
+    9741  27 05          jreq   $9748                      
+    9743  72 1F 52 10    bres   I2C_CR1,#7                 
+    9747  81             ret                               
+    9748  72 1E 52 10    bset   I2C_CR1,#7                 
+    974C  81             ret                               
+sub_974D:
+    974D  4D             tnz    A                          
+    974E  26 05          jrne   L_9755                     
+    9750  72 15 52 11    bres   I2C_CR2,#2                 
+    9754  81             ret                               
+L_9755:
+    9755  72 14 52 11    bset   I2C_CR2,#2                 
+    9759  4A             dec    A                          
+    975A  26 05          jrne   L_9761                     
+    975C  72 17 52 11    bres   I2C_CR2,#3                 
+    9760  81             ret                               
+L_9761:
+    9761  72 16 52 11    bset   I2C_CR2,#3                 
+    9765  81             ret                               
+
+; ---- never called ----
+    9766  89             pushw  X                          
+    9767  9F             ld     A,XL                       
+    9768  4D             tnz    A                          
+    9769  27 06          jreq   $9771                      
+    976B  9E             ld     A,XH                       
+    976C  CA 52 1A       or     A,I2C_ITR                  
+    976F  20 06          jra    $9777                      
+    9771  7B 01          ld     A,($1,SP)                  
+    9773  43             cpl    A                          
+    9774  C4 52 1A       and    A,I2C_ITR                  
+    9777  C7 52 1A       ld     I2C_ITR,A                  
+    977A  85             popw   X                          
+    977B  81             ret                               
+    977C  A1 40          cp     A,#$40                     
+    977E  26 05          jrne   $9785                      
+    9780  72 1C 52 1C    bset   I2C_CCRH,#6                
+    9784  81             ret                               
+    9785  72 1D 52 1C    bres   I2C_CCRH,#6                
+    9789  81             ret                               
+    978A  C6 52 16       ld     A,I2C_DR                   
+    978D  81             ret                               
+sub_978E:
+    978E  89             pushw  X                          
+    978F  7B 01          ld     A,($1,SP)                  
+    9791  A4 FE          and    A,#$FE                     
+    9793  6B 01          ld     ($1,SP),A                  
+    9795  1A 02          or     A,($2,SP)                  
+    9797  C7 52 16       ld     I2C_DR,A                   
+    979A  85             popw   X                          
+    979B  81             ret                               
+sub_979C:
+    979C  C7 52 16       ld     I2C_DR,A                   
+    979F  81             ret                               
+
+; ST library: waits on I2C_SR1-SR3 for an event (unbounded: a missing OLED
+; hangs the firmware).
+I2C_CheckEvent:
+    97A0  89             pushw  X                          
+    97A1  52 06          sub    SP,#$6                     
+    97A3  5F             clrw   X                          
+    97A4  1F 04          ldw    ($4,SP),X                  
+    97A6  1E 07          ldw    X,($7,SP)                  
+    97A8  A3 00 04       cpw    X,#$4                      
+    97AB  26 09          jrne   L_97B6                     
+    97AD  C6 52 18       ld     A,I2C_SR2                  
+    97B0  A4 04          and    A,#$4                      
+    97B2  5F             clrw   X                          
+    97B3  97             ld     XL,A                       
+    97B4  20 1A          jra    L_97D0                     
+L_97B6:
+    97B6  C6 52 17       ld     A,I2C_SR1                  
+    97B9  6B 03          ld     ($3,SP),A                  
+    97BB  C6 52 19       ld     A,I2C_SR3                  
+    97BE  6B 06          ld     ($6,SP),A                  
+    97C0  5F             clrw   X                          
+    97C1  7B 03          ld     A,($3,SP)                  
+    97C3  97             ld     XL,A                       
+    97C4  1F 01          ldw    ($1,SP),X                  
+    97C6  5F             clrw   X                          
+    97C7  7B 06          ld     A,($6,SP)                  
+    97C9  97             ld     XL,A                       
+    97CA  7B 02          ld     A,($2,SP)                  
+    97CC  01             rrwa   X                          
+    97CD  1A 01          or     A,($1,SP)                  
+    97CF  01             rrwa   X                          
+L_97D0:
+    97D0  1F 04          ldw    ($4,SP),X                  
+    97D2  1E 04          ldw    X,($4,SP)                  
+    97D4  01             rrwa   X                          
+    97D5  14 08          and    A,($8,SP)                  
+    97D7  01             rrwa   X                          
+    97D8  14 07          and    A,($7,SP)                  
+    97DA  01             rrwa   X                          
+    97DB  13 07          cpw    X,($7,SP)                  
+    97DD  26 04          jrne   L_97E3                     
+    97DF  A6 01          ld     A,#$1                      
+    97E1  20 01          jra    L_97E4                     
+L_97E3:
+    97E3  4F             clr    A                          
+L_97E4:
+    97E4  5B 08          add    SP,#$8                     
+    97E6  81             ret                               
+
+; ---- never called ----
+    97E7  52 06          sub    SP,#$6                     
+    97E9  5F             clrw   X                          
+    97EA  1F 05          ldw    ($5,SP),X                  
+    97EC  72 05 52 18 05 btjf   I2C_SR2,#2,$97F6           
+    97F1  AE 00 04       ldw    X,#$4                      
+    97F4  20 13          jra    $9809                      
+    97F6  C6 52 17       ld     A,I2C_SR1                  
+    97F9  97             ld     XL,A                       
+    97FA  1F 01          ldw    ($1,SP),X                  
+    97FC  C6 52 19       ld     A,I2C_SR3                  
+    97FF  5F             clrw   X                          
+    9800  97             ld     XL,A                       
+    9801  1F 03          ldw    ($3,SP),X                  
+    9803  7B 02          ld     A,($2,SP)                  
+    9805  01             rrwa   X                          
+    9806  1A 01          or     A,($1,SP)                  
+    9808  01             rrwa   X                          
+    9809  1F 05          ldw    ($5,SP),X                  
+    980B  1E 05          ldw    X,($5,SP)                  
+    980D  5B 06          add    SP,#$6                     
+    980F  81             ret                               
+sub_9810:
+    9810  89             pushw  X                          
+    9811  89             pushw  X                          
+    9812  0F 02          clr    ($2,SP)                    
+    9814  9E             ld     A,XH                       
+    9815  6B 01          ld     ($1,SP),A                  
+    9817  4A             dec    A                          
+    9818  27 08          jreq   L_9822                     
+    981A  4A             dec    A                          
+    981B  27 0A          jreq   L_9827                     
+    981D  4A             dec    A                          
+    981E  27 0C          jreq   L_982C                     
+    9820  20 0F          jra    L_9831                     
+L_9822:
+    9822  C6 52 17       ld     A,I2C_SR1                  
+    9825  20 08          jra    L_982F                     
+L_9827:
+    9827  C6 52 18       ld     A,I2C_SR2                  
+    982A  20 03          jra    L_982F                     
+L_982C:
+    982C  C6 52 19       ld     A,I2C_SR3                  
+L_982F:
+    982F  6B 02          ld     ($2,SP),A                  
+L_9831:
+    9831  7B 04          ld     A,($4,SP)                  
+    9833  15 02          bcp    A,($2,SP)                  
+    9835  27 04          jreq   L_983B                     
+    9837  A6 01          ld     A,#$1                      
+    9839  20 01          jra    L_983C                     
+L_983B:
+    983B  4F             clr    A                          
+L_983C:
+    983C  5B 04          add    SP,#$4                     
+    983E  81             ret                               
+
+; ---- never called ----
+    983F  89             pushw  X                          
+    9840  01             rrwa   X                          
+    9841  5F             clrw   X                          
+    9842  02             rlwa   X                          
+    9843  1F 01          ldw    ($1,SP),X                  
+    9845  7B 02          ld     A,($2,SP)                  
+    9847  43             cpl    A                          
+    9848  C7 52 18       ld     I2C_SR2,A                  
+    984B  85             popw   X                          
+    984C  81             ret                               
+    984D  89             pushw  X                          
+    984E  52 04          sub    SP,#$4                     
+    9850  0F 03          clr    ($3,SP)                    
+    9852  9E             ld     A,XH                       
+    9853  A4 07          and    A,#$7                      
+    9855  5F             clrw   X                          
+    9856  97             ld     XL,A                       
+    9857  1F 01          ldw    ($1,SP),X                  
+    9859  C6 52 1A       ld     A,I2C_ITR                  
+    985C  14 02          and    A,($2,SP)                  
+    985E  6B 03          ld     ($3,SP),A                  
+    9860  7B 05          ld     A,($5,SP)                  
+    9862  A4 30          and    A,#$30                     
+    9864  97             ld     XL,A                       
+    9865  4F             clr    A                          
+    9866  02             rlwa   X                          
+    9867  A3 01 00       cpw    X,#$100                    
+    986A  26 0D          jrne   $9879                      
+    986C  C6 52 17       ld     A,I2C_SR1                  
+    986F  15 06          bcp    A,($6,SP)                  
+    9871  27 15          jreq   $9888                      
+    9873  0D 03          tnz    ($3,SP)                    
+    9875  27 11          jreq   $9888                      
+    9877  20 0B          jra    $9884                      
+    9879  C6 52 18       ld     A,I2C_SR2                  
+    987C  15 06          bcp    A,($6,SP)                  
+    987E  27 08          jreq   $9888                      
+    9880  0D 03          tnz    ($3,SP)                    
+    9882  27 04          jreq   $9888                      
+    9884  A6 01          ld     A,#$1                      
+    9886  20 01          jra    $9889                      
+    9888  4F             clr    A                          
+    9889  5B 06          add    SP,#$6                     
+    988B  81             ret                               
+    988C  89             pushw  X                          
+    988D  01             rrwa   X                          
+    988E  5F             clrw   X                          
+    988F  02             rlwa   X                          
+    9890  1F 01          ldw    ($1,SP),X                  
+    9892  7B 02          ld     A,($2,SP)                  
+    9894  43             cpl    A                          
+    9895  C7 52 18       ld     I2C_SR2,A                  
+    9898  85             popw   X                          
+    9899  81             ret                               
+
+; ST library.
+GPIO_DeInit:
+    989A  7F             clr    (X)                        
+    989B  6F 02          clr    ($2,X)                     
+    989D  6F 03          clr    ($3,X)                     
+    989F  6F 04          clr    ($4,X)                     
+    98A1  81             ret                               
+
+; ST library.
+GPIO_Init:
+    98A2  89             pushw  X                          
+    98A3  7B 05          ld     A,($5,SP)                  
+    98A5  43             cpl    A                          
+    98A6  E4 04          and    A,($4,X)                   
+    98A8  E7 04          ld     ($4,X),A                   
+    98AA  7B 06          ld     A,($6,SP)                  
+    98AC  2A 16          jrpl   L_98C4                     
+    98AE  A5 10          bcp    A,#$10                     
+    98B0  27 05          jreq   L_98B7                     
+    98B2  F6             ld     A,(X)                      
+    98B3  1A 05          or     A,($5,SP)                  
+    98B5  20 04          jra    L_98BB                     
+L_98B7:
+    98B7  7B 05          ld     A,($5,SP)                  
+    98B9  43             cpl    A                          
+    98BA  F4             and    A,(X)                      
+L_98BB:
+    98BB  F7             ld     (X),A                      
+    98BC  1E 01          ldw    X,($1,SP)                  
+    98BE  E6 02          ld     A,($2,X)                   
+    98C0  1A 05          or     A,($5,SP)                  
+    98C2  20 05          jra    L_98C9                     
+L_98C4:
+    98C4  7B 05          ld     A,($5,SP)                  
+    98C6  43             cpl    A                          
+    98C7  E4 02          and    A,($2,X)                   
+L_98C9:
+    98C9  E7 02          ld     ($2,X),A                   
+    98CB  7B 06          ld     A,($6,SP)                  
+    98CD  A5 40          bcp    A,#$40                     
+    98CF  27 06          jreq   L_98D7                     
+    98D1  E6 03          ld     A,($3,X)                   
+    98D3  1A 05          or     A,($5,SP)                  
+    98D5  20 05          jra    L_98DC                     
+L_98D7:
+    98D7  7B 05          ld     A,($5,SP)                  
+    98D9  43             cpl    A                          
+    98DA  E4 03          and    A,($3,X)                   
+L_98DC:
+    98DC  E7 03          ld     ($3,X),A                   
+    98DE  7B 06          ld     A,($6,SP)                  
+    98E0  A5 20          bcp    A,#$20                     
+    98E2  27 06          jreq   L_98EA                     
+    98E4  E6 04          ld     A,($4,X)                   
+    98E6  1A 05          or     A,($5,SP)                  
+    98E8  20 05          jra    L_98EF                     
+L_98EA:
+    98EA  7B 05          ld     A,($5,SP)                  
+    98EC  43             cpl    A                          
+    98ED  E4 04          and    A,($4,X)                   
+L_98EF:
+    98EF  E7 04          ld     ($4,X),A                   
+    98F1  85             popw   X                          
+    98F2  81             ret                               
+
+; ---- never called ----
+    98F3  7B 03          ld     A,($3,SP)                  
+    98F5  F7             ld     (X),A                      
+    98F6  81             ret                               
+    98F7  F6             ld     A,(X)                      
+    98F8  1A 03          or     A,($3,SP)                  
+    98FA  F7             ld     (X),A                      
+    98FB  81             ret                               
+    98FC  7B 03          ld     A,($3,SP)                  
+    98FE  43             cpl    A                          
+    98FF  F4             and    A,(X)                      
+    9900  F7             ld     (X),A                      
+    9901  81             ret                               
+    9902  F6             ld     A,(X)                      
+    9903  18 03          xor    A,($3,SP)                  
+    9905  F7             ld     (X),A                      
+    9906  81             ret                               
+    9907  F6             ld     A,(X)                      
+    9908  81             ret                               
+    9909  E6 01          ld     A,($1,X)                   
+    990B  81             ret                               
+    990C  E6 01          ld     A,($1,X)                   
+    990E  14 03          and    A,($3,SP)                  
+    9910  81             ret                               
+    9911  7B 04          ld     A,($4,SP)                  
+    9913  27 06          jreq   $991B                      
+    9915  E6 03          ld     A,($3,X)                   
+    9917  1A 03          or     A,($3,SP)                  
+    9919  20 05          jra    $9920                      
+    991B  7B 03          ld     A,($3,SP)                  
+    991D  43             cpl    A                          
+    991E  E4 03          and    A,($3,X)                   
+    9920  E7 03          ld     ($3,X),A                   
+    9922  81             ret                               
+    9923  35 01 50 C0    mov    CLK_ICKR,#$1               
+    9927  72 5F 50 C1    clr    $50C1                      
+    992B  35 E1 50 C4    mov    $50C4,#$E1                 
+    992F  72 5F 50 C5    clr    $50C5                      
+    9933  35 18 50 C6    mov    CLK_CKDIVR,#$18            
+    9937  35 FF 50 C7    mov    CLK_PCKENR1,#$FF           
+    993B  35 FF 50 CA    mov    CLK_PCKENR2,#$FF           
+    993F  72 5F 50 C8    clr    $50C8                      
+    9943  72 5F 50 C9    clr    $50C9                      
+    9947  72 00 50 C9 FB btjt   $50C9,#0,$9947             
+    994C  72 5F 50 C9    clr    $50C9                      
+    9950  72 5F 50 CC    clr    $50CC                      
+    9954  72 5F 50 CD    clr    $50CD                      
+    9958  81             ret                               
+    9959  4D             tnz    A                          
+    995A  27 05          jreq   $9961                      
+    995C  72 14 50 C0    bset   CLK_ICKR,#2                
+    9960  81             ret                               
+    9961  72 15 50 C0    bres   CLK_ICKR,#2                
+    9965  81             ret                               
+    9966  4D             tnz    A                          
+    9967  27 05          jreq   $996E                      
+    9969  72 10 50 C1    bset   $50C1,#0                   
+    996D  81             ret                               
+    996E  72 11 50 C1    bres   $50C1,#0                   
+    9972  81             ret                               
+    9973  4D             tnz    A                          
+    9974  27 05          jreq   $997B                      
+    9976  72 10 50 C0    bset   CLK_ICKR,#0                
+    997A  81             ret                               
+    997B  72 11 50 C0    bres   CLK_ICKR,#0                
+    997F  81             ret                               
+    9980  4D             tnz    A                          
+    9981  27 05          jreq   $9988                      
+    9983  72 16 50 C0    bset   CLK_ICKR,#3                
+    9987  81             ret                               
+    9988  72 17 50 C0    bres   CLK_ICKR,#3                
+    998C  81             ret                               
+    998D  4D             tnz    A                          
+    998E  27 05          jreq   $9995                      
+    9990  72 10 50 C9    bset   $50C9,#0                   
+    9994  81             ret                               
+    9995  72 11 50 C9    bres   $50C9,#0                   
+    9999  81             ret                               
+    999A  4D             tnz    A                          
+    999B  27 05          jreq   $99A2                      
+    999D  72 12 50 C5    bset   $50C5,#1                   
+    99A1  81             ret                               
+    99A2  72 13 50 C5    bres   $50C5,#1                   
+    99A6  81             ret                               
+    99A7  4D             tnz    A                          
+    99A8  27 05          jreq   $99AF                      
+    99AA  72 1A 50 C0    bset   CLK_ICKR,#5                
+    99AE  81             ret                               
+    99AF  72 1B 50 C0    bres   CLK_ICKR,#5                
+    99B3  81             ret                               
+    99B4  89             pushw  X                          
+    99B5  9E             ld     A,XH                       
+    99B6  A5 10          bcp    A,#$10                     
+    99B8  26 30          jrne   $99EA                      
+    99BA  7B 02          ld     A,($2,SP)                  
+    99BC  27 14          jreq   $99D2                      
+    99BE  7B 01          ld     A,($1,SP)                  
+    99C0  A4 0F          and    A,#$F                      
+    99C2  5F             clrw   X                          
+    99C3  97             ld     XL,A                       
+    99C4  A6 01          ld     A,#$1                      
+    99C6  5D             tnzw   X                          
+    99C7  27 04          jreq   $99CD                      
+    99C9  48             sla    A                          
+    99CA  5A             decw   X                          
+    99CB  26 FC          jrne   $99C9                      
+    99CD  CA 50 C7       or     A,CLK_PCKENR1              
+    99D0  20 13          jra    $99E5                      
+    99D2  7B 01          ld     A,($1,SP)                  
+    99D4  A4 0F          and    A,#$F                      
+    99D6  5F             clrw   X                          
+    99D7  97             ld     XL,A                       
+    99D8  A6 01          ld     A,#$1                      
+    99DA  5D             tnzw   X                          
+    99DB  27 04          jreq   $99E1                      
+    99DD  48             sla    A                          
+    99DE  5A             decw   X                          
+    99DF  26 FC          jrne   $99DD                      
+    99E1  43             cpl    A                          
+    99E2  C4 50 C7       and    A,CLK_PCKENR1              
+    99E5  C7 50 C7       ld     CLK_PCKENR1,A              
+    99E8  20 2E          jra    $9A18                      
+    99EA  7B 02          ld     A,($2,SP)                  
+    99EC  27 14          jreq   $9A02                      
+    99EE  7B 01          ld     A,($1,SP)                  
+    99F0  A4 0F          and    A,#$F                      
+    99F2  5F             clrw   X                          
+    99F3  97             ld     XL,A                       
+    99F4  A6 01          ld     A,#$1                      
+    99F6  5D             tnzw   X                          
+    99F7  27 04          jreq   $99FD                      
+    99F9  48             sla    A                          
+    99FA  5A             decw   X                          
+    99FB  26 FC          jrne   $99F9                      
+    99FD  CA 50 CA       or     A,CLK_PCKENR2              
+    9A00  20 13          jra    $9A15                      
+    9A02  7B 01          ld     A,($1,SP)                  
+    9A04  A4 0F          and    A,#$F                      
+    9A06  5F             clrw   X                          
+    9A07  97             ld     XL,A                       
+    9A08  A6 01          ld     A,#$1                      
+    9A0A  5D             tnzw   X                          
+    9A0B  27 04          jreq   $9A11                      
+    9A0D  48             sla    A                          
+    9A0E  5A             decw   X                          
+    9A0F  26 FC          jrne   $9A0D                      
+    9A11  43             cpl    A                          
+    9A12  C4 50 CA       and    A,CLK_PCKENR2              
+    9A15  C7 50 CA       ld     CLK_PCKENR2,A              
+    9A18  85             popw   X                          
+    9A19  81             ret                               
+    9A1A  89             pushw  X                          
+    9A1B  52 04          sub    SP,#$4                     
+    9A1D  AE 04 91       ldw    X,#$491                    
+    9A20  1F 03          ldw    ($3,SP),X                  
+    9A22  C6 50 C3       ld     A,$50C3                    
+    9A25  6B 01          ld     ($1,SP),A                  
+    9A27  7B 05          ld     A,($5,SP)                  
+    9A29  4A             dec    A                          
+    9A2A  26 2D          jrne   $9A59                      
+    9A2C  72 12 50 C5    bset   $50C5,#1                   
+    9A30  7B 09          ld     A,($9,SP)                  
+    9A32  27 06          jreq   $9A3A                      
+    9A34  72 14 50 C5    bset   $50C5,#2                   
+    9A38  20 04          jra    $9A3E                      
+    9A3A  72 15 50 C5    bres   $50C5,#2                   
+    9A3E  7B 06          ld     A,($6,SP)                  
+    9A40  C7 50 C4       ld     $50C4,A                    
+    9A43  20 03          jra    $9A48                      
+    9A45  5A             decw   X                          
+    9A46  1F 03          ldw    ($3,SP),X                  
+    9A48  72 01 50 C5 04 btjf   $50C5,#0,$9A51             
+    9A4D  1E 03          ldw    X,($3,SP)                  
+    9A4F  26 F4          jrne   $9A45                      
+    9A51  1E 03          ldw    X,($3,SP)                  
+    9A53  26 17          jrne   $9A6C                      
+    9A55  0F 02          clr    ($2,SP)                    
+    9A57  20 17          jra    $9A70                      
+    9A59  7B 09          ld     A,($9,SP)                  
+    9A5B  27 06          jreq   $9A63                      
+    9A5D  72 14 50 C5    bset   $50C5,#2                   
+    9A61  20 04          jra    $9A67                      
+    9A63  72 15 50 C5    bres   $50C5,#2                   
+    9A67  7B 06          ld     A,($6,SP)                  
+    9A69  C7 50 C4       ld     $50C4,A                    
+    9A6C  A6 01          ld     A,#$1                      
+    9A6E  6B 02          ld     ($2,SP),A                  
+    9A70  7B 0A          ld     A,($A,SP)                  
+    9A72  26 0C          jrne   $9A80                      
+    9A74  7B 01          ld     A,($1,SP)                  
+    9A76  A1 E1          cp     A,#$E1                     
+    9A78  26 06          jrne   $9A80                      
+    9A7A  72 11 50 C0    bres   CLK_ICKR,#0                
+    9A7E  20 1E          jra    $9A9E                      
+    9A80  7B 0A          ld     A,($A,SP)                  
+    9A82  26 0C          jrne   $9A90                      
+    9A84  7B 01          ld     A,($1,SP)                  
+    9A86  A1 D2          cp     A,#$D2                     
+    9A88  26 06          jrne   $9A90                      
+    9A8A  72 17 50 C0    bres   CLK_ICKR,#3                
+    9A8E  20 0E          jra    $9A9E                      
+    9A90  7B 0A          ld     A,($A,SP)                  
+    9A92  26 0A          jrne   $9A9E                      
+    9A94  7B 01          ld     A,($1,SP)                  
+    9A96  A1 B4          cp     A,#$B4                     
+    9A98  26 04          jrne   $9A9E                      
+    9A9A  72 11 50 C1    bres   $50C1,#0                   
+    9A9E  7B 02          ld     A,($2,SP)                  
+    9AA0  5B 06          add    SP,#$6                     
+    9AA2  81             ret                               
+
+; ST library: CLK_CKDIVR = $08 here, so the CPU runs at 8 MHz.
+CLK_HSIPrescalerConfig:
+    9AA3  88             push   A                          
+    9AA4  C6 50 C6       ld     A,CLK_CKDIVR               
+    9AA7  A4 E7          and    A,#$E7                     
+    9AA9  C7 50 C6       ld     CLK_CKDIVR,A               
+    9AAC  C6 50 C6       ld     A,CLK_CKDIVR               
+    9AAF  1A 01          or     A,($1,SP)                  
+    9AB1  C7 50 C6       ld     CLK_CKDIVR,A               
+    9AB4  84             pop    A                          
+    9AB5  81             ret                               
+
+; ---- never called ----
+    9AB6  88             push   A                          
+    9AB7  C6 50 C9       ld     A,$50C9                    
+    9ABA  A4 E1          and    A,#$E1                     
+    9ABC  C7 50 C9       ld     $50C9,A                    
+    9ABF  C6 50 C9       ld     A,$50C9                    
+    9AC2  1A 01          or     A,($1,SP)                  
+    9AC4  C7 50 C9       ld     $50C9,A                    
+    9AC7  72 10 50 C9    bset   $50C9,#0                   
+    9ACB  84             pop    A                          
+    9ACC  81             ret                               
+    9ACD  89             pushw  X                          
+    9ACE  9F             ld     A,XL                       
+    9ACF  4D             tnz    A                          
+    9AD0  27 15          jreq   $9AE7                      
+    9AD2  9E             ld     A,XH                       
+    9AD3  A0 0C          sub    A,#$C                      
+    9AD5  27 0A          jreq   $9AE1                      
+    9AD7  A0 10          sub    A,#$10                     
+    9AD9  26 20          jrne   $9AFB                      
+    9ADB  72 14 50 C5    bset   $50C5,#2                   
+    9ADF  20 1A          jra    $9AFB                      
+    9AE1  72 14 50 C8    bset   $50C8,#2                   
+    9AE5  20 14          jra    $9AFB                      
+    9AE7  7B 01          ld     A,($1,SP)                  
+    9AE9  A0 0C          sub    A,#$C                      
+    9AEB  27 0A          jreq   $9AF7                      
+    9AED  A0 10          sub    A,#$10                     
+    9AEF  26 0A          jrne   $9AFB                      
+    9AF1  72 15 50 C5    bres   $50C5,#2                   
+    9AF5  20 04          jra    $9AFB                      
+    9AF7  72 15 50 C8    bres   $50C8,#2                   
+    9AFB  85             popw   X                          
+    9AFC  81             ret                               
+
+; ST library.
+CLK_SYSCLKConfig:
+    9AFD  88             push   A                          
+    9AFE  A5 80          bcp    A,#$80                     
+    9B00  26 0E          jrne   L_9B10                     
+    9B02  C6 50 C6       ld     A,CLK_CKDIVR               
+    9B05  A4 E7          and    A,#$E7                     
+    9B07  C7 50 C6       ld     CLK_CKDIVR,A               
+    9B0A  7B 01          ld     A,($1,SP)                  
+    9B0C  A4 18          and    A,#$18                     
+    9B0E  20 0C          jra    L_9B1C                     
+L_9B10:
+    9B10  C6 50 C6       ld     A,CLK_CKDIVR               
+    9B13  A4 F8          and    A,#$F8                     
+    9B15  C7 50 C6       ld     CLK_CKDIVR,A               
+    9B18  7B 01          ld     A,($1,SP)                  
+    9B1A  A4 07          and    A,#$7                      
+L_9B1C:
+    9B1C  CA 50 C6       or     A,CLK_CKDIVR               
+    9B1F  C7 50 C6       ld     CLK_CKDIVR,A               
+    9B22  84             pop    A                          
+    9B23  81             ret                               
+
+; ---- never called ----
+    9B24  4D             tnz    A                          
+    9B25  27 05          jreq   $9B2C                      
+    9B27  72 10 50 CD    bset   $50CD,#0                   
+    9B2B  81             ret                               
+    9B2C  72 11 50 CD    bres   $50CD,#0                   
+    9B30  81             ret                               
+    9B31  72 10 50 C8    bset   $50C8,#0                   
+    9B35  81             ret                               
+    9B36  C6 50 C3       ld     A,$50C3                    
+    9B39  81             ret                               
+sub_9B3A:
+    9B3A  52 09          sub    SP,#$9                     
+    9B3C  C6 50 C3       ld     A,$50C3                    
+    9B3F  6B 09          ld     ($9,SP),A                  
+    9B41  A1 E1          cp     A,#$E1                     
+    9B43  26 34          jrne   L_9B79                     
+    9B45  C6 50 C6       ld     A,CLK_CKDIVR               
+    9B48  A4 18          and    A,#$18                     
+    9B4A  44             srl    A                          
+    9B4B  44             srl    A                          
+    9B4C  44             srl    A                          
+    9B4D  5F             clrw   X                          
+    9B4E  97             ld     XL,A                       
+    9B4F  D6 8C 87       ld     A,($8C87,X)                
+    9B52  6B 09          ld     ($9,SP),A                  
+    9B54  B7 2D          ld     $2D,A                      
+    9B56  3F 2C          clr    $2C                        
+    9B58  3F 2B          clr    $2B                        
+    9B5A  3F 2A          clr    $2A                        
+    9B5C  96             ldw    X,SP                       
+    9B5D  5C             incw   X                          
+    9B5E  CD 9E 01       call   sub_9E01                   
+    9B61  AE 24 00       ldw    X,#$2400                   
+    9B64  BF 2C          ldw    $2C,X                      
+    9B66  AE 00 F4       ldw    X,#$F4                     
+    9B69  BF 2A          ldw    $2A,X                      
+    9B6B  96             ldw    X,SP                       
+    9B6C  5C             incw   X                          
+    9B6D  CD 9C DA       call   sub_9CDA                   
+    9B70  96             ldw    X,SP                       
+    9B71  1C 00 05       addw   X,#$5                      
+    9B74  CD 9E 01       call   sub_9E01                   
+    9B77  20 18          jra    L_9B91                     
+L_9B79:
+    9B79  A1 D2          cp     A,#$D2                     
+    9B7B  26 0A          jrne   L_9B87                     
+    9B7D  AE F4 00       ldw    X,#$F400                   
+    9B80  1F 07          ldw    ($7,SP),X                  
+    9B82  AE 00 01       ldw    X,#$1                      
+    9B85  20 08          jra    L_9B8F                     
+L_9B87:
+    9B87  AE 24 00       ldw    X,#$2400                   
+    9B8A  1F 07          ldw    ($7,SP),X                  
+    9B8C  AE 00 F4       ldw    X,#$F4                     
+L_9B8F:
+    9B8F  1F 05          ldw    ($5,SP),X                  
+L_9B91:
+    9B91  96             ldw    X,SP                       
+    9B92  1C 00 05       addw   X,#$5                      
+    9B95  CD 9C C8       call   sub_9CC8                   
+    9B98  5B 09          add    SP,#$9                     
+    9B9A  81             ret                               
+
+; ---- never called ----
+    9B9B  88             push   A                          
+    9B9C  C6 50 CC       ld     A,$50CC                    
+    9B9F  A4 F8          and    A,#$F8                     
+    9BA1  1A 01          or     A,($1,SP)                  
+    9BA3  C7 50 CC       ld     $50CC,A                    
+    9BA6  84             pop    A                          
+    9BA7  81             ret                               
+    9BA8  72 11 50 C5    bres   $50C5,#0                   
+    9BAC  81             ret                               
+    9BAD  89             pushw  X                          
+    9BAE  52 03          sub    SP,#$3                     
+    9BB0  01             rrwa   X                          
+    9BB1  4F             clr    A                          
+    9BB2  02             rlwa   X                          
+    9BB3  1F 01          ldw    ($1,SP),X                  
+    9BB5  A3 01 00       cpw    X,#$100                    
+    9BB8  26 05          jrne   $9BBF                      
+    9BBA  C6 50 C0       ld     A,CLK_ICKR                 
+    9BBD  20 21          jra    $9BE0                      
+    9BBF  A3 02 00       cpw    X,#$200                    
+    9BC2  26 05          jrne   $9BC9                      
+    9BC4  C6 50 C1       ld     A,$50C1                    
+    9BC7  20 17          jra    $9BE0                      
+    9BC9  A3 03 00       cpw    X,#$300                    
+    9BCC  26 05          jrne   $9BD3                      
+    9BCE  C6 50 C5       ld     A,$50C5                    
+    9BD1  20 0D          jra    $9BE0                      
+    9BD3  A3 04 00       cpw    X,#$400                    
+    9BD6  26 05          jrne   $9BDD                      
+    9BD8  C6 50 C8       ld     A,$50C8                    
+    9BDB  20 03          jra    $9BE0                      
+    9BDD  C6 50 C9       ld     A,$50C9                    
+    9BE0  6B 03          ld     ($3,SP),A                  
+    9BE2  7B 05          ld     A,($5,SP)                  
+    9BE4  15 03          bcp    A,($3,SP)                  
+    9BE6  27 04          jreq   $9BEC                      
+    9BE8  A6 01          ld     A,#$1                      
+    9BEA  20 01          jra    $9BED                      
+    9BEC  4F             clr    A                          
+    9BED  5B 05          add    SP,#$5                     
+    9BEF  81             ret                               
+    9BF0  88             push   A                          
+    9BF1  88             push   A                          
+    9BF2  A1 1C          cp     A,#$1C                     
+    9BF4  26 09          jrne   $9BFF                      
+    9BF6  C4 50 C5       and    A,$50C5                    
+    9BF9  A1 0C          cp     A,#$C                      
+    9BFB  26 0F          jrne   $9C0C                      
+    9BFD  20 09          jra    $9C08                      
+    9BFF  C6 50 C8       ld     A,$50C8                    
+    9C02  14 02          and    A,($2,SP)                  
+    9C04  A1 0C          cp     A,#$C                      
+    9C06  26 04          jrne   $9C0C                      
+    9C08  A6 01          ld     A,#$1                      
+    9C0A  20 01          jra    $9C0D                      
+    9C0C  4F             clr    A                          
+    9C0D  85             popw   X                          
+    9C0E  81             ret                               
+    9C0F  A1 0C          cp     A,#$C                      
+    9C11  26 05          jrne   $9C18                      
+    9C13  72 17 50 C8    bres   $50C8,#3                   
+    9C17  81             ret                               
+    9C18  72 17 50 C5    bres   $50C5,#3                   
+    9C1C  81             ret                               
+sub_9C1D:
+    9C1D  B6 2A          ld     A,$2A                      
+    9C1F  F1             cp     A,(X)                      
+    9C20  26 1A          jrne   L_9C3C                     
+    9C22  B6 2B          ld     A,$2B                      
+    9C24  E1 01          cp     A,($1,X)                   
+    9C26  26 0C          jrne   L_9C34                     
+    9C28  B6 2C          ld     A,$2C                      
+    9C2A  E1 02          cp     A,($2,X)                   
+    9C2C  26 06          jrne   L_9C34                     
+    9C2E  B6 2D          ld     A,$2D                      
+    9C30  E1 03          cp     A,($3,X)                   
+    9C32  27 08          jreq   L_9C3C                     
+L_9C34:
+    9C34  9C             rvf                               
+    9C35  24 03          jruge  L_9C3A                     
+    9C37  A6 FF          ld     A,#$FF                     
+    9C39  81             ret                               
+L_9C3A:
+    9C3A  A6 01          ld     A,#$1                      
+L_9C3C:
+    9C3C  81             ret                               
+sub_9C3D:
+    9C3D  E6 03          ld     A,($3,X)                   
+    9C3F  88             push   A                          
+    9C40  E6 02          ld     A,($2,X)                   
+    9C42  88             push   A                          
+    9C43  FE             ldw    X,(X)                      
+    9C44  89             pushw  X                          
+    9C45  1E 03          ldw    X,($3,SP)                  
+    9C47  B6 2A          ld     A,$2A                      
+    9C49  42             mul    X,A                        
+    9C4A  BF 2E          ldw    $2E,X                      
+    9C4C  BE 2A          ldw    X,$2A                      
+    9C4E  7B 03          ld     A,($3,SP)                  
+    9C50  42             mul    X,A                        
+    9C51  72 BB 00 2E    addw   X,$2E                      
+    9C55  BF 2E          ldw    $2E,X                      
+    9C57  BE 2B          ldw    X,$2B                      
+    9C59  7B 02          ld     A,($2,SP)                  
+    9C5B  42             mul    X,A                        
+    9C5C  72 BB 00 2E    addw   X,$2E                      
+    9C60  BF 2E          ldw    $2E,X                      
+    9C62  BE 2C          ldw    X,$2C                      
+    9C64  7B 01          ld     A,($1,SP)                  
+    9C66  42             mul    X,A                        
+    9C67  72 BB 00 2E    addw   X,$2E                      
+    9C6B  9F             ld     A,XL                       
+    9C6C  B7 2A          ld     $2A,A                      
+    9C6E  BE 2A          ldw    X,$2A                      
+    9C70  7B 04          ld     A,($4,SP)                  
+    9C72  3F 2B          clr    $2B                        
+    9C74  42             mul    X,A                        
+    9C75  72 BB 00 2A    addw   X,$2A                      
+    9C79  BF 2A          ldw    $2A,X                      
+    9C7B  BE 2B          ldw    X,$2B                      
+    9C7D  7B 03          ld     A,($3,SP)                  
+    9C7F  42             mul    X,A                        
+    9C80  72 BB 00 2A    addw   X,$2A                      
+    9C84  BF 2A          ldw    $2A,X                      
+    9C86  BE 2C          ldw    X,$2C                      
+    9C88  7B 02          ld     A,($2,SP)                  
+    9C8A  42             mul    X,A                        
+    9C8B  72 BB 00 2A    addw   X,$2A                      
+    9C8F  BF 2A          ldw    $2A,X                      
+    9C91  BE 2B          ldw    X,$2B                      
+    9C93  7B 04          ld     A,($4,SP)                  
+    9C95  3F 2C          clr    $2C                        
+    9C97  42             mul    X,A                        
+    9C98  72 BB 00 2B    addw   X,$2B                      
+    9C9C  BF 2B          ldw    $2B,X                      
+    9C9E  24 02          jruge  L_9CA2                     
+    9CA0  3C 2A          inc    $2A                        
+L_9CA2:
+    9CA2  BE 2C          ldw    X,$2C                      
+    9CA4  7B 03          ld     A,($3,SP)                  
+    9CA6  42             mul    X,A                        
+    9CA7  72 BB 00 2B    addw   X,$2B                      
+    9CAB  BF 2B          ldw    $2B,X                      
+    9CAD  24 02          jruge  L_9CB1                     
+    9CAF  3C 2A          inc    $2A                        
+L_9CB1:
+    9CB1  BE 2C          ldw    X,$2C                      
+    9CB3  7B 04          ld     A,($4,SP)                  
+    9CB5  3F 2D          clr    $2D                        
+    9CB7  42             mul    X,A                        
+    9CB8  72 BB 00 2C    addw   X,$2C                      
+    9CBC  BF 2C          ldw    $2C,X                      
+    9CBE  24 05          jruge  L_9CC5                     
+    9CC0  BE 2A          ldw    X,$2A                      
+    9CC2  5C             incw   X                          
+    9CC3  BF 2A          ldw    $2A,X                      
+L_9CC5:
+    9CC5  5B 04          add    SP,#$4                     
+    9CC7  81             ret                               
+sub_9CC8:
+    9CC8  88             push   A                          
+    9CC9  F6             ld     A,(X)                      
+    9CCA  B7 2A          ld     $2A,A                      
+    9CCC  E6 01          ld     A,($1,X)                   
+    9CCE  B7 2B          ld     $2B,A                      
+    9CD0  E6 02          ld     A,($2,X)                   
+    9CD2  B7 2C          ld     $2C,A                      
+    9CD4  E6 03          ld     A,($3,X)                   
+    9CD6  B7 2D          ld     $2D,A                      
+    9CD8  84             pop    A                          
+    9CD9  81             ret                               
+sub_9CDA:
+    9CDA  52 04          sub    SP,#$4                     
+    9CDC  E6 03          ld     A,($3,X)                   
+    9CDE  88             push   A                          
+    9CDF  E6 02          ld     A,($2,X)                   
+    9CE1  88             push   A                          
+    9CE2  E6 01          ld     A,($1,X)                   
+    9CE4  88             push   A                          
+    9CE5  F6             ld     A,(X)                      
+    9CE6  96             ldw    X,SP                       
+    9CE7  88             push   A                          
+    9CE8  CD 9D 05       call   sub_9D05                   
+    9CEB  5B 08          add    SP,#$8                     
+    9CED  81             ret                               
+
+; ---- never called ----
+    9CEE  3F 2E          clr    $2E                        
+    9CF0  4D             tnz    A                          
+    9CF1  2A 07          jrpl   $9CFA                      
+    9CF3  CD 9D D9       call   $9DD9                      
+    9CF6  72 10 00 2E    bset   $2E,#0                     
+    9CFA  B6 2A          ld     A,$2A                      
+    9CFC  2A 07          jrpl   sub_9D05                   
+    9CFE  CD 9D EC       call   $9DEC                      
+    9D01  72 12 00 2E    bset   $2E,#1                     
+sub_9D05:
+    9D05  90 89          pushw  Y                          
+    9D07  F6             ld     A,(X)                      
+    9D08  26 67          jrne   L_9D71                     
+    9D0A  E6 01          ld     A,($1,X)                   
+    9D0C  26 63          jrne   L_9D71                     
+    9D0E  90 BE 2A       ldw    Y,$2A                      
+    9D11  27 1B          jreq   L_9D2E                     
+    9D13  E6 02          ld     A,($2,X)                   
+    9D15  27 2E          jreq   L_9D45                     
+    9D17  B1 2A          cp     A,$2A                      
+    9D19  22 59          jrugt  L_9D74                     
+    9D1B  26 06          jrne   L_9D23                     
+    9D1D  E6 03          ld     A,($3,X)                   
+    9D1F  B1 2B          cp     A,$2B                      
+    9D21  22 51          jrugt  L_9D74                     
+L_9D23:
+    9D23  90 AE 00 20    ldw    Y,#$20                     
+    9D27  4F             clr    A                          
+    9D28  E7 06          ld     ($6,X),A                   
+    9D2A  E7 07          ld     ($7,X),A                   
+    9D2C  20 57          jra    L_9D85                     
+L_9D2E:
+    9D2E  89             pushw  X                          
+    9D2F  EE 02          ldw    X,($2,X)                   
+    9D31  90 BE 2C       ldw    Y,$2C                      
+    9D34  51             exgw   X,Y                        
+    9D35  65             divw   X,Y                        
+    9D36  BF 2C          ldw    $2C,X                      
+    9D38  85             popw   X                          
+    9D39  EF 06          ldw    ($6,X),Y                   
+    9D3B  90 5F          clrw   Y                          
+    9D3D  EF 04          ldw    ($4,X),Y                   
+    9D3F  90 BF 2A       ldw    $2A,Y                      
+    9D42  90 85          popw   Y                          
+    9D44  81             ret                               
+L_9D45:
+    9D45  E7 04          ld     ($4,X),A                   
+    9D47  E7 05          ld     ($5,X),A                   
+    9D49  E7 06          ld     ($6,X),A                   
+    9D4B  E6 03          ld     A,($3,X)                   
+    9D4D  90 62          div    Y,A                        
+    9D4F  90 BF 2A       ldw    $2A,Y                      
+    9D52  90 95          ld     YH,A                       
+    9D54  B6 2C          ld     A,$2C                      
+    9D56  90 97          ld     YL,A                       
+    9D58  E6 03          ld     A,($3,X)                   
+    9D5A  90 62          div    Y,A                        
+    9D5C  90 01          rrwa   Y                          
+    9D5E  B7 2C          ld     $2C,A                      
+    9D60  B6 2D          ld     A,$2D                      
+    9D62  90 97          ld     YL,A                       
+    9D64  E6 03          ld     A,($3,X)                   
+    9D66  90 62          div    Y,A                        
+    9D68  E7 07          ld     ($7,X),A                   
+    9D6A  90 9F          ld     A,YL                       
+    9D6C  B7 2D          ld     $2D,A                      
+    9D6E  90 85          popw   Y                          
+    9D70  81             ret                               
+L_9D71:
+    9D71  90 BE 2A       ldw    Y,$2A                      
+L_9D74:
+    9D74  EF 06          ldw    ($6,X),Y                   
+    9D76  90 BE 2C       ldw    Y,$2C                      
+    9D79  90 BF 2A       ldw    $2A,Y                      
+    9D7C  90 AE 00 10    ldw    Y,#$10                     
+    9D80  4F             clr    A                          
+    9D81  B7 2C          ld     $2C,A                      
+    9D83  B7 2D          ld     $2D,A                      
+L_9D85:
+    9D85  E7 05          ld     ($5,X),A                   
+L_9D87:
+    9D87  38 2D          sla    $2D                        
+    9D89  39 2C          rlc    $2C                        
+    9D8B  39 2B          rlc    $2B                        
+    9D8D  39 2A          rlc    $2A                        
+    9D8F  69 07          rlc    ($7,X)                     
+    9D91  69 06          rlc    ($6,X)                     
+    9D93  69 05          rlc    ($5,X)                     
+    9D95  49             rlc    A                          
+    9D96  F1             cp     A,(X)                      
+    9D97  25 37          jrult  L_9DD0                     
+    9D99  26 1C          jrne   L_9DB7                     
+    9D9B  E7 04          ld     ($4,X),A                   
+    9D9D  E6 05          ld     A,($5,X)                   
+    9D9F  E1 01          cp     A,($1,X)                   
+    9DA1  25 10          jrult  L_9DB3                     
+    9DA3  26 14          jrne   L_9DB9                     
+    9DA5  E6 06          ld     A,($6,X)                   
+    9DA7  E1 02          cp     A,($2,X)                   
+    9DA9  25 08          jrult  L_9DB3                     
+    9DAB  26 0C          jrne   L_9DB9                     
+    9DAD  E6 07          ld     A,($7,X)                   
+    9DAF  E0 03          sub    A,($3,X)                   
+    9DB1  24 0A          jruge  L_9DBD                     
+L_9DB3:
+    9DB3  E6 04          ld     A,($4,X)                   
+    9DB5  20 19          jra    L_9DD0                     
+L_9DB7:
+    9DB7  E7 04          ld     ($4,X),A                   
+L_9DB9:
+    9DB9  E6 07          ld     A,($7,X)                   
+    9DBB  E0 03          sub    A,($3,X)                   
+L_9DBD:
+    9DBD  E7 07          ld     ($7,X),A                   
+    9DBF  E6 06          ld     A,($6,X)                   
+    9DC1  E2 02          sbc    A,($2,X)                   
+    9DC3  E7 06          ld     ($6,X),A                   
+    9DC5  E6 05          ld     A,($5,X)                   
+    9DC7  E2 01          sbc    A,($1,X)                   
+    9DC9  E7 05          ld     ($5,X),A                   
+    9DCB  E6 04          ld     A,($4,X)                   
+    9DCD  F2             sbc    A,(X)                      
+    9DCE  3C 2D          inc    $2D                        
+L_9DD0:
+    9DD0  90 5A          decw   Y                          
+    9DD2  26 B3          jrne   L_9D87                     
+    9DD4  90 85          popw   Y                          
+    9DD6  E7 04          ld     ($4,X),A                   
+    9DD8  81             ret                               
+
+; ---- never called ----
+    9DD9  73             cpl    (X)                        
+    9DDA  63 01          cpl    ($1,X)                     
+    9DDC  63 02          cpl    ($2,X)                     
+    9DDE  60 03          neg    ($3,X)                     
+    9DE0  26 09          jrne   $9DEB                      
+    9DE2  6C 02          inc    ($2,X)                     
+    9DE4  26 05          jrne   $9DEB                      
+    9DE6  6C 01          inc    ($1,X)                     
+    9DE8  26 01          jrne   $9DEB                      
+    9DEA  7C             inc    (X)                        
+    9DEB  81             ret                               
+    9DEC  33 2A          cpl    $2A                        
+    9DEE  33 2B          cpl    $2B                        
+    9DF0  33 2C          cpl    $2C                        
+    9DF2  30 2D          neg    $2D                        
+    9DF4  26 0A          jrne   $9E00                      
+    9DF6  3C 2C          inc    $2C                        
+    9DF8  26 06          jrne   $9E00                      
+    9DFA  3C 2B          inc    $2B                        
+    9DFC  26 02          jrne   $9E00                      
+    9DFE  3C 2A          inc    $2A                        
+    9E00  81             ret                               
+sub_9E01:
+    9E01  88             push   A                          
+    9E02  B6 2A          ld     A,$2A                      
+    9E04  F7             ld     (X),A                      
+    9E05  B6 2B          ld     A,$2B                      
+    9E07  E7 01          ld     ($1,X),A                   
+    9E09  B6 2C          ld     A,$2C                      
+    9E0B  E7 02          ld     ($2,X),A                   
+    9E0D  B6 2D          ld     A,$2D                      
+    9E0F  E7 03          ld     ($3,X),A                   
+    9E11  84             pop    A                          
+    9E12  81             ret                               
+
+; ---- never called ----
+    9E13  35 80 00 2E    mov    $2E,#$80                   
+    9E17  20 02          jra    $9E1B                      
+sub_9E19:
+    9E19  3F 2E          clr    $2E                        
+    9E1B  5D             tnzw   X                          
+    9E1C  2A 09          jrpl   L_9E27                     
+    9E1E  50             negw   X                          
+    9E1F  72 10 00 2E    bset   $2E,#0                     
+    9E23  72 12 00 2E    bset   $2E,#1                     
+L_9E27:
+    9E27  4D             tnz    A                          
+    9E28  2A 05          jrpl   L_9E2F                     
+    9E2A  40             neg    A                          
+    9E2B  90 12 00 2E    bcpl   $0,#1                      
+L_9E2F:
+    9E2F  62             div    X,A                        
+    9E30  37 2E          sra    $2E                        
+    9E32  2A 06          jrpl   L_9E3A                     
+    9E34  5F             clrw   X                          
+    9E35  97             ld     XL,A                       
+    9E36  24 05          jruge  L_9E3D                     
+    9E38  50             negw   X                          
+    9E39  81             ret                               
+L_9E3A:
+    9E3A  27 01          jreq   L_9E3D                     
+    9E3C  50             negw   X                          
+L_9E3D:
+    9E3D  81             ret                               
+sub_9E3E:
+    9E3E  89             pushw  X                          
+    9E3F  90 89          pushw  Y                          
+    9E41  90 97          ld     YL,A                       
+    9E43  97             ld     XL,A                       
+    9E44  B6 2A          ld     A,$2A                      
+    9E46  42             mul    X,A                        
+    9E47  9F             ld     A,XL                       
+    9E48  B7 2A          ld     $2A,A                      
+    9E4A  93             ldw    X,Y                        
+    9E4B  B6 2B          ld     A,$2B                      
+    9E4D  3F 2B          clr    $2B                        
+    9E4F  42             mul    X,A                        
+    9E50  72 BB 00 2A    addw   X,$2A                      
+    9E54  BF 2A          ldw    $2A,X                      
+    9E56  93             ldw    X,Y                        
+    9E57  B6 2C          ld     A,$2C                      
+    9E59  3F 2C          clr    $2C                        
+    9E5B  42             mul    X,A                        
+    9E5C  72 BB 00 2B    addw   X,$2B                      
+    9E60  BF 2B          ldw    $2B,X                      
+    9E62  24 02          jruge  L_9E66                     
+    9E64  3C 2A          inc    $2A                        
+L_9E66:
+    9E66  B6 2D          ld     A,$2D                      
+    9E68  93             ldw    X,Y                        
+    9E69  3F 2D          clr    $2D                        
+    9E6B  42             mul    X,A                        
+    9E6C  72 BB 00 2C    addw   X,$2C                      
+    9E70  BF 2C          ldw    $2C,X                      
+    9E72  24 05          jruge  L_9E79                     
+    9E74  BE 2A          ldw    X,$2A                      
+    9E76  5C             incw   X                          
+    9E77  BF 2A          ldw    $2A,X                      
+L_9E79:
+    9E79  90 85          popw   Y                          
+    9E7B  85             popw   X                          
+    9E7C  81             ret                               
+
+; Every vector but reset and port D.
+unused_irq:
+    9E7D  80             iret                              
+
+; end of image

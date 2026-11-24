@@ -19,8 +19,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - Keep answers simple and direct.
 
 ## Public-repo rules
-- Digicool's factory firmware is in `firmware/digicool` with Greg's (Digicool's owner)
-  permission; it is not MIT. Never commit Digicool's artwork.
+- Digicool's factory firmware for both boards (OLED Thing and LED Thing) is in
+  `firmware/digicool` with Greg's (Digicool's owner) permission; it is not MIT. Never commit Digicool's artwork.
 - Keep ST's names (STM8, ST-LINK, SWIM) out of the project's own names. Using them to
   describe compatibility is fine.
 
@@ -41,7 +41,10 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 - `art/` holds the SVG sources for the wren; `src/Wren/Assets` holds what the app uses
   (`wren.ico`, `wren.png`, `wren-oled.png`).
 - `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
-  `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` (pins).
+  `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` and `docs/LedThing.md`
+  (the two Digicool boards' pins).
+- `docs/How_We_Make_Videos.md` is how the project's YouTube videos are made: read it before
+  writing a video's script, slides or thumbnail.
 - Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
   rendered from, and the render steps are in that file's opening comment.
 - Michael works in Wren BASIC; the app never shows assembly or CPU registers.
@@ -61,8 +64,10 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   live in a standard menu bar with the usual shortcuts, not in toolbars. Each library is
   UI-free and has its own test project, so it can be tested headless.
 - Firmware is STM8 assembly. There is no C compiler.
-- Firmware must fit the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM. The kernel
-  must end below the program store at $9440; a test checks.
+- Firmware must fit the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM (some Things
+  have 640 B; Install kernel checks and records it in the kernel's info block). The kernel
+  must end below its info block at $9270, just under the program store at $9280; the
+  assembler refuses an overlap and a test checks.
 - Wren.Asm directives beyond ST's syntax: `RELAX` (short JRA/CALLR where in reach),
   and overlapping output is an error. Kernel opcodes $30 up are one contiguous table:
   add new opcodes at the end and keep `Op.cs`, `Vm.inc` and `docs/Bytecode.md` in step.

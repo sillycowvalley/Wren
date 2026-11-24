@@ -13,7 +13,7 @@ FAULT_OPCODE    equ 6
 FAULT_JUMP      equ 7
 
 OP_FIRST        equ $30         ; opcodes from here on are in op_table
-OP_COUNT        equ $45         ; $30-$74
+OP_COUNT        equ $46         ; $30-$75
 
 ; Runs the handler at program address X until it returns.
 vm_run:
@@ -58,7 +58,7 @@ op_table:
         dc.w sv_cls,sv_show,sv_pixel,sv_line,sv_box,sv_fill,sv_invert,sv_contrast   ; $59
         dc.w sv_inverse,sv_text,sv_hex,sv_dec,sv_bin,sv_bits,sv_bar,sv_wait         ; $61
         dc.w sv_eewrite,sv_inputs,sv_pin,sv_analog,sv_millis,sv_eeread,sv_rnd,sv_abs ; $69
-        dc.w sv_min,sv_max,sv_lost,sv_flip                                          ; $71
+        dc.w sv_min,sv_max,sv_lost,sv_flip,sv_pullups                               ; $71
 
 ; ---- Fetching and the value stack ----
 
@@ -820,15 +820,54 @@ sv_eewrite:
         ld a,#2
         call pop_args
         ldw x,args
-        cpw x,#SETTINGS_SIZE
+        cpw x,INFO_SETSIZE
         jruge eewrite_done          ; outside the settings: ignored
-        addw x,#SETTINGS
+        addw x,INFO_SETTINGS
         mov FLASH_DUKR,#$AE
         mov FLASH_DUKR,#$56
         ld a,args+3
         call ee_write               ; only writes when the value changes
         bres FLASH_IAPSR,#3         ; lock again
 eewrite_done:
+        ret
+
+; Writes A to the EEPROM byte at X (unlocked) unless it already holds it.
+ee_write:
+        cp a,(x)
+        jreq ee_same
+        ld (x),a
+ee_wait:
+        btjf FLASH_IAPSR,#2,ee_wait
+ee_same:
+        ret
+
+; PULLUPS mask: bit n pulls bn up (1) or leaves it floating (0). b0-b4 are PC7-PC3,
+; b5-b7 PD6-PD4.
+sv_pullups:
+        call vpop
+        ld a,xl
+        ld tmp,a
+        ld a,#8
+pull_loop:
+        srl tmp
+        rlcw x                      ; XL becomes the mask reversed: b0 in bit 7 ... b7 in bit 0
+        dec a
+        jrne pull_loop
+        ld a,xl
+        and a,#$F8                  ; b0-b4 to bits 7-3: PC7-PC3
+        ld tmp+1,a
+        ld a,PC_CR1
+        and a,#$07
+        or a,tmp+1
+        ld PC_CR1,a
+        ld a,xl
+        swap a
+        and a,#$70                  ; b5-b7 to bits 6-4: PD6-PD4
+        ld tmp+1,a
+        ld a,PD_CR1
+        and a,#$8F
+        or a,tmp+1
+        ld PD_CR1,a
         ret
 
 sv_inputs:
@@ -895,9 +934,10 @@ sv_millis:
 
 sv_eeread:
         call vpop
-        cpw x,#SETTINGS_SIZE
+        cpw x,INFO_SETSIZE
         jruge eeread_zero           ; outside the settings: 0
-        ld a,(SETTINGS,x)
+        addw x,INFO_SETTINGS
+        ld a,(x)
         clrw x
         ld xl,a
         jp vpush

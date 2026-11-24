@@ -922,7 +922,7 @@ public partial class MainWindow : Window
         if (session == null) return "";
         var fat = session.ReadFat();
         var counts = ProgramStore.WriteCounts(fat);
-        int uploads = fat[0] == 1 ? (fat[6] << 8) | fat[7] : 0;
+        int uploads = ProgramStore.IsFormatted(fat) ? (fat[6] << 8) | fat[7] : 0;
         string program = session.Program == null ? "" :
             $"Program: {session.Program.Image.Length} bytes in {session.Program.Blocks} of {ProgramStore.Blocks} blocks; " +
             $"variables {session.Program.DataBytes} of {Compiler.VariableArea - session.Program.Blocks} bytes.\n";

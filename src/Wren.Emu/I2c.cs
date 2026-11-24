@@ -162,7 +162,9 @@ public sealed class I2cPeripheral : Peripheral
                     bool read = (value & 1) != 0;
                     if (Bus.Address(value))
                     {
-                        regs[Sr1] |= AddrFlag;
+                        // A master transmitter's data register is empty as the address is
+                        // acknowledged: the chip sets TXE with ADDR (ST's library waits for both).
+                        regs[Sr1] |= read ? AddrFlag : (byte)(AddrFlag | Txe);
                         regs[Sr3] = (byte)(read ? regs[Sr3] & ~Tra : regs[Sr3] | Tra);
                     }
                     else

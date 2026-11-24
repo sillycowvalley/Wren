@@ -31,6 +31,7 @@ public static class Names
         new Builtin("CONTRAST", Op.Contrast, 1, 1, Array.Empty<long>(), false),
         new Builtin("INVERSE", Op.Inverse, 1, 1, Array.Empty<long>(), false),
         new Builtin("FLIP", Op.Flip, 1, 1, Array.Empty<long>(), false),
+        new Builtin("PULLUPS", Op.Pullups, 1, 1, Array.Empty<long>(), false),
         new Builtin("TEXT", Op.Text, 3, 4, new long[] { 1 }, false),
         new Builtin("HEX", Op.Hex, 4, 5, new long[] { 1 }, false),
         new Builtin("DEC", Op.Dec, 3, 4, new long[] { 1 }, false),

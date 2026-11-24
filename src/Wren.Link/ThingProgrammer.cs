@@ -3,6 +3,9 @@ using Wren.Script;
 
 namespace Wren.Link;
 
+/// <summary>Which board a Thing is, and how Wren knows.</summary>
+public sealed record BoardFinding(Board Board, string How);
+
 /// <summary>The program store's wear, read from a Thing's program table.</summary>
 public sealed record StoreWear(IReadOnlyList<int> WriteCounts, IReadOnlyList<int> ProgramBlocks, int Uploads, int ProgramLength);
 
@@ -25,7 +28,8 @@ public sealed record ThingStatus(
     int KernelBlocksDiffering,
     int ProgramLength,
     int Uploads,
-    IReadOnlyList<int> WriteCounts)
+    IReadOnlyList<int> WriteCounts,
+    KernelInfo? Info = null)
 {
     /// <summary>Wren's kernel, this build or another: the program table is Wren's.</summary>
     public bool HasKernel => Flash is FlashContents.WrenKernel or FlashContents.WrenKernelOtherBuild;
@@ -54,13 +58,13 @@ public sealed class ThingProgrammer
 
     /// <summary>
     /// The program store's wear, as the Thing's own program table records it: the writes to
-    /// each of the 47 store blocks, the blocks the current program occupies, and the number of
+    /// each of the 54 store blocks, the blocks the current program occupies, and the number of
     /// uploads. Only meaningful under Wren's kernel. Reads only.
     /// </summary>
     public StoreWear ReadWear()
     {
         byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
-        bool formatted = fat[0] == 1;
+        bool formatted = ProgramStore.IsFormatted(fat);
         return new StoreWear(
             formatted ? ProgramStore.WriteCounts(fat) : new int[ProgramStore.Blocks],
             ProgramStore.ProgramBlocks(fat),
@@ -91,7 +95,7 @@ public sealed class ThingProgrammer
                 : FlashContents.OtherFirmware;
         }
         byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
-        bool formatted = flash is FlashContents.WrenKernel or FlashContents.WrenKernelOtherBuild && fat[0] == 1;
+        bool formatted = flash is FlashContents.WrenKernel or FlashContents.WrenKernelOtherBuild && ProgramStore.IsFormatted(fat);
         return new ThingStatus(
             rop == RopOn,
             ubc,
@@ -99,7 +103,88 @@ public sealed class ThingProgrammer
             differing,
             formatted && fat[1] != ProgramStore.FreeBlock ? (fat[2] << 8) | fat[3] : 0,
             formatted ? (fat[6] << 8) | fat[7] : 0,
-            formatted ? ProgramStore.WriteCounts(fat) : new int[ProgramStore.Blocks]);
+            formatted ? ProgramStore.WriteCounts(fat) : new int[ProgramStore.Blocks],
+            ReadInfo());
+    }
+
+    /// <summary>The kernel's info block, or null when the flash holds no Wren kernel with one.</summary>
+    public KernelInfo? ReadInfo() => KernelInfo.Parse(target.Read(KernelInfo.Address, KernelInfo.Size));
+
+    /// <summary>The first 8 bytes of each Digicool factory image: their reset and TRAP vectors.</summary>
+    private static readonly byte[] DigicoolOled = { 0x82, 0x00, 0x8C, 0xCB, 0x82, 0x00, 0x9E, 0x7D },
+        DigicoolLed = { 0x82, 0x00, 0x81, 0x50, 0x82, 0x00, 0x85, 0x24 };
+
+    /// <summary>
+    /// Which board this is: from Digicool's factory firmware if it is there, else from a Wren
+    /// kernel's info block, else by asking the I2C bus whether an OLED answers at $3C (the OLED
+    /// Thing's display; on an LED Thing, PB4/PB5 are inputs b6 and b7). Writes no flash or EEPROM.
+    /// </summary>
+    public BoardFinding DetectBoard()
+    {
+        byte[] vectors = target.Read(FlashStart, DigicoolOled.Length);
+        if (vectors.AsSpan().SequenceEqual(DigicoolOled)) return new BoardFinding(Board.OledThing, "it holds Digicool's OLED Thing firmware");
+        if (vectors.AsSpan().SequenceEqual(DigicoolLed)) return new BoardFinding(Board.LedThing, "it holds Digicool's LED Thing firmware");
+        var info = ReadInfo();
+        if (info != null && info.Board != Board.Unknown) return new BoardFinding(info.Board, $"it holds Wren's {info}");
+        return OledAnswers()
+            ? new BoardFinding(Board.OledThing, "an OLED answered at I2C address $3C")
+            : new BoardFinding(Board.Unknown, "no OLED answered at I2C address $3C: an LED Thing, or an OLED Thing whose display is not answering");
+    }
+
+    private const int I2cCr1 = 0x5210, I2cCr2 = 0x5211, I2cFreqr = 0x5212, I2cOarh = 0x5214, I2cDr = 0x5216,
+        I2cSr1 = 0x5217, I2cSr2 = 0x5218, I2cSr3 = 0x5219, I2cCcrl = 0x521B, I2cCcrh = 0x521C, I2cTriser = 0x521D,
+        PbIdr = 0x5006;
+
+    /// <summary>
+    /// Sends the OLED's address ($3C) on the I2C bus from the stalled chip and reports whether
+    /// anything acknowledged. Only tried when SCL and SDA both read high: the OLED module pulls
+    /// them up, so a low one means no OLED, and nothing is driven.
+    /// </summary>
+    public bool OledAnswers()
+    {
+        if ((target.ReadByte(PbIdr) & 0x30) != 0x30) return false;
+        target.WriteByte(SwimTarget.ClkCkdivr, 0x00);          // 16 MHz
+        target.WriteByte(I2cCr1, 0x00);
+        target.WriteByte(I2cFreqr, 16);
+        target.WriteByte(I2cCcrl, 80);                         // 100 kHz
+        target.WriteByte(I2cCcrh, 0);
+        target.WriteByte(I2cTriser, 17);
+        target.WriteByte(I2cOarh, 0x40);
+        target.WriteByte(I2cCr1, 0x01);                        // PE
+        try
+        {
+            target.WriteByte(I2cCr2, 0x01);                    // START
+            if (!Poll(I2cSr1, 0x01)) return false;             // SB
+            target.WriteByte(I2cDr, 0x78);                     // $3C, write
+            for (int i = 0; i < 10; i++)
+            {
+                if ((target.ReadByte(I2cSr1) & 0x02) != 0)     // ADDR: acknowledged
+                {
+                    target.ReadByte(I2cSr3);
+                    return true;
+                }
+                if ((target.ReadByte(I2cSr2) & 0x04) != 0) return false;   // AF: no one there
+                target.Link.Sleep(1);
+            }
+            return false;
+        }
+        finally
+        {
+            target.WriteByte(I2cCr2, 0x02);                    // STOP
+            target.Link.Sleep(1);
+            target.WriteByte(I2cSr2, 0x00);
+            target.WriteByte(I2cCr1, 0x00);
+        }
+    }
+
+    private bool Poll(int register, byte mask)
+    {
+        for (int i = 0; i < 10; i++)
+        {
+            if ((target.ReadByte(register) & mask) != 0) return true;
+            target.Link.Sleep(1);
+        }
+        return false;
     }
 
     /// <summary>The kernel's 64-byte flash blocks, and how many of them the Thing holds differently.</summary>
@@ -138,7 +223,27 @@ public sealed class ThingProgrammer
     /// differ, sets the option bytes the kernel image carries (UBC), and checks it all.
     /// Returns how many flash blocks were written.
     /// </summary>
-    public int InstallKernel(MemoryImage kernel) => WriteImage(kernel, "kernel");
+    public int InstallKernel(MemoryImage kernel)
+    {
+        var found = DetectBoard();
+        Say($"The board: {found.How}.");
+        if (found.Board == Board.LedThing)
+            throw new LinkException("This is an LED Thing. Wren's kernel for it is not ready yet; this kernel is the OLED Thing's.");
+        if (found.Board != Board.OledThing)
+            throw new LinkException("Wren could not tell this is an OLED Thing, so it installs nothing: " + found.How + ".");
+        bool large = EepromSizeCheck.HasExtraEeprom(target);
+        Say(large ? "EEPROM: 640 bytes, so the program settings get 512 bytes at $4080." : $"EEPROM: 128 bytes, so the program settings get {ProgramStore.SettingsSize}.");
+        int written = WriteImage(KernelInfo.ForEeprom(kernel, large ? 640 : 128), "kernel");
+        byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
+        if (ProgramStore.MigrateVersion1(fat) is byte[] moved)
+        {
+            var bytes = Enumerable.Range(0, ProgramStore.FatSize)
+                .Select(i => new KeyValuePair<int, byte>(ProgramStore.FatAddress + i, moved[i])).ToList();
+            WriteChangedBlocks(bytes, TargetMemory.Eeprom, "FAT");
+            Say("The program table is in the new layout: the program stays where it was, with its blocks' write counts.");
+        }
+        return written;
+    }
 
     /// <summary>
     /// Writes any firmware image (a .s19 or .hex, such as a Thing's factory firmware) the way
@@ -230,6 +335,9 @@ public sealed class ThingProgrammer
     /// </summary>
     public void UploadProgram(byte[] program)
     {
+        var info = ReadInfo();
+        if (info == null || info.FatVersion != ProgramStore.FatVersion || info.StoreAddress != ProgramStore.StoreAddress)
+            throw new LinkException("The Thing's kernel is older than this Wren's: click Install kernel first.");
         byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
         var upload = ProgramStore.Plan(fat, program);
 
@@ -253,7 +361,7 @@ public sealed class ThingProgrammer
     public bool HoldsProgram(byte[] program)
     {
         byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
-        if (fat[0] != 1 || fat[1] == ProgramStore.FreeBlock || ((fat[2] << 8) | fat[3]) != program.Length) return false;
+        if (!ProgramStore.IsFormatted(fat) || fat[1] == ProgramStore.FreeBlock || ((fat[2] << 8) | fat[3]) != program.Length) return false;
         var blocks = ProgramStore.ProgramBlocks(fat);
         if (blocks.Count * ProgramStore.BlockSize < program.Length) return false;
         for (int i = 0; i * ProgramStore.BlockSize < program.Length; i++)

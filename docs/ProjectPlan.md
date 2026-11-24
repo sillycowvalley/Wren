@@ -58,13 +58,15 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    stm8flash and OpenOCD as protocol references. Michael tests it on Windows against an
    S103 board first, then a Thing. A Raspberry Pi Pico does the same job at low SWIM
    speed and has programmed a Thing ([PicoLink.md](PicoLink.md)).
-3. **The firmware (done).** The kernel (VM, graphics, events, FAT loader) fits in 8 KB
-   flash and 1 KB RAM beside a 3,008-byte program store. It runs on a real OLED Thing.
+3. **The firmware (done).** The kernel (VM, graphics, events, the program table) fits in
+   8 KB flash and 1 KB RAM beside a 3,456-byte program store, and ends with an info block
+   that tells Wren its version, board and the Thing's EEPROM. It runs on a real OLED Thing.
    Like Digicool's firmware, it sets the OLED up with segment remap and reversed COM
    scan, because the Thing's module is mounted rotated 180°. It also turns on pull-ups on
-   b0–b7, so inputs left open read 1. Programs reach a Thing over SWIM
-   (Wren.Link) or from a host over its own pins (the kernel's loader).
-4. **Wren BASIC (done).** The Thing's own behaviour is about 310 bytes of BASIC.
+   b0–b7, so inputs left open read 1 (`PULLUPS` changes that). Programs reach a Thing over
+   SWIM (Wren.Link). Install kernel first tells the board from its firmware or by asking
+   for the OLED on I2C, and refuses anything but an OLED Thing.
+4. **Wren BASIC (done).** The Thing's own behaviour is 502 bytes of BASIC.
 5. **Later and optional:** a SWIM on-chip debugger (breakpoints through the debug
    module, as OpenOCD's STM8 support does).
 
@@ -122,11 +124,12 @@ The detailed design, for approval, is in [Design.md](Design.md).
 2. **ST-LINK clones.** Do the clones behave like a genuine V2 (firmware version, SWIM
    speed)?
 3. **Extra EEPROM.** Do Michael's Things have the S103's 640 B of EEPROM ($4000-$427F)
-   rather than the 128 B the S003's datasheet promises? The Programmer window's **EEPROM
-   size check** finds out on each Thing: it writes a test pattern to $4080-$427F (checking
-   after every block that Wren's 128 bytes are untouched), asks for a power cycle, reads it
-   back and puts the original bytes back. It writes no flash. If every Thing has 640 B,
-   the program settings can move above $4080, and item 6's bigger store costs no settings.
+   rather than the 128 B the S003's datasheet promises? Install kernel writes and reads
+   back one block at $4080 and, if it holds, gives the program 512 setting bytes there
+   instead of 12 (the kernel's info block records which). That quick check does not prove
+   the extra EEPROM keeps its contents: the Programmer window's **EEPROM size check** does,
+   with a power cycle between writing a pattern to $4080-$427F and reading it back, and
+   puts the original bytes back. Run it on every Thing on hand and copy the logs back.
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.
@@ -140,11 +143,11 @@ The detailed design, for approval, is in [Design.md](Design.md).
    2. Can SWIM read RAM while the kernel idles in WFI (NO_ACCESS is documented as set in WFI)?
    3. Does DM_ENFCTR freeze TIM4 (the 1 ms tick) while the CPU is stopped?
    Connect, click **Debug module checks**, and copy the log back.
-6. **The host loader goes, the store grows (after the bench).** Uploading over b0-b7 from
-   a host is never used. Once PicoLink v16 and the current kernel are proven on a Thing,
-   remove it: the kernel's loader (528 bytes) and its PD2-at-start-up check,
-   `HostUpload` in Wren.Script and its tests, and "Uploading from a host" in Bytecode.md.
-   The program store then starts at $9240: 55 blocks instead of 47, so the largest
-   program grows from 3,008 to 3,520 bytes, and `EEREAD`/`EEWRITE` keep 10 setting bytes
-   instead of 26. The FAT's version goes up; installing the kernel carries each block's
-   write count over (old block n is new block n + 8), and the program is uploaded again.
+6. **The LED Thing.** Digicool's second board (`docs/LedThing.md`) has the same chip, with
+   b0-b7 on other pins and eight charlieplexed LEDs on PD3-PD6 instead of the OLED. The
+   plan: kernel board profiles (a shared core with an OLED layer or an LED
+   layer; the LED kernel drops the graphics, OLED driver and fonts, about 1.8 KB, which
+   goes to its program store); `LEDS value` and `LED n, ON|OFF` in Wren BASIC, the
+   graphics statements refused on the LED board; a board byte in programs too (a kernel's
+   is in its info block), so neither lands on the wrong board; an emulated LED Thing in the app; and
+   `programs/LedThing.bas` recreating its eight modes. Michael has LED Things to test on.

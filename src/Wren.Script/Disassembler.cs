@@ -18,7 +18,7 @@ public static class Disassembler
         [Op.Hex] = "HEX", [Op.Dec] = "DEC", [Op.Bin] = "BIN", [Op.Bits] = "BITS", [Op.Bar] = "BAR",
         [Op.Wait] = "WAIT", [Op.EeWrite] = "EEWRITE", [Op.Inputs] = "INPUTS", [Op.Pin] = "PIN",
         [Op.Analog] = "ANALOG", [Op.Millis] = "MILLIS", [Op.EeRead] = "EEREAD", [Op.Rnd] = "RND",
-        [Op.Abs] = "ABS", [Op.Min] = "MIN", [Op.Max] = "MAX", [Op.Lost] = "LOST", [Op.Flip] = "FLIP",
+        [Op.Abs] = "ABS", [Op.Min] = "MIN", [Op.Max] = "MAX", [Op.Lost] = "LOST", [Op.Flip] = "FLIP", [Op.Pullups] = "PULLUPS",
     };
 
     /// <summary>One instruction at address: its text and length.</summary>

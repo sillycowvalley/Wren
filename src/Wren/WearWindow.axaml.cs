@@ -7,7 +7,7 @@ using Wren.Script;
 
 namespace Wren;
 
-/// <summary>A grid of the program store's 47 blocks and the writes the Thing has recorded for each.</summary>
+/// <summary>A grid of the program store's 54 blocks and the writes the Thing has recorded for each.</summary>
 public partial class WearWindow : Window
 {
     /// <summary>The rated program/erase cycles of an OLED Thing's (STM8S003) flash.</summary>

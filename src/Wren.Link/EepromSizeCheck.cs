@@ -25,6 +25,35 @@ public sealed class EepromSizeCheck
         this.log = log;
     }
 
+    /// <summary>
+    /// The quick check Install kernel makes: writes one block of the pattern at $4080, reads it
+    /// back, checks Wren's 128 bytes are untouched (putting them back if not), and restores the
+    /// block. True when the extra EEPROM is there. (The full check, with a power cycle, also
+    /// proves it keeps its contents.)
+    /// </summary>
+    public static bool HasExtraEeprom(SwimTarget target)
+    {
+        byte[] wren = target.Read(WrenEeprom, WrenSize);
+        byte[] original = target.Read(ExtraStart, SwimTarget.BlockSize);
+        byte[] pattern = Pattern()[..SwimTarget.BlockSize];
+        try
+        {
+            target.WriteBlocks(ExtraStart, pattern, TargetMemory.Eeprom);
+        }
+        catch (LinkException)
+        {
+            return false;
+        }
+        bool held = target.Read(ExtraStart, SwimTarget.BlockSize).AsSpan().SequenceEqual(pattern);
+        if (!target.Read(WrenEeprom, WrenSize).AsSpan().SequenceEqual(wren))
+        {
+            target.WriteBlocks(WrenEeprom, wren, TargetMemory.Eeprom);
+            return false;
+        }
+        if (held) target.WriteBlocks(ExtraStart, original, TargetMemory.Eeprom);
+        return held;
+    }
+
     /// <summary>The test pattern: different in every byte and every block, so a wrap shows.</summary>
     public static byte[] Pattern()
     {

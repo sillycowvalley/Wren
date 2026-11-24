@@ -36,7 +36,9 @@ public sealed class ThingSession
         varsAddress = kernel.Symbol("VARS");
         faultAddress = kernel.Symbol("vm_fault");
         eventValueAddress = kernel.Symbol("evt_value");
-        Board.Mcu.Load(kernel.Image.Bytes);
+        // The kernel as Wren installs it on this chip: the development board's 640 bytes of
+        // EEPROM keep the program settings at $4080.
+        Board.Mcu.Load(KernelInfo.ForEeprom(kernel.Image, chip.EepromSize).Bytes);
         Board.PowerOn();
     }
 
