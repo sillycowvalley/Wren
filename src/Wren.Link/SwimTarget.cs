@@ -23,7 +23,8 @@ public sealed class SwimTarget
 
     /// <summary>
     /// Enters SWIM: NRST held low, the entry sequence, SWIM_CSR set (interrupts masked, all of
-    /// memory reachable, SWIM first, CPU stalled), NRST released, then high-speed SWIM if
+    /// memory reachable, SWIM first, CPU stalled), NRST released, a communication reset so
+    /// SWIM runs on the trimmed clock, then high-speed SWIM if
     /// the target offers it and the programmer can. The CPU stays stalled until Run.
     /// </summary>
     public void Connect()
@@ -34,6 +35,7 @@ public sealed class SwimTarget
         WriteByte(SwimCsr, 0xA1);
         Link.DeassertReset();
         Link.Sleep(1);
+        Link.ResetSwim(); // the target's clock is trimmed now: resynchronise (UM0470 3.2 step 9)
 
         byte csr = 0;
         for (int i = 0; i < 10; i++)

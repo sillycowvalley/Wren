@@ -9,7 +9,9 @@
 //
 // It speaks SWIM at low speed (8 MHz SWIM clock: a bit is 22 clocks, 2.75 us; a 1 is low for
 // 2 clocks, a 0 for 20), timed with the core's SysTick, from RAM, with interrupts off while a
-// transfer is on the wire. The host's own pulses end with a brief push-pull high, so they
+// transfer is on the wire. After NRST is released, a SWIM communication reset brings a sync
+// pulse at the target's trimmed clock, which calibrates the reading of the target's bits
+// (UM0470 3.2 step 9 and 3.6). The host's own pulses end with a brief push-pull high, so they
 // stay sharp on a slow line. The target's bits are read 1.7 us in, and a bit edge hidden by
 // a slow rise is predicted from the bit period. Wren (src/Wren.Link/PicoLink.cs) sends the
 // requests; the protocol is described there. SWIM itself is described in ST's UM0470.
@@ -24,7 +26,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 6;
+const uint8_t SketchVersion = 7;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -40,8 +42,14 @@ static uint8_t failedFrame;
 static uint32_t lowCycles;
 
 // Times in CPU cycles, worked out from the clock in setup().
-static uint32_t bitPeriod, shortLow, longLow, sampleAt;
-static uint32_t answerTimeout, bitTimeout, riseTimeout, edgeWindow, interFrameGap;
+// The host's bits have a fixed shape well inside UM0470's table 3 (low speed: a 0 low for
+// 1.6-2.4 us, a 1 for 150-250 ns): the target decodes a bit by counting low samples of its
+// SWIM clock (8 or fewer is a 1, 9 or more a 0), so the shape matters, not its own clock.
+// The target's bits are timed by its clock: targetPeriod (22 SWIM clocks) and sampleAt
+// (11, midway between a 1's 2 low clocks and a 0's 20), calibrated from a sync pulse
+// (128 SWIM clocks) when one is measured cleanly.
+static uint32_t hostPeriod, shortLow, longLow, targetPeriod, sampleAt;
+static uint32_t answerTimeout, bitTimeout, riseTimeout, edgeWindow, interFrameGap, commResetLow;
 static uint32_t entryLow, entrySlow, entryFast, syncTimeout, afterSync, syncShortest, syncLongest, stuckTimeout, settleTimeout;
 static uint32_t cpuHz;
 
@@ -101,7 +109,7 @@ static void __not_in_flash_func(sendBit)(uint32_t t, int bit) {
   driveLow();
   waitUntil(t, bit ? shortLow : longLow);
   letGoSharply();
-  waitUntil(t, bitPeriod);
+  waitUntil(t, hostPeriod);
 }
 
 // Reads one bit from the target: 1 or 0, or -1 if the line never fell. *at is its start.
@@ -127,16 +135,16 @@ static uint8_t __not_in_flash_func(sendFrame)(uint32_t value, int bits) {
       int bit = (value >> i) & 1;
       parity ^= bit;
       sendBit(t, bit);
-      t += bitPeriod;
+      t += hostPeriod;
     }
     sendBit(t, parity);
     uint32_t at;
     int ack = readBit(answerTimeout, &at);
     if (ack < 0) return StatusNoAnswer;
     lineBusyFrom = at;
-    lineBusyFor = bitPeriod + interFrameGap;
+    lineBusyFor = targetPeriod + interFrameGap;
     if (ack) return StatusOk; // the ACK's low is over (it was sampled high): listen at once
-    waitUntil(at, bitPeriod);
+    waitUntil(at, targetPeriod);
     if (!waitRise(riseTimeout)) {
       waitRise(stuckTimeout); // measure how long the target held the line
       lowCycles = since(at);
@@ -154,20 +162,20 @@ static uint8_t __not_in_flash_func(receiveFrame)(uint8_t *out) {
     int bit = readBit(answerTimeout, &at);
     if (bit < 0) return StatusNoAnswer;
     if (bit != 1) return StatusBadFrame;
-    // Each later bit starts one period after the last. Its falling edge shows only if the
-    // line rose in the 250 ns gap after the previous bit, which a slow pull-up does not
-    // manage after a 0; so take the edge when it is seen near where it is due, and
-    // otherwise count on the period.
+    // Each later bit starts one of the target's periods after the last. Its falling edge
+    // shows only if the line rose in the 2-clock gap after the previous bit, which a slow
+    // pull-up does not manage after a 0; so take the edge when it is seen near where it is
+    // due, and otherwise count on the period.
     uint32_t value = 0;
     uint32_t bitStart = at;
     for (int i = 0; i < 9; i++) {
-      waitUntil(bitStart, bitPeriod - edgeWindow);
+      waitUntil(bitStart, targetPeriod - edgeWindow);
       uint32_t fell;
       if (lineHigh()) {
         if (!waitFall(2 * edgeWindow, &fell)) return StatusBadFrame;
         bitStart = fell;
       } else {
-        bitStart += bitPeriod;
+        bitStart += targetPeriod;
       }
       waitUntil(bitStart, sampleAt);
       value = (value << 1) | (lineHigh() ? 1u : 0u);
@@ -178,14 +186,14 @@ static uint8_t __not_in_flash_func(receiveFrame)(uint8_t *out) {
     bool good = parity == (int)(value & 1);
     // The host's ACK (or NACK) bit, one period after the parity bit began. After an ACK,
     // return as soon as the line is let go: the next frame may follow the bit at once.
-    waitUntil(at, bitPeriod);
+    waitUntil(at, targetPeriod);
     uint32_t t = now();
     driveLow();
     waitUntil(t, good ? shortLow : longLow);
     letGoSharply();
     lineBusyFrom = t;
-    lineBusyFor = bitPeriod + interFrameGap;
-    if (!good) waitUntil(t, bitPeriod);
+    lineBusyFor = hostPeriod + interFrameGap;
+    if (!good) waitUntil(t, hostPeriod);
     if (good) {
       *out = (uint8_t)(value >> 1);
       return StatusOk;
@@ -263,42 +271,104 @@ static void __not_in_flash_func(sendEntryPulses)() {
   letGo();
 }
 
-static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
-  uint32_t saved = save_and_disable_interrupts();
-  sendEntryPulses();
-  uint32_t t = now();
-  uint32_t released = t;
+// Takes the target's sync pulse after the host lets go of the line at `released`. If the
+// line rises within a couple of microseconds (its own rise), the pulse is still to come and
+// is measured whole ("clean"); if it stays low, the pulse began before the release and only
+// its part after the release is counted. Returns false if no pulse came or the line stuck.
+static bool __not_in_flash_func(catchSync)(uint32_t released, uint32_t *length, bool *clean) {
   uint32_t at;
-  uint8_t status = StatusNoSync;
-  failedFrame = 0;
-  lowCycles = 0;
-  bool measured = false;
+  *clean = false;
   if (waitRise(settleTimeout)) {
     if (!waitFall(syncTimeout, &at)) {
       failedFrame = EntryNoPulse;
-    } else {
-      waitRise(syncTimeout);
-      lowCycles = since(at);
-      measured = true;
+      return false;
     }
-  } else if (!waitRise(syncLongest)) {
+    waitRise(syncTimeout);
+    *length = since(at);
+    *clean = true;
+    return true;
+  }
+  if (!waitRise(syncLongest)) {
     failedFrame = EntryNoRise;
     waitRise(stuckTimeout);
     lowCycles = since(released);
-  } else {
-    lowCycles = since(released);
-    measured = true;
+    return false;
   }
-  if (measured) {
-    *syncCycles = lowCycles;
-    if (lowCycles >= syncShortest && lowCycles <= syncLongest) {
-      t = now();
+  *length = since(released);
+  return true;
+}
+
+// A sync pulse measured whole sets the target's bit timing: 128 SWIM clocks long, a target
+// bit is 22 of them, sampled at 11. Only a plausible pulse (12 to 24 us; 16 is right) counts.
+static void calibrate(uint32_t syncCycles) {
+  if (syncCycles < cycles(12000) || syncCycles > cycles(24000)) return;
+  targetPeriod = syncCycles * 22 / 128;
+  sampleAt = syncCycles * 11 / 128;
+  edgeWindow = syncCycles * 5 / 128;
+}
+
+static void resetCalibration() {
+  targetPeriod = cycles(2750);
+  sampleAt = cycles(1375);
+  edgeWindow = cycles(625);
+}
+
+static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles, bool *clean) {
+  uint32_t saved = save_and_disable_interrupts();
+  resetCalibration();
+  sendEntryPulses();
+  uint32_t released = now();
+  uint8_t status = StatusNoSync;
+  failedFrame = 0;
+  lowCycles = 0;
+  uint32_t length = 0;
+  if (catchSync(released, &length, clean)) {
+    lowCycles = length;
+    *syncCycles = length;
+    if (length >= syncShortest && length <= syncLongest) {
+      if (*clean) calibrate(length);
+      uint32_t t = now();
       waitUntil(t, afterSync);
       status = StatusOk;
     } else {
       failedFrame = EntryBadPulse;
     }
   }
+  lineBusyFor = 0;
+  restore_interrupts(saved);
+  return status;
+}
+
+// SWIM communication reset (UM0470 3.6): the line low for more than 64 SWIM clocks resets
+// the target's state machine and low speed, and it answers with a sync pulse. Done after
+// NRST is released, when the target's clock is trimmed (3.2 step 9), its sync recalibrates
+// the host. UM0470 has the host hold it 128 clocks: 25 us is 200 at 8 MHz and still over 64
+// at the slowest HSI it allows (10 MHz, a 5 MHz SWIM clock). If the target's answer is
+// hidden under the host's low, the reset has still happened: it simply calibrates nothing.
+static uint8_t __not_in_flash_func(resetComms)(uint32_t *syncCycles, bool *clean) {
+  uint32_t saved = save_and_disable_interrupts();
+  waitUntil(lineBusyFrom, lineBusyFor);
+  failedFrame = 0;
+  lowCycles = 0;
+  uint32_t t = now();
+  driveLow();
+  waitUntil(t, commResetLow);
+  letGo();
+  uint32_t released = now();
+  uint32_t length = 0;
+  uint8_t status = StatusNoSync;
+  if (catchSync(released, &length, clean)) {
+    *syncCycles = length;
+    if (*clean) calibrate(length);
+    t = now();
+    waitUntil(t, afterSync);
+    status = StatusOk;
+  } else if (failedFrame == EntryNoPulse) {
+    *syncCycles = 0;
+    failedFrame = 0;
+    status = StatusOk;
+  }
+  lineBusyFor = 0;
   restore_interrupts(saved);
   return status;
 }
@@ -394,12 +464,12 @@ void setup() {
   systick_hw->csr |= 0x5; // enabled, counting CPU clocks
 
   cpuHz = clock_get_hz(clk_sys);
-  bitPeriod = cycles(2750);
-  shortLow = cycles(250);
-  longLow = cycles(2500);
-  sampleAt = cycles(1700);  // late in the bit, so a slow rise after a 1 still reads as 1
+  hostPeriod = cycles(2750);
+  shortLow = cycles(220);
+  longLow = cycles(2000);
+  resetCalibration();
+  commResetLow = cycles(25000);
   boostHigh = cycles(100);
-  edgeWindow = cycles(600);
   interFrameGap = cycles(250);
   answerTimeout = cycles(2000000); // 2 ms
   bitTimeout = cycles(10000);
@@ -432,15 +502,17 @@ void loop() {
     if (args[0]) sio_hw->gpio_oe_set = ResetMask;
     else sio_hw->gpio_oe_clr = ResetMask;
     reply(command, StatusOk);
-  } else if (command == 'E') {
+  } else if (command == 'E' || command == 'L') {
     uint32_t syncCycles = 0;
-    uint8_t status = enterSwim(&syncCycles);
+    bool clean = false;
+    uint8_t status = command == 'E' ? enterSwim(&syncCycles, &clean) : resetComms(&syncCycles, &clean);
     reply(command, status);
     if (status == StatusOk) {
       uint32_t ns = (uint32_t)((uint64_t)syncCycles * 1000000000ull / cpuHz);
       if (ns > 0xFFFF) ns = 0xFFFF;
       Serial.write((uint8_t)(ns >> 8));
       Serial.write((uint8_t)ns);
+      Serial.write(clean ? 1 : 0);
     }
   } else if (command == 'S') {
     reply(command, softReset());

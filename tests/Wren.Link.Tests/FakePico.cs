@@ -19,6 +19,7 @@ public sealed class FakePico : Stream
     public Stm8Device Device { get; }
     public bool ResetHeld { get; private set; }
     public bool Entered { get; private set; }
+    public int CommsResets { get; private set; }
 
     /// <summary>When set, SWIM requests answer this status (e.g. no answer from the target).</summary>
     public byte? SwimError { get; set; }
@@ -70,7 +71,7 @@ public sealed class FakePico : Stream
         switch (r[0])
         {
             case PicoLink.Hello:
-                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 6);
+                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', (byte)PicoLink.SketchVersion);
                 return;
             case PicoLink.Reset:
                 ResetHeld = r[1] != 0;
@@ -88,7 +89,11 @@ public sealed class FakePico : Stream
                 if (SwimError != null) { Reply(r[0], PicoLink.StatusNoSync); return; }
                 Entered = true;
                 swimCsr = 0x02; // HSIT offered; the Pico does not take it
-                Reply(r[0], PicoLink.StatusOk, 0x3E, 0x80); // 16,000 ns
+                Reply(r[0], PicoLink.StatusOk, 0x3E, 0x80, 0); // 16,000 ns, begun before the release
+                return;
+            case PicoLink.CommsReset:
+                CommsResets++;
+                Reply(r[0], PicoLink.StatusOk, 0x3E, 0x80, 1); // 16,000 ns, measured whole
                 return;
             case PicoLink.Srst:
                 if (swimStatus == PicoLink.StatusOk && (swimCsr & 0x04) != 0) Device.Reset();

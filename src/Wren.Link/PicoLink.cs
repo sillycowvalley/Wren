@@ -13,7 +13,9 @@ namespace Wren.Link;
 /// <list type="bullet">
 /// <item><c>H</c>: hello. Data: "WREN" and the sketch's version.</item>
 /// <item><c>R</c> n: NRST low (n = 1) or released (n = 0).</item>
-/// <item><c>E</c>: the SWIM entry sequence. Data: the target's sync pulse in ns (2 bytes, high first).</item>
+/// <item><c>E</c>: the SWIM entry sequence. Data: the target's sync pulse in ns (2 bytes, high
+/// first), then 1 if it was measured whole (and so calibrated the reading of the target's bits).</item>
+/// <item><c>L</c>: SWIM communication reset (the line low over 64 SWIM clocks); the same data.</item>
 /// <item><c>S</c>: SWIM's SRST command.</item>
 /// <item><c>r</c> n a2 a1 a0: read n (1 to 64) bytes at address a. Data: the bytes.</item>
 /// <item><c>w</c> n a2 a1 a0 data: write n (1 to 64) bytes at address a.</item>
@@ -24,7 +26,10 @@ namespace Wren.Link;
 public sealed class PicoLink : ITargetLink
 {
     public const byte Hello = (byte)'H', Reset = (byte)'R', Entry = (byte)'E', Srst = (byte)'S',
-        Read = (byte)'r', Write = (byte)'w', Release = (byte)'X', LineCheck = (byte)'D';
+        Read = (byte)'r', Write = (byte)'w', Release = (byte)'X', LineCheck = (byte)'D', CommsReset = (byte)'L';
+
+    /// <summary>The sketch version this Wren speaks to.</summary>
+    public const int SketchVersion = 7;
 
     public const byte StatusOk = 0, StatusNoAnswer = 1, StatusNack = 2, StatusParity = 3,
         StatusBadFrame = 4, StatusNoSync = 5, StatusBadCommand = 6;
@@ -47,6 +52,12 @@ public sealed class PicoLink : ITargetLink
 
     /// <summary>The target's sync pulse at the last entry, in microseconds (16 is right).</summary>
     public double SyncMicroseconds { get; private set; }
+
+    /// <summary>The sync pulse after the last communication reset, in microseconds.</summary>
+    public double ResetSyncMicroseconds { get; private set; }
+
+    /// <summary>Whether that pulse was measured whole, so the sketch calibrated to it.</summary>
+    public bool Calibrated { get; private set; }
 
     public Action<int> Sleep { get; set; } = ms => Thread.Sleep(ms);
 
@@ -91,6 +102,8 @@ public sealed class PicoLink : ITargetLink
         byte[] data = Request(new[] { Hello }, 5);
         if (Encoding.ASCII.GetString(data, 0, 4) != "WREN") throw new LinkException("The serial device is not a Wren Pico programmer");
         Version = data[4];
+        if (Version != SketchVersion)
+            throw new LinkException($"The Pico runs sketch version {Version}; this Wren needs version {SketchVersion}. Upload firmware/PicoLink/PicoLink.ino again.");
     }
 
     public void EnterSwimMode() => SayHello();
@@ -103,12 +116,20 @@ public sealed class PicoLink : ITargetLink
 
     public void EnterSequence()
     {
-        byte[] data = Request(new[] { Entry }, 2);
+        byte[] data = Request(new[] { Entry }, 3);
         SyncMicroseconds = ((data[0] << 8) | data[1]) / 1000.0;
     }
 
-    /// <summary>Nothing to do: the Pico stays at low speed, where no reset is needed.</summary>
-    public void ResetSwim() { }
+    /// <summary>
+    /// SWIM communication reset: after NRST is released the target's clock is trimmed, and
+    /// the sync pulse it answers with calibrates the sketch (UM0470 3.2 step 9).
+    /// </summary>
+    public void ResetSwim()
+    {
+        byte[] data = Request(new[] { CommsReset }, 3);
+        ResetSyncMicroseconds = ((data[0] << 8) | data[1]) / 1000.0;
+        Calibrated = data[2] != 0;
+    }
 
     public void GenerateReset() => Request(new[] { Srst }, 0);
 

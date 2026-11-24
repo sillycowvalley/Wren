@@ -28,6 +28,8 @@ public class PicoLinkTests
         Assert.True(fake.Entered);
         Assert.False(fake.ResetHeld);
         Assert.Equal(16.0, ((PicoLink)link.Link).SyncMicroseconds);
+        Assert.True(fake.CommsResets >= 1);
+        Assert.True(((PicoLink)link.Link).Calibrated);
         Assert.Contains("COM9", link.About[0]);
         Assert.Null(link.Version);
     }

@@ -64,20 +64,24 @@ and NRST to GP3, and that the Thing has 3.3 V on VCC.
 
 ## How it works
 
-The sketch drives SWIM from GP2 as an open-drain line, timed by the CPU's SysTick, from
-RAM, with interrupts off while a transfer is on the wire. A 1 is low for 250 ns, a 0 for
-2.5 µs, in a 2.75 µs bit. It reads the target's bits by timing their low pulses, checks
-parity, and answers ACK or NACK. Bad frames are resent, up to 16 times. NRST is driven
-from GP3, also open drain.
+The sketch follows ST's SWIM manual, UM0470 (not in this repository: it is ST's).
+- **Lines:** SWIM is driven from GP2 as an open-drain line. NRST is driven from GP3, also open drain.
+- **Timing:** taken from the CPU's SysTick, with the code running from RAM and interrupts off while a transfer is on the wire.
+- **Connecting:**
+  1. NRST is held low and the entry sequence sent. The Thing answers with a sync pulse, sometimes starting before the Pico lets go.
+  2. SWIM_CSR is written, then NRST released.
+  3. A communication reset follows: the line held low for 25 µs (UM0470 3.2 step 9 and 3.6). The Thing's clock is trimmed by now, and its fresh sync pulse calibrates how the sketch reads the Thing's bits.
+- **The Pico's bits:** a 1 is low for 220 ns, a 0 for 2.0 µs, in a 2.75 µs bit, inside the manual's table 3. Each low ends with a brief push-pull high. The Thing decodes a bit by counting low samples on its own clock, so the shape matters, not the period.
+- **The Thing's bits:** read at 11 of its SWIM clocks, midway between a 1's 2 low clocks and a 0's 20. An edge hidden by a slow rise is predicted from the bit period.
+- **Errors:** parity is checked, and the Thing gets an ACK or a NACK. A bad frame is resent up to 16 times.
 
-Wren talks to it in short requests (hello, reset, entry, read, write, SRST, release),
-described in `src/Wren.Link/PicoLink.cs`. Reads and writes go in pieces of up to 64 bytes:
-one flash block.
+Wren talks to it in short requests (hello, reset, entry, communication reset, read, write, SRST, release, line check), described in `src/Wren.Link/PicoLink.cs`. Reads and writes go in pieces of up to 64 bytes: one flash block. When Connect fails, Wren runs the line check by itself and explains each reading.
 
-The sketch has been checked against a simulated chip on the SWIM line, but not yet
-against a real one:
+The sketch has been checked against a simulated chip that decodes bits as UM0470 describes, but not yet against a real one. The simulation covers:
 - CPU clocks of 133, 150 and 200 MHz;
-- the target's clock 3 % fast and slow;
+- the Thing's clock from 0.6 to 1.5 times its trimmed rate before the reset, and 3 % either side after it;
+- line rises up to 435 ns;
+- replies with no gap after an acknowledge;
 - NACKed and damaged frames.
 
 ## Open issues
