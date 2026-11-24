@@ -26,7 +26,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 11;
+const uint8_t SketchVersion = 12;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -607,6 +607,10 @@ void setup() {
     gpio_set_dir(pin, GPIO_IN);
     gpio_pull_up(pin);
   }
+  // A Thing loads its SWIM line: at the pin's default 4 mA the host's lows arrived late and
+  // its short pulses vanished. Drive it as hard and as fast as the pad allows.
+  gpio_set_drive_strength(SwimPin, GPIO_DRIVE_STRENGTH_12MA);
+  gpio_set_slew_rate(SwimPin, GPIO_SLEW_RATE_FAST);
   pinMode(LED_BUILTIN, OUTPUT);
 
   systick_hw->rvr = 0x00FFFFFF;
@@ -624,7 +628,7 @@ void setup() {
   calibrateShortest = cycles(12000);
   calibrateLongest = cycles(24000);
   traceWindow = cycles(300000);
-  boostHigh = cycles(100);
+  boostHigh = cycles(250);  // long enough to charge a loaded line back up
   interFrameGap = cycles(250);
   answerTimeout = cycles(2000000); // 2 ms
   bitTimeout = cycles(10000);
