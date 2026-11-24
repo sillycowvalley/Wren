@@ -87,12 +87,18 @@ public sealed class EspStLink : ITargetLink
 
     public void EnterSwimMode() => ReadVersion();
 
-    public void LeaveSwimMode() => Request(new[] { Reset, ResetLetGo }, 0);
+    /// <summary>Leaves NRST driven high, so the Thing runs (see <see cref="DeassertReset"/>).</summary>
+    public void LeaveSwimMode() => Request(new[] { Reset, ResetHigh }, 0);
 
     public void AssertReset() => Request(new[] { Reset, ResetLow }, 0);
 
-    /// <summary>Lets NRST go rather than driving it high: the target's own pull-up raises it.</summary>
-    public void DeassertReset() => Request(new[] { Reset, ResetLetGo }, 0);
+    /// <summary>
+    /// Drives NRST high. Letting it go is not enough: an RP2040 pin let go keeps its default
+    /// pull-down, which fights the STM8's weak internal pull-up on NRST, leaves NRST part way
+    /// up and the chip in reset (seen on a Thing as SWIM_CSR NO_ACCESS with HSIT clear). Safe
+    /// because the Thing runs from the same 3.3 V.
+    /// </summary>
+    public void DeassertReset() => Request(new[] { Reset, ResetHigh }, 0);
 
     /// <summary>
     /// The entry sequence, then an SRST, as pico-swimlib's own example does before its first

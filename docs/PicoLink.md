@@ -72,8 +72,10 @@ If Connect says the target did not answer in time, check:
 write, version).
 
 - **Connecting:** it follows pico-swimlib's own example. NRST is held low, then the entry
-  sequence and an SRST. SWIM_CSR is set to $A1, and NRST is let go so the Thing's pull-up
-  raises it.
+  sequence and an SRST, then SWIM_CSR is set to $A1.
+- **Releasing NRST:** Wren drives NRST **high** rather than letting go, unlike the example.
+  A let-go RP2040 pin keeps its default pull-down, which fights the Thing's weak NRST
+  pull-up and leaves the chip half in reset.
 - **Transfers:** reads go in pieces of up to 255 bytes. Writes go a flash block (64 bytes)
   at a time.
 - **Recognising the board:** Wren asks the board for its esp-stlink version when it opens

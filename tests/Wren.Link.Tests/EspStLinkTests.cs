@@ -27,6 +27,7 @@ public class EspStLinkTests
         var (_, fake, link) = Connect();
         Assert.True(fake.Entered);
         Assert.False(fake.ResetHeld);
+        Assert.False(fake.ResetLetGo); // driven high: a let-go RP2040 pin pulls NRST down
         Assert.Equal(1, fake.Srsts);
         Assert.Equal(16.0, ((EspStLink)link.Link).SyncMicroseconds);
         Assert.Contains("0.1", link.About[0]);

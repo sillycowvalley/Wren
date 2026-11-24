@@ -19,6 +19,7 @@ public sealed class FakeEspStLink : Stream
 
     public Stm8Device Device { get; }
     public bool ResetHeld { get; private set; }
+    public bool ResetLetGo { get; private set; }
     public bool Entered { get; private set; }
     public int Srsts { get; private set; }
     public int LargestRead { get; private set; }
@@ -77,6 +78,7 @@ public sealed class FakeEspStLink : Stream
                 return;
             case EspStLink.Reset:
                 ResetHeld = r[1] == EspStLink.ResetLow;
+                ResetLetGo = r[1] == EspStLink.ResetLetGo;
                 Reply(r[0], EspStLink.Success);
                 return;
             case EspStLink.Entry:
