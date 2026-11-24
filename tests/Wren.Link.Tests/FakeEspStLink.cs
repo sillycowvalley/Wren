@@ -27,6 +27,9 @@ public sealed class FakeEspStLink : Stream
     /// <summary>When set, reads and writes fail with this esp-stlink error code.</summary>
     public int? Error { get; set; }
 
+    /// <summary>When set, the chip has read-out protection: SWIM_CSR shows NO_ACCESS and memory reads time out.</summary>
+    public bool ReadOutProtected { get; set; }
+
     /// <summary>When set, the device answers nothing (like a port with something else on it).</summary>
     public bool Silent { get; set; }
 
@@ -78,7 +81,7 @@ public sealed class FakeEspStLink : Stream
                 return;
             case EspStLink.Entry:
                 Entered = true;
-                swimCsr = 0x02; // HSIT offered; this programmer does not take it
+                swimCsr = (byte)(0x02 | (ReadOutProtected ? 0x40 : 0)); // HSIT offered; this programmer does not take it
                 Reply(r[0], EspStLink.Success, 0x05, 0x00); // 1280 cycles at 80 MHz: 16 µs
                 return;
             case EspStLink.Srst:
@@ -91,6 +94,7 @@ public sealed class FakeEspStLink : Stream
                 int n = r[1], address = (r[2] << 16) | (r[3] << 8) | r[4];
                 LargestRead = Math.Max(LargestRead, n);
                 if (Error is int e) { Fail(r[0], e); return; }
+                if (ReadOutProtected && address != SwimTarget.SwimCsr) { Fail(r[0], EspStLink.ErrorTimeout); return; }
                 Reply(r[0], EspStLink.Success, r[1], r[2], r[3], r[4]);
                 Reply(Enumerable.Range(address, n).Select(ReadTarget).ToArray());
                 return;
@@ -117,7 +121,7 @@ public sealed class FakeEspStLink : Stream
 
     private void WriteTarget(int address, byte value)
     {
-        if (address == SwimTarget.SwimCsr) swimCsr = (byte)((value & ~0x02) | (swimCsr & 0x02));
+        if (address == SwimTarget.SwimCsr) swimCsr = (byte)((value & ~0x42) | (swimCsr & 0x42)); // HSIT and NO_ACCESS are read-only
         else if (address == SwimTarget.DmCsr2) dmCsr2 = value;
         else Device.DebugWrite(address, value);
     }

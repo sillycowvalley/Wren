@@ -19,6 +19,15 @@ public sealed class SwimTarget
 
     public SwimTarget(ITargetLink link) => Link = link;
 
+    /// <summary>SWIM_CSR as read at the end of Connect.</summary>
+    public byte ConnectedCsr { get; private set; }
+
+    /// <summary>
+    /// SWIM_CSR's NO_ACCESS bit at Connect: the chip refuses memory access, because read-out
+    /// protection is on (or it is halted). SWIM_CSR itself can still be read and written.
+    /// </summary>
+    public bool NoAccess => (ConnectedCsr & 0x40) != 0;
+
     public ITargetLink Link { get; }
 
     /// <summary>
@@ -44,6 +53,7 @@ public sealed class SwimTarget
             if ((csr & 0x02) != 0) break; // HSIT: high speed is possible
             Link.Sleep(1);
         }
+        ConnectedCsr = csr;
         Link.ResetSwim();
         if ((csr & 0x02) != 0 && Link.OffersHighSpeed)
         {

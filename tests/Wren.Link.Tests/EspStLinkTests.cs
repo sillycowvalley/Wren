@@ -83,6 +83,18 @@ public class EspStLinkTests
     }
 
     [Fact]
+    public void AReadOutProtectedThingConnectsAndSaysSo()
+    {
+        var thing = new OledThing();
+        var fake = new FakeEspStLink(thing.Mcu) { ReadOutProtected = true };
+        var link = new ThingLink(new EspStLink(fake), "COM7");
+        link.Link.Sleep = _ => { };
+        link.Target.Connect();
+        Assert.True(link.Target.NoAccess);
+        Assert.Throws<LinkException>(() => link.Programmer.ReadStatus());
+    }
+
+    [Fact]
     public void ADeviceThatDoesNotAnswerIsNotAProgrammer()
     {
         var link = new EspStLink(new FakeEspStLink(new OledThing().Mcu) { Silent = true });
