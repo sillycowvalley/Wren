@@ -26,7 +26,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 12;
+const uint8_t SketchVersion = 13;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -46,8 +46,9 @@ static uint32_t lowCycles;
 // 1.6-2.4 us, a 1 for 150-250 ns): the target decodes a bit by counting low samples of its
 // SWIM clock (8 or fewer is a 1, 9 or more a 0), so the shape matters, not its own clock.
 // The target's bits are timed by its clock: targetPeriod (22 SWIM clocks) and sampleAt
-// (11, midway between a 1's 2 low clocks and a 0's 20), calibrated from a sync pulse
-// (128 SWIM clocks) when one is measured cleanly.
+// (16: late, because a Thing has about 1.2 nF on SWIM and a 1 lets the line rise slowly
+// back up; a 0 stays low for 20), calibrated from a sync pulse (128 SWIM clocks) when one
+// is measured cleanly.
 static uint32_t hostPeriod, shortLow, longLow, targetPeriod, sampleAt;
 static uint32_t answerTimeout, bitTimeout, riseTimeout, edgeWindow, interFrameGap, commResetLow;
 static uint32_t entryLow, entrySlow, entryFast, syncTimeout, afterSync, syncShortest, syncLongest, stuckTimeout, settleTimeout;
@@ -314,7 +315,7 @@ static uint32_t calibrateShortest, calibrateLongest, traceWindow;
 static void __not_in_flash_func(calibrate)(uint32_t syncCycles) {
   if (syncCycles < calibrateShortest || syncCycles > calibrateLongest) return;
   targetPeriod = syncCycles * 22 / 128;
-  sampleAt = syncCycles * 11 / 128;
+  sampleAt = syncCycles * 16 / 128;
   edgeWindow = syncCycles * 5 / 128;
 }
 
@@ -621,7 +622,7 @@ void setup() {
   shortLow = cycles(220);
   longLow = cycles(2000);
   defaultPeriod = cycles(2750);
-  defaultSampleAt = cycles(1375);
+  defaultSampleAt = cycles(2000);
   defaultEdgeWindow = cycles(625);
   resetCalibration();
   commResetLow = cycles(25000);

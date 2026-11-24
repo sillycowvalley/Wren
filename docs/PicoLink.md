@@ -11,8 +11,10 @@ and a program upload well under one.
 ## Parts
 
 - A Pico or Pico 2 (a Pico W or Pico 2 W works too) and a USB cable.
-- One 1 kΩ resistor: the SWIM line's pull-up. The Pico's own pull-up is too weak for
-  SWIM's 250 ns pulses.
+- Two 1 kΩ resistors, side by side as the SWIM line's pull-up (500 Ω). A Thing has
+  about 1.2 nF on SWIM, so the line needs a strong pull-up to rise in time; don't go
+  below about 410 Ω, as the Thing's pin can only sink 8 mA. The Pico's own pull-up is far
+  too weak.
 - Four jumper wires to the Thing's J2 (SWIM header) and VCC.
 
 ## Wiring
