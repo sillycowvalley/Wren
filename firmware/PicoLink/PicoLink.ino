@@ -22,7 +22,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 3;
+const uint8_t SketchVersion = 4;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -40,7 +40,7 @@ static uint32_t lowCycles;
 // Times in CPU cycles, worked out from the clock in setup().
 static uint32_t bitPeriod, shortLow, longLow, sampleAt;
 static uint32_t answerTimeout, bitTimeout, riseTimeout;
-static uint32_t entryLow, entrySlow, entryFast, syncTimeout, afterSync, syncShortest, syncLongest, stuckTimeout;
+static uint32_t entryLow, entrySlow, entryFast, syncTimeout, afterSync, syncShortest, syncLongest, stuckTimeout, settleTimeout;
 static uint32_t cpuHz;
 
 static uint32_t cycles(uint32_t ns) { return (uint32_t)((uint64_t)cpuHz * ns / 1000000000ull); }
@@ -182,8 +182,10 @@ static uint8_t __not_in_flash_func(softReset)() {
 
 // The entry sequence: low for 16 us, four pulses at 1 kHz, four at 2 kHz; then the target
 // answers with a sync pulse 128 SWIM clocks (16 us) long. *syncCycles is how long it was.
-// The line takes a moment to rise once let go, so wait for it to be high before looking for
-// the pulse; a pulse far from 16 us is not the target's sync.
+// The target may start its pulse before the host lets go (seen on a Thing: the line stays
+// low about 16 us after release). So: if the line rises within a couple of microseconds
+// (its own rise time), the pulse is still to come; if it stays low, the pulse has begun
+// and its length is counted from the release. A pulse far from 16 us is not the sync.
 // When an entry fails, failedFrame says where: EntryNoRise (the line did not rise once let
 // go; lowCycles is how long it stayed low), EntryNoPulse (no pulse came), EntryBadPulse
 // (a pulse of the wrong length; lowCycles is its length).
@@ -215,15 +217,24 @@ static uint8_t __not_in_flash_func(enterSwim)(uint32_t *syncCycles) {
   uint8_t status = StatusNoSync;
   failedFrame = 0;
   lowCycles = 0;
-  if (!waitRise(riseTimeout)) {
+  bool measured = false;
+  if (waitRise(settleTimeout)) {
+    if (!waitFall(syncTimeout, &at)) {
+      failedFrame = EntryNoPulse;
+    } else {
+      waitRise(syncTimeout);
+      lowCycles = since(at);
+      measured = true;
+    }
+  } else if (!waitRise(syncLongest)) {
     failedFrame = EntryNoRise;
     waitRise(stuckTimeout);
     lowCycles = since(released);
-  } else if (!waitFall(syncTimeout, &at)) {
-    failedFrame = EntryNoPulse;
   } else {
-    waitRise(syncTimeout);
-    lowCycles = since(at);
+    lowCycles = since(released);
+    measured = true;
+  }
+  if (measured) {
     *syncCycles = lowCycles;
     if (lowCycles >= syncShortest && lowCycles <= syncLongest) {
       t = now();
@@ -354,6 +365,7 @@ void setup() {
   syncShortest = cycles(4000);  // 16 us is right; allow a target clock well off
   syncLongest = cycles(64000);
   stuckTimeout = cycles(2000000);
+  settleTimeout = cycles(2000);  // the line's own rise once let go is well under this
 }
 
 void loop() {

@@ -81,8 +81,19 @@ public class PicoLinkTests
         var lines = ((PicoLink)link.Link).CheckLine();
         Assert.Contains(lines, l => l.Contains("SWIM at rest: high"));
         Assert.Contains(lines, l => l.Contains("90 ns (good"));
-        Assert.Contains(lines, l => l.Contains("16 µs sync pulse (good)"));
+        Assert.Contains(lines, l => l.Contains("answered with its sync pulse: 16.0"));
         Assert.DoesNotContain(lines, l => l.Contains("LOW") || l.Contains("did not answer"));
+    }
+
+    [Fact]
+    public void TheLineCheckCountsAPulseBegunBeforeTheRelease()
+    {
+        var thing = new OledThing();
+        var fake = new FakePico(thing.Mcu) { LineCheckReply = new byte[] { 1, 0, 1, 0x01, 0xB3, 0, 1, 0x00, 0xA7 } };
+        var link = new ThingLink(new PicoLink(fake), "COM6");
+        var lines = ((PicoLink)link.Link).CheckLine();
+        Assert.Contains(lines, l => l.Contains("answered with its sync pulse: 16.7"));
+        Assert.Contains(lines, l => l.Contains("435 ns (works"));
     }
 
     [Fact]

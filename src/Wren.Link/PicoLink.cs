@@ -170,7 +170,9 @@ public sealed class PicoLink : ITargetLink
             ? "SWIM rise after letting go: it never rose. The pull-up is missing, or the line is shorted to GND."
             : rise > 1500
                 ? $"SWIM rise after letting go: {rise} ns, too slow. Is the 1 kΩ pull-up from GP2 to 3V3(OUT) in place?"
-                : $"SWIM rise after letting go: {rise} ns (good; under a few hundred is right).");
+                : rise > 300
+                    ? $"SWIM rise after letting go: {rise} ns (works; with 1 kΩ expect nearer 100: check the resistor is brown-black-red, not brown-black-orange)."
+                    : $"SWIM rise after letting go: {rise} ns (good).");
         lines.Add(resetHeld
             ? "NRST held low by GP3: it still reads HIGH. Is GP3 wired to J2 pin 3?"
             : "NRST held low by GP3: low (good).");
@@ -181,11 +183,13 @@ public sealed class PicoLink : ITargetLink
             ? $"no edges (the line stayed {(level != 0 ? "high" : "low")})"
             : $"starts {(level != 0 ? "high" : "low")}, edges at {string.Join(", ", edges.Select(t => $"{t:F1}"))} µs";
         lines.Add($"After the entry sequence: {trace}.");
-        // Pulses are a fall then a rise; a line that starts low is still rising from the
-        // Pico letting go, so its first rise is not a pulse.
+        // Pulses are a fall then a rise. A line that starts low and rises within 2 µs is just
+        // rising from the Pico letting go; one that stays low longer is the target's pulse,
+        // begun before the release and counted from it.
         var pulses = new List<double>();
         bool high = level != 0;
         double? fell = null;
+        if (level == 0 && edges.Count > 0 && edges[0] > 2) fell = 0;
         foreach (double t in edges)
         {
             high = !high;
@@ -195,7 +199,7 @@ public sealed class PicoLink : ITargetLink
         lines.Add(pulses.Count == 0
             ? "The Thing did not answer: no pulse came back. Check SWIM goes to J2 pin 2 and the Thing has 3.3 V on VCC."
             : pulses.Any(p => p is > 12 and < 20)
-                ? "The Thing answered with its 16 µs sync pulse (good)."
+                ? $"The Thing answered with its sync pulse: {pulses.First(p => p is > 12 and < 20):F1} µs (16 is right)."
                 : $"A pulse came back but not 16 µs: {string.Join(", ", pulses.Select(p => $"{p:F1}"))} µs.");
         return lines;
     }

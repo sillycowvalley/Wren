@@ -23,6 +23,9 @@ public sealed class FakePico : Stream
     /// <summary>When set, SWIM requests answer this status (e.g. no answer from the target).</summary>
     public byte? SwimError { get; set; }
 
+    /// <summary>The line check's data; by default a healthy line (idle high, NRST works, a 90 ns rise, the sync pulse).</summary>
+    public byte[] LineCheckReply { get; set; } = { 1, 0, 1, 0x00, 0x5A, 0, 3, 0x00, 0x00, 0x00, 0x14, 0x00, 0xB4 };
+
     /// <summary>The largest read or write asked for.</summary>
     public int LargestTransfer { get; private set; }
 
@@ -67,14 +70,14 @@ public sealed class FakePico : Stream
         switch (r[0])
         {
             case PicoLink.Hello:
-                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 3);
+                Reply(r[0], PicoLink.StatusOk, (byte)'W', (byte)'R', (byte)'E', (byte)'N', 4);
                 return;
             case PicoLink.Reset:
                 ResetHeld = r[1] != 0;
                 Reply(r[0], PicoLink.StatusOk);
                 return;
-            case PicoLink.LineCheck: // a healthy line: idle high, NRST works, 90 ns rise, the sync pulse
-                Reply(r[0], PicoLink.StatusOk, 1, 0, 1, 0x00, 0x5A, 0, 3, 0x00, 0x00, 0x00, 0x14, 0x00, 0xB4);
+            case PicoLink.LineCheck:
+                Reply(r[0], PicoLink.StatusOk, LineCheckReply);
                 return;
             case PicoLink.Release:
                 ResetHeld = false;
