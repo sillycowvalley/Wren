@@ -13,7 +13,8 @@ Wren recognises either.
 - **pico-swimlib** (`firmware/pico-swimlib/pico-espstlink.uf2`): Richard Hulme's
   [pico-swimlib](https://github.com/rhulme/pico-swimlib) (BSD 3-Clause) built unchanged.
   - **Protocol:** it speaks the esp-stlink protocol.
-  - **Status:** proven on a real Thing: it restored Digicool's firmware.
+  - **Status:** proven on a real Thing: it restored Digicool's firmware, installed Wren's
+    kernel and uploaded `OledThing.bas`.
 
 In both, SWIM is timed in hardware by the RP2040's PIO. SWIM runs at low speed only. A whole
 kernel takes a few seconds, a program upload well under one.
@@ -104,6 +105,13 @@ If Connect says the target did not answer in time, check:
 
 ## Open issues
 
-1. **Wren's PicoLink on a real Thing.** It follows pico-swimlib's method and sequence, but
-   has only been compile-checked and tested against a simulated Pico. pico-swimlib's
-   firmware is the proven fallback.
+1. **Wren's PicoLink fails part way through long transfers.** On a real Thing, sketch
+   version 15:
+   - connects, and reads thousands of bytes;
+   - writes five kernel blocks;
+   - then the Thing stops answering in the middle of a 64-byte transfer.
+
+   It uses pico-swimlib's PIO program, timings and sequence, so the difference is in how
+   the sketch feeds the PIO between frames (pico-swimlib does it from DMA and its
+   interrupt). Until that is fixed, use pico-swimlib's firmware, which installed the
+   kernel and restored Digicool's firmware without an error.
