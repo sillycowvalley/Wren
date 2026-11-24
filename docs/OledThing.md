@@ -39,13 +39,31 @@ Unused b inputs need an external pull-up or pull-down, or a tie to GND.
 
 ## Digicool's firmware
 
-The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT).
+The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT), with
+its annotated disassembly. It is compiled C and runs the CPU at 8 MHz. One main loop
+reads everything raw, about every 37 µs, with no debounce; the only interrupt is PD3's.
 
-- Shows the byte on b0-b7 as two hex digits and a bar.
-- HEX or BAR pulled low turns that part off; INV low inverts; HEX and BAR both low give
-  "Dice Roll" mode, rolled by pulling any b input low.
-- v1.1 adds PD3 "Latch" (each falling edge latches b0-b7 until reset) and PD2 "Hold"
-  (while low, the display freezes).
+- **Views** (HEX PA1, BAR PA2): both high, two hex digits (about 12 x 18 pixels, cells at
+  x 15 and 34) above eight bit cells 7 x 8 at x = 8i, y 24-31, b7 on the left (filled for
+  1, outlined for 0); BAR low, two big digits (about 17 x 24, cells at x 6 and 33); HEX
+  low, the bit cells 7 x 24 at y 4-27. A change redraws in place; a mode-pin change
+  clears first.
+- **INV (PA3) low** inverts the panel; the rightmost pixel column stays dark.
+- **Inputs**: b0-b7 float in these views (pull-ups only in Dice); HEX, BAR, INV, PD2 and
+  PD3 have pull-ups.
+- **Dice Roll** (HEX and BAR low): entering shows a 6. Any b input low rolls the die (a
+  level, not an edge): a new face every ~115 ms while held, then after release 4 faces
+  ~117 ms apart, 3 ~226 ms apart, a blank, and the result ~1.53 s after release. A face
+  never repeats twice in a row. The faces are a 32 x 32 rounded box at x 16-47 with 4 x 4
+  pips; three runs top right to bottom left. The random source is a 16-bit xorshift
+  stepped every loop pass.
+- **PD3 Latch**: each falling edge latches b0-b7 (read within a few µs); only a reset
+  ends it. Views and INV still redraw with the latched value. Leaving Dice replaces the
+  latched value with the inputs read last in Dice.
+- **PD2 Hold**: while low, the display keeps its value; release shows the live inputs.
+  It has no effect in Dice; a PD3 edge while held still latches.
+- No timers, watchdog or EEPROM use. A missing OLED hangs it (its I2C waits never time
+  out).
 
 ## Programming
 

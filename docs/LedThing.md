@@ -58,16 +58,34 @@ time.
 
 ## Digicool's firmware
 
-The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT). It
-leaves b0-b7 floating and pulls M0-M2 up. The mode pins choose what the bar shows:
+The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT), with
+its annotated disassembly. It is compiled C and runs the CPU at 8 MHz with no interrupts,
+timers, watchdog or EEPROM use: one busy loop is the time base. It leaves b0-b7 floating
+and pulls M0-M2 up.
 
-| M2 M1 M0 | Mode |
-|---|---|
-| 0 0 0 | In-out middle bounce scanner (curtain close and open) |
-| 0 0 1 | In-out middle bounce scanner (2 LEDs) |
-| 0 1 0 | Binary counter loop ($00 to $FF) |
-| 0 1 1 | Left-right single LED scanner |
-| 1 0 0 | Left and right to middle sweep scanner |
-| 1 0 1 | Left-right sweep scanner (0 to 8 LEDs) |
-| 1 1 0 | Dice roll (for example M0 to GND through a push-to-break switch) |
-| 1 1 1 | Each LED shows its b input (the default, through the pull-ups) |
+- **The scan**: one frame (a loop pass) is about 2.9 ms: eight slots of about 357 µs, b0
+  first, each LED lit in its slot if its bit is 1. Only one LED is ever on, so a lit LED
+  has 1/8 duty whatever else is lit.
+- **The mode** (M0 + 2·M1 + 4·M2) is read raw every frame; a change restarts the new
+  mode's sequence from its first step. A step is 32 frames, about 91 ms.
+
+| M2 M1 M0 | Mode | Sequence (b7..b0, repeating) | Step |
+|---|---|---|---|
+| 0 0 0 | Curtain close and open | 81 C3 E7 FF E7 C3 81 00 | 91 ms |
+| 0 0 1 | Two LEDs in and out | 81 42 24 18 24 42 81 00 | 91 ms |
+| 0 1 0 | Binary counter | 00, 01 ... FF, wrapping | 183 ms |
+| 0 1 1 | One LED left and right | 01 02 04 08 10 20 40 80 80 40 20 10 08 04 02 01 | 91 ms |
+| 1 0 0 | Fill from the ends, empty from the ends | 81 C3 E7 FF 7E 3C 18 00 | 91 ms |
+| 1 0 1 | Sweep | 01 03 07 0F 1F 3F 7F FF FE FC F8 F0 E0 C0 80 00 80 C0 E0 F0 F8 FC FE FF 7F 3F 1F 0F 07 03 01 00 | 91 ms |
+| 1 1 0 | Dice Roll | below | |
+| 1 1 1 | The b inputs (the default) | below | |
+
+- **Dice Roll** (mode 6): a roll starts when the mode goes from 7 to 6, so M0 falling
+  with M1 and M2 high (Digicool's push-to-break switch from M0 to GND: releasing it
+  rolls), and at power-up in mode 6. Seven faces, each different from the one before,
+  at 0, 183, 367, 550, 734, 1101 and 1468 ms, a blank at 1835 ms, then the 7th face
+  again at 2202 ms, held. The faces (1-6 pips) are 10 18 34 3C 7A 7E. Coming to mode 6
+  from modes 0-5 shows the last face. The random source is a 16-bit xorshift stepped every
+  frame.
+- **The b inputs** (mode 7): each LED shows the share of the last frame (about 3 ms) its
+  input was high, in 33 steps: a steady high is fully lit, a fast PWM input dimmed.
