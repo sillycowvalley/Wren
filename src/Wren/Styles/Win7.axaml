@@ -1,17 +1,17 @@
 <!--
-  Wren's Windows 7 look, on top of Avalonia's Simple theme: Segoe UI 9 pt, the #F0F0F0
-  dialog grey, glossy grey buttons that turn light blue under the mouse, a gradient menu
-  bar, group boxes with a caption on the border, and white views with a sunken border.
+  Wren's Windows 7 (Aero) look, on top of Avalonia's Simple theme: Segoe UI 9 pt, pale blue
+  window and group boxes, blue-tinted glossy buttons that deepen under the mouse, a blue
+  gradient menu bar and status bar, captioned group boxes, white views with a blue-grey border.
 -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <Styles.Resources>
     <LinearGradientBrush x:Key="Win7ButtonNormal" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#F2F2F2" />
-      <GradientStop Offset="0.5" Color="#EBEBEB" />
-      <GradientStop Offset="0.5" Color="#DDDDDD" />
-      <GradientStop Offset="1" Color="#CFCFCF" />
+      <GradientStop Offset="0" Color="#F6FAFE" />
+      <GradientStop Offset="0.5" Color="#E9F1FA" />
+      <GradientStop Offset="0.5" Color="#D9E6F5" />
+      <GradientStop Offset="1" Color="#C9DBF0" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="Win7ButtonHover" StartPoint="0%,0%" EndPoint="0%,100%">
       <GradientStop Offset="0" Color="#EAF6FD" />
@@ -26,16 +26,20 @@
       <GradientStop Offset="1" Color="#68B3DB" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="Win7MenuBar" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#FFFFFF" />
-      <GradientStop Offset="1" Color="#E6EBF5" />
+      <GradientStop Offset="0" Color="#F7FAFE" />
+      <GradientStop Offset="1" Color="#D5E3F4" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="Win7MenuHover" StartPoint="0%,0%" EndPoint="0%,100%">
       <GradientStop Offset="0" Color="#F2F8FE" />
       <GradientStop Offset="1" Color="#D6E8FC" />
     </LinearGradientBrush>
     <LinearGradientBrush x:Key="Win7StatusBar" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#F5F7FA" />
-      <GradientStop Offset="1" Color="#E3E8EF" />
+      <GradientStop Offset="0" Color="#E8F0FA" />
+      <GradientStop Offset="1" Color="#CCDCF0" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Win7Window" StartPoint="0%,0%" EndPoint="0%,100%">
+      <GradientStop Offset="0" Color="#EEF4FB" />
+      <GradientStop Offset="1" Color="#DCE8F6" />
     </LinearGradientBrush>
 
     <!-- Sliders: a grey gradient thumb on a thin grooved track (horizontal only) -->
@@ -45,7 +49,7 @@
         <ControlTemplate>
           <Grid Name="grid">
             <Border Name="TrackBackground" Height="4" Margin="5,0" VerticalAlignment="Center"
-                    Background="#E7EAEA" BorderBrush="#B0B0B0" BorderThickness="1" />
+                    Background="#E3ECF7" BorderBrush="#A3BDE3" BorderThickness="1" />
             <Track Name="PART_Track" Orientation="Horizontal"
                    IsDirectionReversed="{TemplateBinding IsDirectionReversed}"
                    Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
@@ -67,7 +71,7 @@
               <Thumb Name="thumb" Width="11" Height="20">
                 <Thumb.Template>
                   <ControlTemplate>
-                    <Border Background="{StaticResource Win7ButtonNormal}" BorderBrush="#707070"
+                    <Border Background="{StaticResource Win7ButtonNormal}" BorderBrush="#7A96BC"
                             BorderThickness="1" CornerRadius="2" />
                   </ControlTemplate>
                 </Thumb.Template>
@@ -81,7 +85,7 @@
 
   <!-- Windows and text -->
   <Style Selector="Window">
-    <Setter Property="Background" Value="#F0F0F0" />
+    <Setter Property="Background" Value="{StaticResource Win7Window}" />
     <Setter Property="FontFamily" Value="Segoe UI, Inter" />
     <Setter Property="FontSize" Value="12" />
     <Setter Property="Foreground" Value="#000000" />
@@ -90,7 +94,7 @@
   <!-- Buttons and toggle buttons -->
   <Style Selector="Button, ToggleButton">
     <Setter Property="Background" Value="{StaticResource Win7ButtonNormal}" />
-    <Setter Property="BorderBrush" Value="#707070" />
+    <Setter Property="BorderBrush" Value="#7A96BC" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="3" />
     <Setter Property="Padding" Value="10,3" />
@@ -108,15 +112,15 @@
     <Setter Property="BorderBrush" Value="#2C628B" />
   </Style>
   <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#F4F4F4" />
-    <Setter Property="BorderBrush" Value="#ADB2B5" />
-    <Setter Property="Foreground" Value="#838383" />
+    <Setter Property="Background" Value="#EEF3F9" />
+    <Setter Property="BorderBrush" Value="#B5C3D6" />
+    <Setter Property="Foreground" Value="#8494A8" />
   </Style>
 
   <!-- Text boxes, lists and combo boxes: white with the sunken grey border -->
   <Style Selector="TextBox">
     <Setter Property="Background" Value="#FFFFFF" />
-    <Setter Property="BorderBrush" Value="#ABADB3" />
+    <Setter Property="BorderBrush" Value="#8EA5C5" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Padding" Value="3,2" />
@@ -126,12 +130,12 @@
   </Style>
   <Style Selector="ListBox">
     <Setter Property="Background" Value="#FFFFFF" />
-    <Setter Property="BorderBrush" Value="#828790" />
+    <Setter Property="BorderBrush" Value="#8EA5C5" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="ComboBox">
     <Setter Property="Background" Value="{StaticResource Win7ButtonNormal}" />
-    <Setter Property="BorderBrush" Value="#707070" />
+    <Setter Property="BorderBrush" Value="#7A96BC" />
     <Setter Property="CornerRadius" Value="3" />
     <Setter Property="MinHeight" Value="23" />
   </Style>
@@ -139,7 +143,7 @@
   <!-- The menu bar and its menus -->
   <Style Selector="Menu">
     <Setter Property="Background" Value="{StaticResource Win7MenuBar}" />
-    <Setter Property="BorderBrush" Value="#B6BCCC" />
+    <Setter Property="BorderBrush" Value="#A3BDE3" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="Padding" Value="2,1" />
   </Style>
@@ -153,20 +157,20 @@
     <Setter Property="CornerRadius" Value="2" />
   </Style>
   <Style Selector="MenuItem /template/ Popup > Border">
-    <Setter Property="Background" Value="#F0F0F0" />
-    <Setter Property="BorderBrush" Value="#979797" />
+    <Setter Property="Background" Value="#F3F7FC" />
+    <Setter Property="BorderBrush" Value="#8EA5C5" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <!-- A group box: a thin rounded border with its caption on the top edge -->
   <Style Selector="HeaderedContentControl.group">
-    <Setter Property="Background" Value="#F0F0F0" />
+    <Setter Property="Background" Value="#E6EFF9" />
     <Setter Property="Margin" Value="0,0,0,6" />
     <Setter Property="Template">
       <ControlTemplate>
         <Grid RowDefinitions="Auto,*">
-          <Border Grid.Row="0" Grid.RowSpan="2" Margin="0,8,0,0"
-                  BorderBrush="#D5DFE5" BorderThickness="1" CornerRadius="3" />
+          <Border Grid.Row="0" Grid.RowSpan="2" Margin="0,8,0,0" Background="#F2F7FD"
+                  BorderBrush="#A3BDE3" BorderThickness="1" CornerRadius="4" />
           <Border Grid.Row="0" Margin="7,0,0,0" Padding="3,0" HorizontalAlignment="Left"
                   Background="{TemplateBinding Background}">
             <ContentPresenter Content="{TemplateBinding Header}" Foreground="#1E3287" />
@@ -180,14 +184,14 @@
   <!-- A white view with the sunken border of a list or edit box -->
   <Style Selector="Border.view">
     <Setter Property="Background" Value="#FFFFFF" />
-    <Setter Property="BorderBrush" Value="#828790" />
+    <Setter Property="BorderBrush" Value="#8EA5C5" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <!-- The status bar -->
   <Style Selector="Border.statusbar">
     <Setter Property="Background" Value="{StaticResource Win7StatusBar}" />
-    <Setter Property="BorderBrush" Value="#B6BCCC" />
+    <Setter Property="BorderBrush" Value="#A3BDE3" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
     <Setter Property="Padding" Value="6,3" />
   </Style>

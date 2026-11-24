@@ -49,7 +49,7 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
 
 ## Code rules
 - Avalonia UI for the app, in a Windows 7 look: the Simple theme with `src/Wren/Styles/Win7.axaml`
-  (Segoe UI 9 pt, #F0F0F0, gradient buttons and menu bar, captioned group boxes). Commands
+  (Segoe UI 9 pt, Aero light blues, glossy buttons, gradient menu bar, captioned group boxes). Commands
   live in a standard menu bar with the usual shortcuts, not in toolbars. Each library is
   UI-free and has its own test project, so it can be tested headless.
 - Firmware is STM8 assembly. There is no C compiler.
