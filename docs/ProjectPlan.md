@@ -137,3 +137,11 @@ The detailed design, for approval, is in [Design.md](Design.md).
    2. Can SWIM read RAM while the kernel idles in WFI (NO_ACCESS is documented as set in WFI)?
    3. Does DM_ENFCTR freeze TIM4 (the 1 ms tick) while the CPU is stopped?
    Connect, click **Debug module checks**, and copy the log back.
+6. **The host loader goes, the store grows (after the bench).** Uploading over b0-b7 from
+   a host is never used. Once PicoLink v16 and the current kernel are proven on a Thing,
+   remove it: the kernel's loader (528 bytes) and its PD2-at-start-up check,
+   `HostUpload` in Wren.Script and its tests, and "Uploading from a host" in Bytecode.md.
+   The program store then starts at $9240: 55 blocks instead of 47, so the largest
+   program grows from 3,008 to 3,520 bytes, and `EEREAD`/`EEWRITE` keep 10 setting bytes
+   instead of 26. The FAT's version goes up; installing the kernel carries each block's
+   write count over (old block n is new block n + 8), and the program is uploaded again.
