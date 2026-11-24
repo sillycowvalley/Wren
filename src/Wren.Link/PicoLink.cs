@@ -22,15 +22,16 @@ namespace Wren.Link;
 /// <item><c>X</c>: let go of SWIM and NRST.</item>
 /// <item><c>D</c>: the line check; see <see cref="CheckLine"/>.</item>
 /// <item><c>T</c> a2 a1 a0: the read trace; see <see cref="TraceRead"/>.</item>
+/// <item><c>F</c> c: the frame trace; see <see cref="TraceFrame"/>.</item>
 /// </list>
 /// </summary>
 public sealed class PicoLink : ITargetLink
 {
     public const byte Hello = (byte)'H', Reset = (byte)'R', Entry = (byte)'E', Srst = (byte)'S',
-        Read = (byte)'r', Write = (byte)'w', Release = (byte)'X', LineCheck = (byte)'D', CommsReset = (byte)'L', ReadTrace = (byte)'T';
+        Read = (byte)'r', Write = (byte)'w', Release = (byte)'X', LineCheck = (byte)'D', CommsReset = (byte)'L', ReadTrace = (byte)'T', FrameTrace = (byte)'F';
 
     /// <summary>The sketch version this Wren speaks to.</summary>
-    public const int SketchVersion = 9;
+    public const int SketchVersion = 10;
 
     public const byte StatusOk = 0, StatusNoAnswer = 1, StatusNack = 2, StatusParity = 3,
         StatusBadFrame = 4, StatusNoSync = 5, StatusBadCommand = 6;
@@ -274,6 +275,48 @@ public sealed class PicoLink : ITargetLink
                 lines.Add("Bit periods (start to start, µs): " +
                           string.Join(" ", pulses.Zip(pulses.Skip(1), (a, b) => $"{b.Start - a.Start:F2}")));
         }
+        return lines;
+    }
+
+    /// <summary>
+    /// The frame trace: after a communication reset, the Pico sends one command frame (ROTF
+    /// by default) from a timetable and records every edge on the line, its own pulses
+    /// included, then 300 µs more. Each low pulse is listed with who most likely made it.
+    /// </summary>
+    public IReadOnlyList<string> TraceFrame(byte command = 1)
+    {
+        byte[] d = Request(new[] { FrameTrace, command }, 4);
+        double sync = ((d[0] << 8) | d[1]) / 1000.0;
+        int level = d[2], count = d[3];
+        byte[] e = ReadExactly(2 * count);
+        var edges = Enumerable.Range(0, count).Select(i => ((e[2 * i] << 8) | e[2 * i + 1]) / 100.0).ToList();
+
+        var lines = new List<string> { $"--- Frame trace (command {Convert.ToString(command, 2).PadLeft(3, '0')})" };
+        lines.Add(sync == 0 ? "Communication reset: no sync pulse seen." : $"Communication reset: sync pulse {sync:F1} µs.");
+        lines.Add(count == 0
+            ? "No edges at all: the Pico's own pulses did not show on the line."
+            : $"Starts {(level != 0 ? "high" : "low")}, {count} edges (µs from the frame's start): {string.Join(", ", edges.Select(t => $"{t:F2}"))}.");
+        // The Pico's five bits start every 2.75 µs; a low that starts near one of those is its own.
+        int[] bits = { 0, (command >> 2) & 1, (command >> 1) & 1, command & 1, 0 };
+        bits[4] = bits[1] ^ bits[2] ^ bits[3];
+        var pulses = new List<string>();
+        bool high = level != 0;
+        double? fell = high ? null : 0.0;
+        foreach (double t in edges)
+        {
+            high = !high;
+            if (!high) fell = t;
+            else if (fell is double f)
+            {
+                int nearest = (int)Math.Round(f / 2.75);
+                bool host = nearest is >= 0 and < 5 && Math.Abs(f - nearest * 2.75) < 0.3;
+                string who = host ? $"Pico bit {nearest} ({bits[nearest]}, expect {(bits[nearest] == 1 ? 0.22 : 2.0):F2})" : "Thing";
+                pulses.Add($"{f:F2}+{t - f:F2} {who}");
+                fell = null;
+            }
+        }
+        if (fell is double open) pulses.Add($"{open:F2}+ (still low at the end)");
+        lines.Add("Low pulses (start+length µs): " + string.Join("; ", pulses));
         return lines;
     }
 

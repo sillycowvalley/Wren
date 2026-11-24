@@ -52,6 +52,7 @@ public sealed class FakePico : Stream
         PicoLink.Reset => request.Count == 2,
         PicoLink.Read => request.Count == 5,
         PicoLink.ReadTrace => request.Count == 4,
+        PicoLink.FrameTrace => request.Count == 2,
         PicoLink.Write => request.Count >= 2 && request.Count == 5 + request[1],
         _ => true,
     };
@@ -89,6 +90,14 @@ public sealed class FakePico : Stream
                     edges.Add(start + (bits[i] == 1 ? 25 : 250));
                 }
                 var data = new List<byte> { 0, 0, 0x3E, 0x80, 1, 1, (byte)edges.Count };
+                foreach (int t in edges) { data.Add((byte)(t >> 8)); data.Add((byte)t); }
+                Reply(r[0], PicoLink.StatusOk, data.ToArray());
+                return;
+            }
+            case PicoLink.FrameTrace: // the Pico's five bits of ROTF (0 001 1), then the Thing's ACK
+            {
+                int[] edges = { 0, 200, 275, 297, 550, 572, 825, 847, 1100, 1122, 1160, 1185 };
+                var data = new List<byte> { 0x3F, 0xAC, 1, (byte)edges.Length };
                 foreach (int t in edges) { data.Add((byte)(t >> 8)); data.Add((byte)t); }
                 Reply(r[0], PicoLink.StatusOk, data.ToArray());
                 return;

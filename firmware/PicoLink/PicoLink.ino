@@ -26,7 +26,7 @@ const uint SwimPin = 2;
 const uint ResetPin = 3;
 const uint32_t SwimMask = 1u << SwimPin;
 const uint32_t ResetMask = 1u << ResetPin;
-const uint8_t SketchVersion = 9;
+const uint8_t SketchVersion = 10;
 const int MaxChunk = 64;
 
 // Reply statuses (as in PicoLink.cs).
@@ -462,6 +462,62 @@ static void readTrace(uint32_t address) {
   }
 }
 
+// The frame trace ('F' c): a communication reset, then the 4-bit command frame c (with its
+// parity) sent from a timetable while every edge on the line is recorded, the host's own
+// pulses included, and 300 us more after it, sending no ACKs. Then another communication
+// reset. Data: the reset's sync (ns, 2 bytes), the level when recording began, the count of
+// edges (96 at most) and each edge's time from the frame's start in units of 10 ns.
+const int MaxFrameEdges = 96;
+static uint16_t frameEdges[MaxFrameEdges];
+
+static void frameTrace(uint8_t command) {
+  uint32_t syncCycles = 0;
+  bool clean = false;
+  resetComms(&syncCycles, &clean);
+  // The bits: the 0 header, the three command bits, the parity.
+  int bits[5];
+  bits[0] = 0;
+  int parity = 0;
+  for (int i = 0; i < 3; i++) { bits[1 + i] = (command >> (2 - i)) & 1; parity ^= bits[1 + i]; }
+  bits[4] = parity;
+  uint32_t saved = save_and_disable_interrupts();
+  uint32_t start = now();
+  bool high = lineHigh();
+  uint8_t level = high ? 1 : 0;
+  uint8_t count = 0;
+  int step = 0;           // 0: drive low next; 1: drive high next; 2: let go next
+  int bit = 0;
+  uint32_t due = 0;       // when the next step is due, in cycles from start
+  uint32_t end = 5 * hostPeriod + cycles(300000);
+  for (;;) {
+    uint32_t t = since(start);
+    if (t >= end) break;
+    if (bit < 5 && t >= due) {
+      if (step == 0) { driveLow(); due = bit * hostPeriod + (bits[bit] ? shortLow : longLow); step = 1; }
+      else if (step == 1) { sio_hw->gpio_set = SwimMask; due += boostHigh; step = 2; }
+      else { sio_hw->gpio_oe_clr = SwimMask; sio_hw->gpio_clr = SwimMask; bit++; due = bit * hostPeriod; step = 0; }
+    }
+    if (lineHigh() != high) {
+      high = !high;
+      if (count < MaxFrameEdges) frameEdges[count++] = (uint16_t)((uint64_t)t * 100000000ull / cpuHz);
+    }
+  }
+  restore_interrupts(saved);
+  uint32_t ignored;
+  bool alsoIgnored;
+  resetComms(&ignored, &alsoIgnored);
+  uint32_t ns = (uint32_t)((uint64_t)syncCycles * 1000000000ull / cpuHz);
+  if (ns > 0xFFFF) ns = 0xFFFF;
+  Serial.write((uint8_t)(ns >> 8));
+  Serial.write((uint8_t)ns);
+  Serial.write(level);
+  Serial.write(count);
+  for (int i = 0; i < count; i++) {
+    Serial.write((uint8_t)(frameEdges[i] >> 8));
+    Serial.write((uint8_t)frameEdges[i]);
+  }
+}
+
 static void lineCheck() {
   sio_hw->gpio_oe_clr = SwimMask | ResetMask;
   delay(20);
@@ -599,6 +655,9 @@ void loop() {
   } else if (command == 'T' && readArguments(args, 3)) {
     reply(command, StatusOk);
     readTrace(((uint32_t)args[0] << 16) | ((uint32_t)args[1] << 8) | args[2]);
+  } else if (command == 'F' && readArguments(args, 1)) {
+    reply(command, StatusOk);
+    frameTrace(args[0]);
   } else if (command == 'D') {
     reply(command, StatusOk);
     lineCheck();

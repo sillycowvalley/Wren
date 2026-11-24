@@ -114,6 +114,14 @@ public partial class LinkWindow : Window
                     $"{(pico.Calibrated ? " (calibrated to it)" : "")}.");
                 try
                 {
+                    foreach (string line in pico.TraceFrame()) Log(line);
+                }
+                catch (Exception trace) when (trace is LinkException or IOException or TimeoutException)
+                {
+                    Log($"The frame trace failed: {trace.Message}");
+                }
+                try
+                {
                     foreach (string line in pico.TraceRead()) Log(line);
                 }
                 catch (Exception trace) when (trace is LinkException or IOException or TimeoutException)

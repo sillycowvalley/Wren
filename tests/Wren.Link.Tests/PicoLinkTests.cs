@@ -110,6 +110,16 @@ public class PicoLinkTests
     }
 
     [Fact]
+    public void TheFrameTraceTellsThePicosPulsesFromTheThings()
+    {
+        var (_, _, link) = Connect();
+        string pulses = ((PicoLink)link.Link).TraceFrame().Single(l => l.StartsWith("Low pulses"));
+        Assert.Contains("0.00+2.00 Pico bit 0", pulses);
+        Assert.Contains("11.00+0.22 Pico bit 4", pulses);
+        Assert.Contains("11.60+0.25 Thing", pulses);
+    }
+
+    [Fact]
     public void RefusesHighSpeed() =>
         Assert.Throws<LinkException>(() => new PicoLink(new MemoryStream()).SetHighSpeed(true));
 }
