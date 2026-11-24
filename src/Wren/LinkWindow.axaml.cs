@@ -371,7 +371,7 @@ public partial class LinkWindow : Window
         var program = currentProgram();
         if (program == null || !program.Success)
         {
-            Log("Open a program that compiles in Wren first.");
+            Log("The program does not build: see Messages in Wren's main window.");
             return;
         }
         var l = link;

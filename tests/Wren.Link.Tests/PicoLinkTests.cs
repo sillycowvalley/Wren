@@ -54,6 +54,24 @@ public class PicoLinkTests
     }
 
     [Fact]
+    public void UploadsOnlyWhenTheProgramChanged()
+    {
+        var (thing, _, link) = Connect();
+        link.Programmer.InstallKernel(Kernel.Image);
+        var first = Compiler.Compile("DIM a\nON START\n a = 1\nEND ON\n").Image;
+        Assert.False(link.Programmer.HoldsProgram(first));
+        Assert.True(link.Programmer.UploadIfChanged(first));
+        int[] writes = (int[])thing.Mcu.FlashWrites.Clone();
+        Assert.True(link.Programmer.HoldsProgram(first));
+        Assert.False(link.Programmer.UploadIfChanged(first));
+        Assert.Equal(writes, thing.Mcu.FlashWrites);
+        var second = Compiler.Compile("DIM a\nON START\n a = 2\nEND ON\n").Image;
+        Assert.False(link.Programmer.HoldsProgram(second));
+        Assert.True(link.Programmer.UploadIfChanged(second));
+        Assert.True(link.Programmer.HoldsProgram(second));
+    }
+
+    [Fact]
     public void LongReadsAndWritesGoInPieces()
     {
         var (thing, fake, link) = Connect();

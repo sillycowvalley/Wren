@@ -11,9 +11,14 @@ SWIM are ST's names, used here to describe compatibility.
 ## What is in it
 
 - **Wren**: the app. You edit a Wren BASIC program in it (File and Edit menus, Notepad
-  style). Saving compiles it, uploads it to an emulated OLED Thing and runs it: the OLED,
-  the inputs and pins, the current line, stepping by statement, breakpoints, variables,
-  and the flash write counts. A program saved from another editor reloads by itself.
+  style) and build, run and debug it with Visual Studio's keys: Ctrl+Shift+B builds, F5
+  starts debugging (building first if the program changed), Ctrl+F5 runs without
+  debugging, Shift+F5 stops, F9 toggles a breakpoint, F11, F10 and Shift+F11 step into,
+  over and out, Ctrl+F10 runs to the cursor. **Debug → Target** chooses where: the
+  emulated OLED Thing (the OLED, the inputs and pins, the current line, variables and the
+  flash write counts), or a real Thing on the programmer, where Ctrl+F5 uploads the
+  program only if it changed and runs it. A program saved from another editor reloads
+  by itself.
 - **Wren BASIC**: the Thing's language. Programs react to events (`ON CHANGE`,
   `ON LATCH PD3 RISING WHILE PD2 LOW`, `ON EVERY 100` ...) and draw with statements
   such as `HEX`, `BITS`, `TEXT` and `BOX`. See [docs/Design.md](docs/Design.md), and the

@@ -48,12 +48,31 @@
         <MenuItem Header="_Find…" InputGesture="Ctrl+F" Click="OnFind" />
         <MenuItem Header="Select _All" InputGesture="Ctrl+A" Click="OnSelectAll" />
       </MenuItem>
-      <MenuItem Header="_Program">
-        <MenuItem Name="RunMenu" Header="_Run" InputGesture="F5" Click="OnRun" />
-        <MenuItem Name="StepMenu" Header="_Step" InputGesture="F10" Click="OnStep" />
+      <MenuItem Header="_Build">
+        <MenuItem Header="_Build" InputGesture="Ctrl+Shift+B" Click="OnBuild"
+                  ToolTip.Tip="Compiles the program and lists any errors in Messages; runs nothing" />
+      </MenuItem>
+      <MenuItem Header="_Debug">
+        <MenuItem Name="StartMenu" Header="_Start Debugging" InputGesture="F5" Click="OnStartDebugging" />
+        <MenuItem Name="StartFreeMenu" Header="Start _Without Debugging" InputGesture="Ctrl+F5" Click="OnStartWithoutDebugging" />
+        <MenuItem Name="StopMenu" Header="Stop D_ebugging" InputGesture="Shift+F5" Click="OnStop" />
+        <MenuItem Name="RestartMenu" Header="_Restart" InputGesture="Ctrl+Shift+F5" Click="OnRestart" />
+        <MenuItem Name="BreakMenu" Header="Break _All" InputGesture="Ctrl+Alt+Pause" Click="OnBreakAll" />
         <Separator />
-        <MenuItem Header="R_eset" Click="OnReset" />
-        <MenuItem Header="_Power cycle" Click="OnPowerCycle" />
+        <MenuItem Name="StepIntoMenu" Header="Step _Into" InputGesture="F11" Click="OnStepInto" />
+        <MenuItem Name="StepOverMenu" Header="Step _Over" InputGesture="F10" Click="OnStepOver" />
+        <MenuItem Name="StepOutMenu" Header="Step Ou_t" InputGesture="Shift+F11" Click="OnStepOut" />
+        <MenuItem Name="RunToCursorMenu" Header="Run To _Cursor" InputGesture="Ctrl+F10" Click="OnRunToCursor" />
+        <MenuItem Header="Toggle _Breakpoint" InputGesture="F9" Click="OnToggleBreakpoint" />
+        <Separator />
+        <MenuItem Header="Tar_get">
+          <MenuItem Name="EmulatorTargetMenu" Header="_Emulator" ToggleType="Radio" GroupName="target" IsChecked="True" Click="OnTargetChanged" />
+          <MenuItem Name="ThingTargetMenu" Header="_Thing on the programmer" ToggleType="Radio" GroupName="target" Click="OnTargetChanged"
+                    ToolTip.Tip="Ctrl+F5 uploads the program to a real Thing (only if it changed) and runs it" />
+        </MenuItem>
+        <Separator />
+        <MenuItem Name="ResetMenu" Header="Reset the emulated Thing" Click="OnReset" />
+        <MenuItem Name="PowerMenu" Header="_Power cycle the emulated Thing" Click="OnPowerCycle" />
       </MenuItem>
       <MenuItem Header="_Board">
         <MenuItem Name="ThingMenu" Header="_OLED Thing (STM8S003F3)" ToggleType="Radio" GroupName="board" IsChecked="True" Click="OnBoardChanged" />
@@ -85,7 +104,7 @@
         <ColumnDefinition Width="8" />
         <ColumnDefinition Width="320" MinWidth="220" MaxWidth="700" />
       </Grid.ColumnDefinitions>
-      <HeaderedContentControl Grid.Column="0" Classes="group" Header="Program (click left of a line number for a breakpoint)">
+      <HeaderedContentControl Grid.Column="0" Classes="group" Header="Program (F9, or click left of a line number, for a breakpoint)">
         <Border Classes="view">
           <edit:TextEditor Name="Editor" ShowLineNumbers="True"
                            FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="13"

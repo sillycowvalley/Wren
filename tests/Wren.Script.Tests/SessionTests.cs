@@ -52,10 +52,86 @@ public class SessionTests
     }
 
     [Fact]
+    public void StepOverRunsASubWithoutStopping()
+    {
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        s.Upload(Source);
+        Assert.Equal(SessionStop.Statement, s.Step(0.5));
+        var lines = new List<int> { s.CurrentLine };
+        for (int i = 0; i < 2; i++)
+        {
+            Assert.Equal(SessionStop.Statement, s.StepOver(0.5, s.CallDepth));
+            lines.Add(s.CurrentLine);
+        }
+        Assert.Equal(new[] { 3, 4, 5 }, lines);
+        Assert.Equal("11  ($000B)", s.Globals().Single(v => v.Name == "a").Value);
+    }
+
+    [Fact]
+    public void StepOverStopsAtABreakpointInsideTheSub()
+    {
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        s.Upload(Source);
+        s.Breakpoints.Add(10);
+        s.UpdateBreakpoints();
+        s.Step(0.5);                                    // line 3
+        s.StepOver(0.5, s.CallDepth);                   // line 4
+        Assert.Equal(SessionStop.Statement, s.StepOver(0.5, s.CallDepth));
+        Assert.Equal(10, s.CurrentLine);
+    }
+
+    [Fact]
+    public void StepOutReturnsToTheCaller()
+    {
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        s.Upload(Source);
+        for (int i = 0; i < 3; i++) s.Step(0.5);       // 3, 4, 9
+        Assert.Equal(9, s.CurrentLine);
+        Assert.Equal(SessionStop.Statement, s.StepOut(0.5, s.CallDepth));
+        Assert.Equal(5, s.CurrentLine);
+    }
+
+    [Fact]
+    public void RunToCursorStopsAtTheLine()
+    {
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        s.Upload(Source);
+        Assert.True(s.HasStatement(10));
+        Assert.False(s.HasStatement(6));
+        Assert.Equal(SessionStop.Statement, s.RunTo(0.5, 10));
+        Assert.Equal(10, s.CurrentLine);
+    }
+
+    [Fact]
+    public void RunFreeIgnoresBreakpoints()
+    {
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        s.Upload(Source);
+        s.Breakpoints.Add(10);
+        s.UpdateBreakpoints();
+        Assert.Equal(SessionStop.TimeUp, s.RunFree(0.2));
+        Assert.Equal("11  ($000B)", s.Globals().Single(v => v.Name == "b").Value);
+    }
+
+    [Fact]
+    public void LoadingTheSameProgramAgainDoesNotUploadIt()
+    {
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        var program = Compiler.Compile(Source);
+        s.Load(program);
+        s.Load(Compiler.Compile(Source));
+        Assert.Equal(1, ProgramStore.WriteCounts(s.ReadFat()).Sum());
+        s.Load(Compiler.Compile(Source + "' changed\n"));
+        Assert.Equal(1, ProgramStore.WriteCounts(s.ReadFat()).Sum()); // a comment changes no bytes
+        s.Load(Compiler.Compile(Source.Replace("a = 1", "a = 2")));
+        Assert.Equal(2, ProgramStore.WriteCounts(s.ReadFat()).Sum());
+    }
+
+    [Fact]
     public void UploadsKeepTheWriteCounts()
     {
         var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
-        for (int i = 0; i < 5; i++) s.Upload(Source);
+        for (int i = 0; i < 5; i++) s.Upload(Source.Replace("a = 1", $"a = {i + 1}"));
         var counts = ProgramStore.WriteCounts(s.ReadFat());
         Assert.Equal(5, counts.Sum());
         Assert.Equal(1, counts.Max());

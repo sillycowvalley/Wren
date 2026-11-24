@@ -10,6 +10,13 @@ public enum BoardChoice
     DevelopmentBoard,
 }
 
+/// <summary>Where Start runs the program (Debug → Target).</summary>
+public enum RunTarget
+{
+    Emulator,
+    Thing,
+}
+
 /// <summary>Where a window was and how big, in its normal (not maximised) state.</summary>
 public sealed class WindowPlacement
 {
@@ -54,6 +61,9 @@ public sealed class AppSettings
 
     public BoardChoice Board { get; set; } = BoardChoice.Thing;
 
+    /// <summary>Where Start runs the program: the emulator, or a real Thing through the programmer.</summary>
+    public RunTarget Target { get; set; } = RunTarget.Emulator;
+
     /// <summary>The programmer last connected to, as the Programmer window names it.</summary>
     public string? LastProgrammer { get; set; }
 
@@ -80,6 +90,7 @@ public sealed class AppSettings
         {
             var settings = JsonSerializer.Deserialize<AppSettings>(json, Options) ?? new AppSettings();
             if (!Enum.IsDefined(settings.Board)) settings.Board = BoardChoice.Thing;
+            if (!Enum.IsDefined(settings.Target)) settings.Target = RunTarget.Emulator;
             return settings;
         }
         catch (JsonException)
