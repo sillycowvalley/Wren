@@ -22,6 +22,7 @@ public partial class App : Application
             // end the app, so shutdown is explicit until the swap is done.
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             var splash = new SplashWindow();
+            WindowLayout.CentreOn(splash, SavedSettings.Current.MainWindow); // where the main window will open
             desktop.MainWindow = splash;
             splash.Opened += async (_, _) =>
             {

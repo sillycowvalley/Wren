@@ -76,6 +76,40 @@ internal sealed class WindowLayout
     }
 
     /// <summary>
+    /// Places a window (the splash screen) at the centre of where a saved window will open:
+    /// its remembered bounds, or the middle of its screen if it was maximised. Leaves the
+    /// window's own start-up location alone when there is no usable placement.
+    /// </summary>
+    public static void CentreOn(Window window, WindowPlacement? saved)
+    {
+        if (saved?.X is not int x || saved.Y is not int y || !double.IsFinite(saved.Width) || !double.IsFinite(saved.Height))
+            return;
+        var screens = window.Screens;
+        var areas = screens.All.Select(s =>
+            new ScreenRect(s.WorkingArea.X, s.WorkingArea.Y, s.WorkingArea.Width, s.WorkingArea.Height));
+        if (!AppSettings.IsOnScreen(x, y, (int)saved.Width, areas)) return;
+        var screen = screens.ScreenFromPoint(new PixelPoint(x, y)) ?? screens.Primary;
+        if (screen == null) return;
+
+        double scale = screen.Scaling;
+        double centreX, centreY;
+        if (saved.Maximized)
+        {
+            centreX = screen.WorkingArea.X + screen.WorkingArea.Width / 2.0;
+            centreY = screen.WorkingArea.Y + screen.WorkingArea.Height / 2.0;
+        }
+        else
+        {
+            centreX = x + saved.Width * scale / 2;
+            centreY = y + saved.Height * scale / 2;
+        }
+        window.WindowStartupLocation = WindowStartupLocation.Manual;
+        window.Position = new PixelPoint(
+            (int)(centreX - window.Width * scale / 2),
+            (int)(centreY - window.Height * scale / 2));
+    }
+
+    /// <summary>
     /// Records the bounds once the change has settled, and only if the window is then normal:
     /// maximising moves and resizes the window before its state says so.
     /// </summary>

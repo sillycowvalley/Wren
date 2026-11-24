@@ -711,19 +711,21 @@ inverse_send:
         call oled_cmd
         ret
 
+; FLIP: the Thing's module is mounted rotated, so upright is $A1 (segment remap) with $C8
+; (reversed COM scan), as oled_init sets it; FLIP turns the picture 180 degrees from that.
 sv_flip:
         call vpop
         tnzw x
         jreq flip_off
-        ld a,#$A1                   ; columns mirrored
+        ld a,#$A0                   ; upside down: no remap,
         call oled_cmd
-        ld a,#$C8                   ; rows scanned the other way
+        ld a,#$C0                   ; normal COM scan
         call oled_cmd
         ret
 flip_off:
-        ld a,#$A0
+        ld a,#$A1                   ; upright
         call oled_cmd
-        ld a,#$C0
+        ld a,#$C8
         call oled_cmd
         ret
 

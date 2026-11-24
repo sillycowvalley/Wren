@@ -33,10 +33,20 @@ public partial class MainWindow : Window
     private bool stepping;
     private bool reloadPending;
     private int shownLine = -1;
+    private readonly BreakpointMargin breakpointMargin = new();
+    private readonly LineHighlighter highlighter = new();
+
+    /// <summary>The program text as last saved or opened: the editor is "changed" when it differs.</summary>
+    private string savedText = "";
+
+    /// <summary>Set once the user has answered the unsaved-changes question, so closing goes ahead.</summary>
+    private bool closeConfirmed;
+
+    private bool Changed => (Editor.Text ?? "") != savedText;
     private readonly WindowLayout layout;
 
     /// <summary>The right-hand column, sized with the splitter.</summary>
-    private ColumnDefinition SidePanel => RightGrid.ColumnDefinitions[2];
+    private ColumnDefinition SidePanel => RightGrid.ColumnDefinitions[3];
 
     /// <summary>The right-hand column's width as last chosen with the splitter (or the default).</summary>
     private double sideWidth = 320;
@@ -47,7 +57,8 @@ public partial class MainWindow : Window
     /// </summary>
     private void FitSidePanel()
     {
-        double room = RightGrid.Bounds.Width - RightGrid.ColumnDefinitions[0].MinWidth - RightGrid.ColumnDefinitions[1].ActualWidth;
+        double room = RightGrid.Bounds.Width - RightGrid.ColumnDefinitions[0].MinWidth
+            - RightGrid.ColumnDefinitions[1].ActualWidth - RightGrid.ColumnDefinitions[2].ActualWidth;
         double width = Math.Max(Math.Min(sideWidth, room), SidePanel.MinWidth);
         if (SidePanel.Width.Value != width) SidePanel.Width = new GridLength(width);
     }
@@ -60,11 +71,18 @@ public partial class MainWindow : Window
         InitializeComponent();
         bits = new[] { B0, B1, B2, B3, B4, B5, B6, B7 };
         KeyDown += OnWindowKeyDown;
+        SetUpEditor();
 
         var settings = SavedSettings.Current;
         layout = new WindowLayout(this, settings.MainWindow);
-        Closing += (_, _) =>
+        Closing += (_, e) =>
         {
+            if (Changed && !closeConfirmed)
+            {
+                e.Cancel = true;
+                CloseAfterAsking();
+                return;
+            }
             settings.MainWindow = layout.Placement;
             settings.SidePanelWidth = sideWidth;
             linkWindow?.KeepLayout();
@@ -145,6 +163,7 @@ public partial class MainWindow : Window
 
     private async void OnOpen(object? sender, RoutedEventArgs e)
     {
+        if (!await MayDiscardChanges()) return;
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open a Wren BASIC program",
@@ -159,25 +178,176 @@ public partial class MainWindow : Window
         if (chosen != null) Open(chosen);
     }
 
-    private void OnReload(object? sender, RoutedEventArgs e)
+    private async void OnReload(object? sender, RoutedEventArgs e)
     {
-        if (path != null) Open(path);
+        if (path == null) return;
+        if (Changed && await SaveChangesDialog.Ask(this, FileName, discardOnly: true) != SaveChangesAnswer.DontSave) return;
+        Open(path);
     }
+
+    private async void OnNew(object? sender, RoutedEventArgs e)
+    {
+        if (!await MayDiscardChanges()) return;
+        watcher?.Dispose();
+        watcher = null;
+        path = null;
+        savedText = "";
+        Editor.Text = "";
+        Editor.Document.UndoStack.ClearAll();
+        sourceLines = Array.Empty<string>();
+        errorLine = 0;
+        messages.Clear();
+        messages.Add("A new program: save it (Ctrl+S) to compile and run it.");
+        UpdateTitle();
+        shownLine = -1;
+        UpdateView();
+    }
+
+    private async void OnSave(object? sender, RoutedEventArgs e) => await Save();
+
+    private async void OnSaveAs(object? sender, RoutedEventArgs e) => await SaveAs();
+
+    /// <summary>Saves to the program's file (asking for one if it has none), then compiles and runs it.</summary>
+    private async Task<bool> Save()
+    {
+        if (path == null) return await SaveAs();
+        string text = Editor.Text ?? "";
+        try
+        {
+            File.WriteAllText(path, text);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            messages.Add($"Could not save {FileName}: {ex.Message}");
+            UpdateView();
+            return false;
+        }
+        savedText = text;
+        UpdateTitle();
+        Compile(text);
+        return true;
+    }
+
+    private async Task<bool> SaveAs()
+    {
+        var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save the Wren BASIC program",
+            SuggestedFileName = path != null ? Path.GetFileName(path) : "Program.bas",
+            DefaultExtension = "bas",
+            FileTypeChoices = new[] { new FilePickerFileType("Wren BASIC") { Patterns = new[] { "*.bas" } } },
+        });
+        string? chosen = file?.TryGetLocalPath();
+        if (chosen == null) return false;
+        path = chosen;
+        SavedSettings.Current.LastFile = Path.GetFullPath(chosen);
+        bool saved = await Save();
+        Watch(chosen);
+        return saved;
+    }
+
+    /// <summary>The file changed on disk: our own save is already compiled; anything else replaces the text unless it has unsaved edits.</summary>
+    private void ReloadFromDisk()
+    {
+        if (path == null) return;
+        string disk;
+        try
+        {
+            disk = File.ReadAllText(path);
+        }
+        catch (IOException)
+        {
+            reloadPending = true; // still being written: try again on the next tick
+            return;
+        }
+        if (disk == savedText) return;
+        if (Changed)
+        {
+            messages.Add($"{FileName} changed on disk; your unsaved edits here are kept. Reload (Ctrl+R) to take the file's version.");
+            UpdateView();
+            return;
+        }
+        Open(path);
+    }
+
+    /// <summary>True when there are no unsaved edits, or they were saved or may be thrown away.</summary>
+    private async Task<bool> MayDiscardChanges()
+    {
+        if (!Changed) return true;
+        return await SaveChangesDialog.Ask(this, FileName) switch
+        {
+            SaveChangesAnswer.Save => await Save(),
+            SaveChangesAnswer.DontSave => true,
+            _ => false,
+        };
+    }
+
+    private async void CloseAfterAsking()
+    {
+        if (!await MayDiscardChanges()) return;
+        closeConfirmed = true;
+        Close();
+    }
+
+    private string FileName => path != null ? Path.GetFileName(path) : "Untitled";
+
+    private void UpdateTitle() => Title = $"{FileName}{(Changed ? " *" : "")} - Wren";
+
+    // ---- The editor ----
+
+    private void SetUpEditor()
+    {
+        Editor.TextArea.LeftMargins.Insert(0, breakpointMargin);
+        Editor.TextArea.TextView.BackgroundRenderers.Add(highlighter);
+        breakpointMargin.HasBreakpoint = line => session?.Breakpoints.Contains(line) ?? false;
+        breakpointMargin.LineClicked += ToggleBreakpoint;
+        Editor.TextChanged += (_, _) => UpdateTitle();
+        Editor.Options.ConvertTabsToSpaces = true;
+        Editor.Options.IndentationSize = 2;
+    }
+
+    private void OnUndo(object? sender, RoutedEventArgs e) => Editor.Undo();
+    private void OnRedo(object? sender, RoutedEventArgs e) => Editor.Redo();
+    private void OnCut(object? sender, RoutedEventArgs e) => Editor.Cut();
+    private void OnCopy(object? sender, RoutedEventArgs e) => Editor.Copy();
+    private void OnPaste(object? sender, RoutedEventArgs e) => Editor.Paste();
+    private void OnDelete(object? sender, RoutedEventArgs e) => Editor.Delete();
+    private void OnSelectAll(object? sender, RoutedEventArgs e) => Editor.SelectAll();
+    private void OnFind(object? sender, RoutedEventArgs e) => Editor.SearchPanel?.Open();
 
     private void Open(string file)
     {
-        path = file;
-        SavedSettings.Current.LastFile = Path.GetFullPath(file);
-        Title = $"{Path.GetFileName(file)} - Wren";
-        Watch(file);
-        messages.Clear();
-        errorLine = 0;
+        string source;
         try
         {
-            string source = File.ReadAllText(file);
-            sourceLines = source.Replace("\r\n", "\n").Split('\n');
-            if (session == null) return;
+            source = File.ReadAllText(file);
+        }
+        catch (IOException ex)
+        {
+            messages.Add(ex.Message);
+            UpdateView();
+            return;
+        }
+        path = file;
+        SavedSettings.Current.LastFile = Path.GetFullPath(file);
+        Watch(file);
+        savedText = source;
+        Editor.Text = source;
+        Editor.Document.UndoStack.ClearAll();
+        UpdateTitle();
+        Compile(source);
+    }
+
+    /// <summary>Compiles the program and uploads it to the emulated Thing; errors go to Messages.</summary>
+    private void Compile(string source)
+    {
+        messages.Clear();
+        errorLine = 0;
+        sourceLines = source.Replace("\r\n", "\n").Split('\n');
+        if (session != null)
+        {
             var program = session.Upload(source);
+            string name = path != null ? Path.GetFileName(path) : "the program";
             if (!program.Success)
             {
                 foreach (var error in program.Errors) messages.Add(error.ToString());
@@ -186,13 +356,9 @@ public partial class MainWindow : Window
             }
             else
             {
-                messages.Add($"Uploaded {Path.GetFileName(file)}: {program.Image.Length} bytes in {program.Blocks} blocks.");
+                messages.Add($"Uploaded {name}: {program.Image.Length} bytes in {program.Blocks} blocks.");
                 SetRunning(true);
             }
-        }
-        catch (IOException ex)
-        {
-            messages.Add(ex.Message);
         }
         shownLine = -1;
         UpdateView();
@@ -218,12 +384,18 @@ public partial class MainWindow : Window
 
     private void OnExit(object? sender, RoutedEventArgs e) => Close();
 
-    /// <summary>The menu shortcuts: F5 run or pause, F10 step, Ctrl+O open, Ctrl+R reload.</summary>
+    /// <summary>
+    /// The menu shortcuts: F5 run or pause, F10 step, Ctrl+N new, Ctrl+O open, Ctrl+S save,
+    /// Ctrl+Shift+S save as, Ctrl+R reload. The editor handles the Edit menu's own keys.
+    /// </summary>
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.F5) OnRun(sender, e);
         else if (e.KeyModifiers == KeyModifiers.None && e.Key == Key.F10) { if (StepMenu.IsEnabled) OnStep(sender, e); }
+        else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.N) OnNew(sender, e);
         else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.O) OnOpen(sender, e);
+        else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.S) OnSave(sender, e);
+        else if (e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift) && e.Key == Key.S) OnSaveAs(sender, e);
         else if (e.KeyModifiers == KeyModifiers.Control && e.Key == Key.R) OnReload(sender, e);
         else return;
         e.Handled = true;
@@ -242,7 +414,7 @@ public partial class MainWindow : Window
         Process.Start(new ProcessStartInfo(found) { UseShellExecute = true });
     }
 
-    private void OnAbout(object? sender, RoutedEventArgs e) => new SplashWindow { IsAbout = true }.ShowDialog(this);
+    private void OnAbout(object? sender, RoutedEventArgs e) => new SplashWindow { IsAbout = true, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(this);
 
     /// <summary>A file in the repository (looking upward from Wren) or beside Wren.</summary>
     private static string? FindBeside(string relative)
@@ -319,7 +491,7 @@ public partial class MainWindow : Window
         if (reloadPending)
         {
             reloadPending = false;
-            if (path != null) Open(path);
+            ReloadFromDisk();
         }
         if (session == null) return;
 
@@ -398,10 +570,10 @@ public partial class MainWindow : Window
 
     // ---- Breakpoints ----
 
-    private void OnLineTapped(object? sender, TappedEventArgs e)
+    private void ToggleBreakpoint(int line)
     {
-        if (session == null || sender is not Control { DataContext: SourceLine line }) return;
-        if (!session.Breakpoints.Remove(line.Number)) session.Breakpoints.Add(line.Number);
+        if (session == null) return;
+        if (!session.Breakpoints.Remove(line)) session.Breakpoints.Add(line);
         session.UpdateBreakpoints();
         shownLine = -1;
         UpdateView();
@@ -439,26 +611,12 @@ public partial class MainWindow : Window
         int key = current * 7919 + (session?.Breakpoints.Sum() ?? 0) * 31 + errorLine * 13 + sourceLines.Length;
         if (key == shownLine) return;
         shownLine = key;
-        SourceList.ItemsSource = sourceLines.Select((text, i) => new SourceLine
-        {
-            Number = i + 1,
-            Text = text.Replace("\t", "    "),
-            HasBreakpoint = session?.Breakpoints.Contains(i + 1) ?? false,
-            IsCurrent = current == i + 1,
-            HasError = errorLine == i + 1,
-        }).ToList();
-        if (current > 0) ScrollToLine(current);
-        else if (errorLine > 0) ScrollToLine(errorLine);
-    }
-
-    private void ScrollToLine(int line)
-    {
-        // Each line is one text row; keep the line in view.
-        double rowHeight = 18;
-        double top = (line - 1) * rowHeight;
-        var view = SourceScroll.Viewport.Height;
-        if (top < SourceScroll.Offset.Y || top > SourceScroll.Offset.Y + view - rowHeight * 2)
-            SourceScroll.Offset = new Avalonia.Vector(SourceScroll.Offset.X, Math.Max(0, top - view / 3));
+        highlighter.CurrentLine = current;
+        highlighter.ErrorLine = errorLine;
+        Editor.TextArea.TextView.InvalidateLayer(AvaloniaEdit.Rendering.KnownLayer.Background);
+        breakpointMargin.InvalidateVisual();
+        int show = current > 0 ? current : errorLine;
+        if (show > 0 && show <= Editor.Document.LineCount) Editor.ScrollToLine(show);
     }
 
     private string NowDescription(int current)

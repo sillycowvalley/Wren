@@ -15,9 +15,27 @@ public partial class WearWindow : Window
 
     public WearWindow() : this(new StoreWear(new int[ProgramStore.Blocks], Array.Empty<int>(), 0, 0)) { }
 
+    private readonly WindowLayout layout;
+
     public WearWindow(StoreWear wear)
     {
         InitializeComponent();
+        layout = new WindowLayout(this, SavedSettings.Current.WearWindow);
+        Closing += (_, _) =>
+        {
+            KeepLayout();
+            SavedSettings.Save();
+        };
+        Fill(wear);
+    }
+
+    /// <summary>Puts this window's placement in the settings (saved when a window closes).</summary>
+    public void KeepLayout() => SavedSettings.Current.WearWindow = layout.Placement;
+
+    /// <summary>Fills the summary and the grid from a fresh reading.</summary>
+    public void Fill(StoreWear wear)
+    {
+        Cells.Children.Clear();
         var program = wear.ProgramBlocks.ToHashSet();
         int most = wear.WriteCounts.Count > 0 ? wear.WriteCounts.Max() : 0;
         int total = wear.WriteCounts.Sum();

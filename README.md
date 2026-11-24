@@ -10,10 +10,10 @@ SWIM are ST's names, used here to describe compatibility.
 
 ## What is in it
 
-- **Wren**: the app. It compiles a Wren BASIC program, uploads it to an emulated OLED
-  Thing and runs it: the OLED, the inputs and pins, the program with the current line,
-  stepping by statement, breakpoints, variables, and the flash write counts. It
-  reloads when the program file is saved.
+- **Wren**: the app. You edit a Wren BASIC program in it (File and Edit menus, Notepad
+  style). Saving compiles it, uploads it to an emulated OLED Thing and runs it: the OLED,
+  the inputs and pins, the current line, stepping by statement, breakpoints, variables,
+  and the flash write counts. A program saved from another editor reloads by itself.
 - **Wren BASIC**: the Thing's language. Programs react to events (`ON CHANGE`,
   `ON LATCH PD3 RISING WHILE PD2 LOW`, `ON EVERY 100` ...) and draw with statements
   such as `HEX`, `BITS`, `TEXT` and `BOX`. See [docs/Design.md](docs/Design.md), and the

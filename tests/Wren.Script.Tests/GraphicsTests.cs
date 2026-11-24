@@ -104,11 +104,24 @@ public class GraphicsTests
     }
 
     [Fact]
-    public void InverseAndFlipReachTheOled()
+    public void InverseReachesTheOled()
     {
-        var run = Run.Start("ON START\n INVERSE ON\n FLIP ON\nEND ON\n");
+        var run = Run.Start("ON START\n INVERSE ON\nEND ON\n");
         Assert.True(run.Thing.Oled.Inverse);
-        Assert.True(run.Thing.Oled.SegmentRemap);
-        Assert.True(run.Thing.Oled.ComReverse);
+    }
+
+    [Theory]
+    [InlineData("", false)]
+    [InlineData(" FLIP ON\n", true)]
+    [InlineData(" FLIP ON\n FLIP OFF\n", false)]
+    public void FlipTurnsThePictureUpsideDown(string flip, bool upsideDown)
+    {
+        // A small box in the top-left corner; FLIP turns the picture 180 degrees on the panel
+        // as the Thing's module (mounted rotated) shows it.
+        var run = Run.Start("ON START\n CLS\n BOX 0, 0, 3, 3\n SHOW\n" + flip + "END ON\n");
+        var oled = run.Thing.Oled;
+        int w = Wren.Emu.Ssd1315.PanelWidth, h = Wren.Emu.Ssd1315.PanelHeight;
+        Assert.Equal(!upsideDown, oled.Pixel(0, 0));
+        Assert.Equal(upsideDown, oled.Pixel(w - 1, h - 1));
     }
 }
