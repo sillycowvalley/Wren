@@ -23,8 +23,8 @@ The breadboard cheatsheet: [Infographics/Pico_Programmer_Wiring.png](Infographic
 
 | Pico pin | Pico name | To |
 |---|---|---|
-| 4 | GP2 | Thing J2 pin 2 (SWIM), **and** the 1 kΩ resistor's first leg |
-| 36 | 3V3(OUT) | the 1 kΩ resistor's second leg, **and** the Thing's VCC (top-right corner) |
+| 4 | GP2 | Thing J2 pin 2 (SWIM), **and** one leg of each pull-up resistor |
+| 36 | 3V3(OUT) | the other leg of each pull-up resistor, **and** the Thing's VCC (top-right corner) |
 | 5 | GP3 | Thing J2 pin 3 (NRST) |
 | 3 | GND | Thing J2 pin 1 (GND) |
 
@@ -61,7 +61,7 @@ fine at 3.3 V. The Pico's onboard LED lights while it is working.
    machine: it must never go into the repository.
 5. **Install kernel**, **Upload program** and **Run** work as they do with an ST-LINK.
 
-If Connect says the target did not answer, check the 1 kΩ pull-up, that SWIM goes to GP2
+If Connect says the target did not answer, check the pull-up (two 1 kΩ side by side), that SWIM goes to GP2
 and NRST to GP3, and that the Thing has 3.3 V on VCC.
 
 ## How it works

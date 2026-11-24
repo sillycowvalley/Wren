@@ -364,7 +364,7 @@ public sealed class PicoLink : ITargetLink
 
     public static string Describe(byte status) => status switch
     {
-        StatusNoAnswer => "SWIM: the target did not answer (is it powered at 3.3 V, and is SWIM wired to GP2 with the 1 kΩ pull-up?)",
+        StatusNoAnswer => "SWIM: the target did not answer (is it powered at 3.3 V, and is SWIM wired to GP2 with the pull-up (two 1 kΩ side by side)?)",
         StatusNack => "SWIM: the target kept refusing a frame",
         StatusParity => "SWIM: a byte from the target arrived damaged (parity); check the wiring is short",
         StatusBadFrame => "SWIM: the target's reply was not a SWIM frame",
