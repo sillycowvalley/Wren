@@ -23,7 +23,6 @@ dives after, for those who stay. Each headline leads with a name or a claim, nev
 | 5 | KNIGHT RIDER on the LED Thing | Eight LEDs charlieplexed on four pins, brightness from scan frames, `KnightRider.bas` and `Cylon.bas`. |
 | 6 | Analog inputs | A knob (a potentiometer) on PD2 or PD3, read with `ANALOG` (0 to 1023): first the emulator's slider, then the real knob on the board, shown as a number and a bar (`Analog.bas`) and then as a history graph. |
 | 7 | BASIC in 1 KB of RAM | The kernel's virtual machine: the bytecode, the event handlers, its speed, and why an interpreter suits a chip this small. |
-| 8 | Building the emulator and the assembler | The CPU checked against ucsim, the display modelled, every instruction form checked against sdasstm8. One video or two. |
 
 Open: whether to make a video on how the project was built with Claude.
 
