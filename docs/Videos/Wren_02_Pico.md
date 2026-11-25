@@ -99,7 +99,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## Back to the factory
 
-> Wren isn't a one-way door. Greg at Digicool kindly lets Wren carry the boards' own firmware, so putting one back the way it came is two clicks.
+> Wren isn't a one-way door. It fetches the boards' own firmware straight from Digicool's GitHub, so putting one back the way it came is two clicks.
 
 > Even a chip that's been locked against reading can be brought back. It just has to be erased first.
 
