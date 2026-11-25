@@ -102,11 +102,28 @@ public class LinkTests
     {
         var (_, _, link) = Connect();
         link.Programmer.InstallKernel(Kernel.Image);
-        var program = Compiler.Compile("DIM a\nON START\n a = 1\nEND ON\n").Image;
-        for (int i = 0; i < 10; i++) link.Programmer.UploadProgram(program);
+        // A different program each time: one already in the store would cost no write.
+        for (int i = 0; i < 10; i++)
+            link.Programmer.UploadProgram(Compiler.Compile($"DIM a\nON START\n a = {100 + i}\nEND ON\n").Image);
         var counts = link.Programmer.ReadStatus().WriteCounts;
         Assert.Equal(10, counts.Sum());
         Assert.Equal(1, counts.Max());
+    }
+
+    [Fact]
+    public void TheSameProgramAgainCostsNoWrite()
+    {
+        var (_, _, link) = Connect();
+        link.Programmer.InstallKernel(Kernel.Image);
+        var a = Compiler.Compile("DIM a\nON START\n a = 1\nEND ON\n").Image;
+        var b = Compiler.Compile("DIM a\nON START\n a = 2\nEND ON\n").Image;
+        link.Programmer.UploadProgram(a);
+        link.Programmer.UploadProgram(b);
+        var lines = new List<string>();
+        link.Programmer.Progress += lines.Add;
+        link.Programmer.UploadProgram(a);                          // a's block is still in the store
+        Assert.Equal(2, link.Programmer.ReadStatus().WriteCounts.Sum());
+        Assert.Contains(lines, l => l.Contains("0 blocks written, 1 already in the store"));
     }
 
     [Fact]

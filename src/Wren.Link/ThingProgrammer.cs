@@ -363,7 +363,14 @@ public sealed class ThingProgrammer
         if (info == null || info.FatVersion != ProgramStore.FatVersion || info.StoreAddress != ProgramStore.StoreAddress)
             throw new LinkException("The Thing's kernel is older than this Wren's: click Install kernel first.");
         byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
-        var upload = ProgramStore.Plan(fat, program);
+        // Read before writing: blocks the store already holds are chained, not written.
+        var store = new byte[ProgramStore.Blocks * ProgramStore.BlockSize];
+        for (int offset = 0; offset < store.Length; offset += 1024)
+        {
+            int length = Math.Min(1024, store.Length - offset);
+            target.Read(ProgramStore.StoreAddress + offset, length).CopyTo(store, offset);
+        }
+        var upload = ProgramStore.Plan(fat, program, store);
 
         foreach (var (block, data) in upload.BlockWrites)
         {
@@ -375,7 +382,10 @@ public sealed class ThingProgrammer
             .Select(i => new KeyValuePair<int, byte>(ProgramStore.FatAddress + i, upload.Fat[i])).ToList();
         WriteChangedBlocks(fatBytes, TargetMemory.Eeprom, "FAT");
         Verify(upload.Bytes(), "program");
-        Say($"Uploaded {program.Length} bytes in {upload.BlockWrites.Count} blocks");
+        Say(upload.Reused == 0
+            ? $"Uploaded {program.Length} bytes in {upload.BlockWrites.Count} blocks"
+            : $"Uploaded {program.Length} bytes: {upload.BlockWrites.Count} block{(upload.BlockWrites.Count == 1 ? "" : "s")} written, " +
+              $"{upload.Reused} already in the store");
     }
 
     /// <summary>

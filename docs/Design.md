@@ -60,18 +60,24 @@ A program may sit in any blocks of the store, in any order. The EEPROM describes
 
 Writing a program (Wren does this over SWIM and reads everything back):
 
-1. Read the FAT. The blocks the new program needs are taken from all 54, least-written
-   first. The old program is replaced, so all its blocks are free for the new one: a
-   program can use the whole store (3,456 bytes).
-2. Write the program's blocks; each is one block write, one wear cycle.
+1. Read the FAT and the whole store. A block of the new program that some store block
+   already holds, byte for byte (the current program's or one left by an earlier
+   program), is chained as it is and not written. The other blocks are taken from those
+   left, least-written first. The old program is replaced, so all its blocks are free for
+   the new one: a program can use the whole store (3,456 bytes).
+2. Write the program's new blocks; each is one block write, one wear cycle. On
+   `OledThing.bas` (8 blocks), changing a number or adding a statement near the end
+   writes 1 block, and going back to a program uploaded earlier writes none; an edit near
+   the start moves all the code after it, so every block is written.
 3. Write the new FAT: chain, header and the raised write counts.
 4. Read back the blocks and the FAT and compare. If anything differs, do it again.
 
 At start-up the kernel checks the CRC, follows the chain once and builds a RAM table
 from program address to physical block, so the VM finds any byte with one lookup.
 
-How far this stretches the ~100 writes (54-block store). Choosing the least-written
-blocks keeps all 54 within one write of each other:
+How far this stretches the ~100 writes (54-block store), for programs that differ in
+every block (reused blocks cost nothing, so real use goes further). Choosing the
+least-written blocks keeps all 54 within one write of each other:
 
 | Program size | Blocks | Uploads before any block reaches 100 writes |
 |---|---|---|
@@ -83,8 +89,8 @@ blocks keeps all 54 within one write of each other:
 Wren shows the write counts after every upload. The EEPROM itself is rated ~100k
 writes, so the FAT outlasts the flash many times over.
 
-Uploads go over SWIM: Wren.Link reads the FAT through the programmer, writes the blocks,
-then the FAT, and verifies. It uploads only to a kernel whose info block says this
+Uploads go over SWIM: Wren.Link reads the FAT and the store through the programmer,
+writes the new blocks, then the FAT, and verifies. It uploads only to a kernel whose info block says this
 layout, and skips the upload when the Thing already holds the program.
 
 Kernel updates go over SWIM and need the UBC lock cleared and set again. Each one

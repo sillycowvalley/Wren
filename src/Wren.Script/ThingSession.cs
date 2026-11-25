@@ -107,7 +107,9 @@ public sealed class ThingSession
         }
         Program = program;
         statementStarts = program.Lines.Select(l => l.Address).ToHashSet();
-        var upload = ProgramStore.Plan(ReadFat(), program.Image);
+        var store = new byte[ProgramStore.Blocks * ProgramStore.BlockSize];
+        for (int i = 0; i < store.Length; i++) store[i] = Mcu.Read(ProgramStore.StoreAddress + i);
+        var upload = ProgramStore.Plan(ReadFat(), program.Image, store);
         Mcu.Load(upload.Bytes());
         PowerOn();
         UpdateBreakpoints();

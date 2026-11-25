@@ -167,9 +167,13 @@ public class EspStLinkTests
     {
         var (_, _, link) = Connect();
         link.Programmer.InstallKernel(Kernel.Image);
-        var big = Compiler.Compile("DIM a\nON START\n" + string.Concat(Enumerable.Repeat(" a = a + 1234\n", 30)) + "END ON\n");
-        Assert.True(big.Success);
-        for (int i = 0; i < 3; i++) link.Programmer.UploadProgram(big.Image);
+        CompiledProgram big = null!;
+        for (int i = 0; i < 3; i++)                                // each different in every block: none is reused
+        {
+            big = Compiler.Compile("DIM a\nON START\n" + string.Concat(Enumerable.Repeat($" a = a + {1234 + i}\n", 30)) + "END ON\n");
+            Assert.True(big.Success);
+            link.Programmer.UploadProgram(big.Image);
+        }
 
         var wear = link.Programmer.ReadWear();
         Assert.Equal(3, wear.Uploads);

@@ -21,9 +21,15 @@ public static class ProgramStore
     public const byte LastBlock = 0xFE;
     public const byte FreeBlock = 0xFF;
 
-    /// <summary>An upload: the blocks to write and the new FAT.</summary>
-    public sealed record Upload(IReadOnlyList<(int Block, byte[] Data)> BlockWrites, byte[] Fat)
+    /// <summary>
+    /// An upload: the blocks to write, the new FAT, and the program's blocks that are used as
+    /// they are because the store already holds exactly their bytes.
+    /// </summary>
+    public sealed record Upload(IReadOnlyList<(int Block, byte[] Data)> BlockWrites, byte[] Fat, IReadOnlyList<int>? ReusedBlocks = null)
     {
+        /// <summary>How many of the program's blocks were already in the store.</summary>
+        public int Reused => ReusedBlocks?.Count ?? 0;
+
         /// <summary>Everything as address and byte, ready for a memory image or the emulator.</summary>
         public IEnumerable<KeyValuePair<int, byte>> Bytes()
         {
@@ -39,10 +45,14 @@ public static class ProgramStore
 
     /// <summary>
     /// Plans an upload of program onto a device whose FAT is currentFat (128 bytes as read
-    /// from EEPROM; null or unformatted for a new device). Blocks are taken least-written
-    /// first; write counts and program settings are kept.
+    /// from EEPROM; null or unformatted for a new device). With store (the whole store as
+    /// read, Blocks x 64 bytes), a program block whose bytes some store block already holds,
+    /// the current program's or a freed one, is chained as it is and not written: editing
+    /// the end of a program, or going back to an earlier one, costs few writes or none.
+    /// The other blocks are written to the least-written blocks left; write counts and
+    /// program settings are kept.
     /// </summary>
-    public static Upload Plan(byte[]? currentFat, byte[] program)
+    public static Upload Plan(byte[]? currentFat, byte[] program, byte[]? store = null)
     {
         if (program.Length == 0) throw new ArgumentException("The program is empty", nameof(program));
         int needed = (program.Length + BlockSize - 1) / BlockSize;
@@ -59,8 +69,35 @@ public static class ProgramStore
             uploads = (currentFat![6] << 8) | currentFat[7];
         }
 
-        // Least-written blocks first; ties in block order.
-        var chosen = Enumerable.Range(0, Blocks).OrderBy(b => counts[b]).ThenBy(b => b).Take(needed).ToList();
+        // Blocks the store already holds, matched first (on a formatted device only: a new
+        // one's store holds nothing of Wren's); the rest go to the least-written blocks left,
+        // ties in block order. A block can be in the chain once, so each match is used once.
+        var chosen = new int[needed];
+        var reused = new bool[needed];
+        var taken = new bool[Blocks];
+        if (store != null && formatted)
+        {
+            if (store.Length != Blocks * BlockSize) throw new ArgumentException($"The store is {Blocks * BlockSize} bytes", nameof(store));
+            for (int i = 0; i < needed; i++)
+            {
+                int length = Math.Min(BlockSize, program.Length - i * BlockSize);
+                var part = program.AsSpan(i * BlockSize, length);
+                for (int b = 0; b < Blocks; b++)
+                {
+                    if (taken[b] || !store.AsSpan(b * BlockSize, length).SequenceEqual(part)) continue;
+                    chosen[i] = b;
+                    reused[i] = taken[b] = true;
+                    break;
+                }
+            }
+        }
+        var fresh = Enumerable.Range(0, Blocks).Where(b => !taken[b]).OrderBy(b => counts[b]).ThenBy(b => b).GetEnumerator();
+        for (int i = 0; i < needed; i++)
+        {
+            if (reused[i]) continue;
+            fresh.MoveNext();
+            chosen[i] = fresh.Current;
+        }
 
         var fat = new byte[FatSize];
         fat[0] = FatVersion;
@@ -74,21 +111,22 @@ public static class ProgramStore
         fat[6] = (byte)(uploads >> 8);
         fat[7] = (byte)uploads;
         for (int b = 0; b < Blocks; b++) fat[ChainOffset + b] = FreeBlock;
-        for (int i = 0; i < chosen.Count; i++)
-            fat[ChainOffset + chosen[i]] = i + 1 < chosen.Count ? (byte)chosen[i + 1] : LastBlock;
-        foreach (int b in chosen) counts[b]++;
+        for (int i = 0; i < needed; i++)
+            fat[ChainOffset + chosen[i]] = i + 1 < needed ? (byte)chosen[i + 1] : LastBlock;
+        for (int i = 0; i < needed; i++) if (!reused[i]) counts[chosen[i]]++;
         for (int b = 0; b < Blocks; b++) fat[CountsOffset + b] = (byte)Math.Min(counts[b], 255);
         Array.Copy(settings, 0, fat, SettingsOffset, SettingsSize);
 
         var writes = new List<(int, byte[])>();
-        for (int i = 0; i < chosen.Count; i++)
+        for (int i = 0; i < needed; i++)
         {
+            if (reused[i]) continue;
             var data = new byte[BlockSize];
             int length = Math.Min(BlockSize, program.Length - i * BlockSize);
             Array.Copy(program, i * BlockSize, data, 0, length);
             writes.Add((chosen[i], data));
         }
-        return new Upload(writes, fat);
+        return new Upload(writes, fat, Enumerable.Range(0, needed).Where(i => reused[i]).Select(i => chosen[i]).ToList());
     }
 
     /// <summary>Write counts per block from a FAT, or zeros for an unformatted one.</summary>

@@ -40,6 +40,57 @@ public class StoreTests
         Assert.Equal(ProgramStore.Crc16(program), (fat[4] << 8) | fat[5]);
     }
 
+    private const string Long = "DIM a, b\nON START\n";
+
+    /// <summary>A program of several blocks whose last statement sets b to last.</summary>
+    private static string Program(int first, int last) =>
+        Long + string.Concat(Enumerable.Range(0, 40).Select(i => $" a = a + {first + i}\n")) + $" b = {last}\nEND ON\n";
+
+    [Fact]
+    public void AnEditAtTheEndWritesOnlyTheBlocksThatChanged()
+    {
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        Assert.True(s.Upload(Program(0, 100)).Success);
+        int[] before = ProgramStore.WriteCounts(s.ReadFat());
+        var edited = s.Upload(Program(0, 200));
+        int[] after = ProgramStore.WriteCounts(s.ReadFat());
+        Assert.True(edited.Blocks >= 3);
+        Assert.Equal(1, after.Sum() - before.Sum());                 // only the last block written
+        s.RunFree(0.05);
+        Assert.Equal("200  ($00C8)", s.Globals().Single(v => v.Name == "b").Value);
+    }
+
+    [Fact]
+    public void GoingBackToAnEarlierProgramWritesNothing()
+    {
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        s.Upload(Program(0, 1));                                      // A
+        s.Upload(Program(1000, 2));                                   // B: every block different
+        int[] before = ProgramStore.WriteCounts(s.ReadFat());
+        s.Upload(Program(0, 1));                                      // A again: its blocks are still there
+        Assert.Equal(before, ProgramStore.WriteCounts(s.ReadFat()));
+        s.RunFree(0.05);
+        Assert.Equal("1", s.Globals().Single(v => v.Name == "b").Value);
+        Assert.Equal(Enumerable.Range(0, 40).Sum().ToString(), s.Globals().Single(v => v.Name == "a").Value.Split(' ')[0]);
+    }
+
+    [Fact]
+    public void TwoIdenticalBlocksTakeTwoBlocks()
+    {
+        var program = new byte[128];                                  // two blocks of zeros
+        program[0] = 1;
+        program[64] = 1;
+        var fat = ProgramStore.Plan(null, program).Fat;
+        var store = new byte[ProgramStore.Blocks * ProgramStore.BlockSize];
+        store[0] = 1;                                                 // block 0 already holds one of them
+        var upload = ProgramStore.Plan(fat, program, store);
+        var chain = ProgramStore.ProgramBlocks(upload.Fat);
+        Assert.Equal(2, chain.Count);
+        Assert.NotEqual(chain[0], chain[1]);
+        Assert.Equal(1, upload.Reused);
+        Assert.Single(upload.BlockWrites);
+    }
+
     [Fact]
     public void CrcMatchesTheStandardCheckValue()
     {
