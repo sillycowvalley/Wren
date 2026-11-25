@@ -12,8 +12,7 @@
   Sources:
     - Stopwatch.bas: programs/OledThing/Stopwatch.bas; 348 bytes in 6 blocks, 10 bytes of
       variables (Wren's compiler); its test is DemoTests.TheStopwatchKeepsTimeAndRemembersTheBest.
-    - The scene: docs/Videos/Wren_03_Basic.md. The emulator's power cycle clears RAM and keeps the
-      EEPROM (Wren.Emu Stm8Device.PowerOn), as a real power cut does.
+    - The scene: docs/Videos/Wren_03_Basic.md.
   A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
   (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
 -->
@@ -188,7 +187,7 @@
 <div class="frame console"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
-<li><code>Stopwatch.bas</code>, <kbd>F5</kbd></li><li>Pull <b>PD3</b> low and let go: start; again: stop</li><li>The same with <b>PD2</b>: back to 0</li><li><b>Debug → Power cycle</b>: the best time stays</li>
+<li><code>Stopwatch.bas</code>, <kbd>F5</kbd></li><li>Pull <b>PD3</b> low and let go: start; again: stop</li><li>The same with <b>PD2</b>: back to 0</li><li>A best time, in the bottom corner</li>
 </ol></div>
 <div class="strip">PD3 and PD2 are the buttons · the best time lives in the <b>EEPROM</b></div>
 <!--NAV--><a class="nav prev" href="Wren_03_03_Integers.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_03_04_SubFunction.html" aria-label="Next slide"></a><!--/NAV-->

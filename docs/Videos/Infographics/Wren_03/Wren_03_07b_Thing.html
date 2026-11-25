@@ -13,6 +13,9 @@
     - Stopwatch.bas: programs/OledThing/Stopwatch.bas; 348 bytes in 6 blocks, 10 bytes of
       variables (Wren's compiler); its test is DemoTests.TheStopwatchKeepsTimeAndRemembersTheBest.
     - The scene: docs/Videos/Wren_03_Basic.md.
+    - The power cut: the Thing runs from the Pico's 3V3(OUT) (docs/PicoLink.md), and PicoLink lets
+      NRST go (an input with its pull-up) as it starts (firmware/PicoLink/PicoLink.ino, setup), so
+      the Thing starts its program again on its own.
   A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
   (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
 -->
@@ -187,7 +190,7 @@
 <div class="frame console"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
-<li><b>Debug → Target → Thing on the programmer</b></li><li><kbd>Ctrl+F5</kbd>: 348 bytes go up</li><li>The <b>PD3</b> button: start; again: stop</li><li>The <b>PD2</b> button: back to 0</li>
+<li><b>Debug → Target → Thing on the programmer</b></li><li><kbd>Ctrl+F5</kbd>: 348 bytes go up</li><li>The <b>PD3</b> button: start and stop; <b>PD2</b>: back to 0</li><li><kbd>Shift+F5</kbd>; unplug the Pico, plug it back: the best time stays</li>
 </ol></div>
 <div class="strip">Two pushbuttons to GND: PD3 on J5 pin 4, PD2 on J5 pin 3 · <b>the same program, on the real chip</b></div>
 <!--NAV--><a class="nav prev" href="Wren_03_07_Time.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_03_08_Limits.html" aria-label="Next slide"></a><!--/NAV-->

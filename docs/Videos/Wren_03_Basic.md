@@ -60,10 +60,6 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Stop it, and if that's the best time so far, it goes in the bottom corner.
 
-*Debug → Power cycle the emulated Thing.*
-
-> And because it's kept in the EEPROM, it's still there after the power goes off and on again.
-
 ## SUB and FUNCTION
 
 > The stopwatch draws its digits in pairs, so that's a SUB, called four times, in two fonts.
@@ -95,6 +91,10 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 *Press the PD3 button to start, again to stop. Press the PD2 button to set it back to 0.*
 
 > On the real board, two pushbuttons on a breadboard, one on each pin. And it's the same three hundred and forty-eight bytes, doing exactly what it did on screen.
+
+*Shift+F5, so Wren lets go of the Pico. Unplug the Pico's USB cable, and plug it back in.*
+
+> The Thing gets its power from the Pico, so that's a real power cut. And the best time is still there, because it lives in the EEPROM.
 
 ## The limits
 
