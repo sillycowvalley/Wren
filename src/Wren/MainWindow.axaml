@@ -76,8 +76,8 @@
       </MenuItem>
       <MenuItem Header="_Board">
         <MenuItem Name="ThingMenu" Header="_OLED Thing (STM8S003F3)" ToggleType="Radio" GroupName="board" IsChecked="True" Click="OnBoardChanged" />
-        <MenuItem Name="DevBoardMenu" Header="_Development board (STM8S103F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
         <MenuItem Name="LedThingMenu" Header="_LED Thing (STM8S003F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
+        <MenuItem Name="DevBoardMenu" Header="_Development board (STM8S103F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
       </MenuItem>
       <MenuItem Header="_Tools">
         <MenuItem Header="_Firmware…" Click="OnOpenLink"

@@ -182,8 +182,9 @@ public sealed class ThingDebugger : IDisposable
     }
 
     /// <summary>
-    /// Reads the variables while the program runs: stalls it, reads RAM and lets it go on,
-    /// unless a breakpoint stopped it meanwhile.
+    /// Reads the variables while the program runs, without stopping it: SWIM reads RAM beside
+    /// the running CPU (PRI clear), so the kernel's tick, and the LED Thing's scan, never pause.
+    /// A word read as the program writes it can be torn; the next refresh puts it right.
     /// </summary>
     public void Refresh()
     {
@@ -193,21 +194,18 @@ public sealed class ThingDebugger : IDisposable
             Stopped();
             return;
         }
-        link.Target.WriteByte(DmCsr2, Stall);
-        if ((link.Target.ReadByte(DmCsr1) & BreakFlags) != 0)
+        ReadRam();
+        if ((link.Target.ReadByte(DmCsr2) & Stall) != 0)
         {
-            Stopped();                                 // a breakpoint came first
+            Stopped();                                 // a breakpoint came while reading
             return;
         }
-        ReadRam();
         if (view.Fault(Read) != 0)
         {
             Trace($"Refresh: the program faulted (ERR {view.Fault(Read)}) at vpc ${Vpc:X4}");
-            State = ThingRunState.Paused;              // the program has stopped with a fault
+            State = ThingRunState.Paused;              // the kernel idles, showing the fault (left running, so the LED Thing's scan goes on)
             pausedAtStatement = pausedBeforeFetch = false;
-            return;
         }
-        link.Target.WriteByte(DmCsr2, 0x00);
     }
 
     public void Continue()

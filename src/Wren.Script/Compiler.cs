@@ -176,7 +176,7 @@ public sealed class Compiler
         {
             int end = code.NewLabel();
             code.Mark(label);
-            var names = GenerateBody("ON", 0, h.Body, Array.Empty<string>(), h.Line);
+            var names = GenerateBody("ON", 0, h.Body, Array.Empty<string>(), h.Line, h.EndLine);
             code.Mark(end);
             string title = h.Event switch
             {
@@ -189,7 +189,7 @@ public sealed class Compiler
         {
             int end = code.NewLabel();
             code.Mark(r.Label);
-            var names = GenerateBody(r.Syntax.IsFunction ? "FUNCTION" : "SUB", r.Syntax.Parameters.Count, r.Syntax.Body, r.Syntax.Parameters, r.Syntax.Line);
+            var names = GenerateBody(r.Syntax.IsFunction ? "FUNCTION" : "SUB", r.Syntax.Parameters.Count, r.Syntax.Body, r.Syntax.Parameters, r.Syntax.Line, r.Syntax.EndLine);
             code.Mark(end);
             routineLabels.Add((r.Syntax.Name, r.Label, end, names));
         }
@@ -247,7 +247,7 @@ public sealed class Compiler
 
     // ---- Bodies ----
 
-    private List<string> GenerateBody(string kind, int parameters, List<Stmt> body, IReadOnlyList<string> parameterNames, int line)
+    private List<string> GenerateBody(string kind, int parameters, List<Stmt> body, IReadOnlyList<string> parameterNames, int line, int endLine = 0)
     {
         scope = new Scope { Parameters = parameters, Kind = kind };
         foreach (string p in parameterNames)
@@ -261,6 +261,9 @@ public sealed class Compiler
 
         foreach (var s in body) Statement(s);
 
+        // END ON, END SUB and END FUNCTION are where a step stops last, as Visual Studio stops
+        // on a method's closing brace (VB's End Sub).
+        if (endLine > 0) code.MarkLine(endLine);
         if (kind == "FUNCTION")
         {
             PushConstant(0);
@@ -449,9 +452,13 @@ public sealed class Compiler
     private void If(IfStmt i)
     {
         int end = code.NewLabel();
+        int branch = 0;
         foreach (var (condition, body) in i.Branches)
         {
             int next = code.NewLabel();
+            // An ELSEIF's test is a statement of its own, as Visual Studio stops on an else if.
+            if (branch > 0 && i.ElseIfLines is { } lines && branch - 1 < lines.Count) code.MarkLine(lines[branch - 1]);
+            branch++;
             Condition(condition, next);
             foreach (var s in body) Statement(s);
             code.Jump(Op.Jump, end);

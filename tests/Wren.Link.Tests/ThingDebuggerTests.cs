@@ -89,13 +89,13 @@ public class ThingDebuggerTests
         d.Start(Compile(Source), debug: true, stopAtFirst: true);
         UntilPaused(thing, d);
         var lines = new List<int> { d.CurrentLine };
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 6; i++)
         {
             d.StepInto();
             UntilPaused(thing, d);
             lines.Add(d.CurrentLine);
         }
-        Assert.Equal(new[] { 3, 4, 9, 10, 5 }, lines);
+        Assert.Equal(new[] { 3, 4, 9, 10, 11, 5, 6 }, lines);   // END SUB and END ON are stops too
     }
 
     [Fact]
@@ -258,6 +258,8 @@ public class ThingDebuggerTests
         UntilPaused(thing, d);                       // 3, in the CHANGE at start
         d.StepOver(); UntilPaused(thing, d);
         Assert.Equal(4, d.CurrentLine);
+        d.StepOver(); UntilPaused(thing, d);
+        Assert.Equal(5, d.CurrentLine);              // END ON
         d.StepOver();                                // off the end of the handler
         RunPolling(thing, d, 0.02);
         Assert.Equal(ThingRunState.Running, d.State);

@@ -134,10 +134,11 @@ public sealed class Parser
         EndOfStatement();
         string end = isFunction ? "FUNCTION" : "SUB";
         var body = ParseBlock(() => Current.Is("END") && Next.Is(end));
+        int endLine = Current.Line;
         Expect("END");
         Expect(end);
         EndOfStatement();
-        return new Routine(line, name, parameters, isFunction, body);
+        return new Routine(line, name, parameters, isFunction, body, endLine);
     }
 
     private Handler ParseHandler(int line)
@@ -181,10 +182,11 @@ public sealed class Parser
         }
         EndOfStatement();
         var body = ParseBlock(() => Current.Is("END") && Next.Is("ON"));
+        int endLine = Current.Line;
         Expect("END");
         Expect("ON");
         EndOfStatement();
-        return new Handler(line, ev, pin, edges, qualifier, qualifierHigh, interval, body);
+        return new Handler(line, ev, pin, edges, qualifier, qualifierHigh, interval, body, endLine);
     }
 
     private int ParsePin()
@@ -336,13 +338,16 @@ public sealed class Parser
 
         EndOfStatement();
         var branches = new List<(Expr, List<Stmt>)>();
+        var elseIfLines = new List<int>();
         List<Stmt>? elseBody = null;
         bool AtBranchEnd() => Current.Is("ELSEIF") || Current.Is("ELSE") || (Current.Is("END") && Next.Is("IF"));
         branches.Add((condition, ParseBlock(AtBranchEnd)));
         while (true)
         {
+            int branchLine = Current.Line;
             if (Accept("ELSEIF"))
             {
+                elseIfLines.Add(branchLine);
                 Expr c = ParseExpression();
                 Expect("THEN");
                 EndOfStatement();
@@ -358,7 +363,7 @@ public sealed class Parser
         Expect("END");
         Expect("IF");
         needsEnd = true;
-        return new IfStmt(line, branches, elseBody);
+        return new IfStmt(line, branches, elseBody, elseIfLines);
     }
 
     private List<Expr> ParseArguments()

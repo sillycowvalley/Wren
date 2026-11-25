@@ -75,8 +75,15 @@ public class CompilerTests
     public void LineTable()
     {
         var p = Run.Compile("DIM a\nON START\n a = 1\n\n a = 2\nEND ON\n");
-        Assert.Equal(new[] { 3, 5 }, p.Lines.Select(l => l.Line));
+        Assert.Equal(new[] { 3, 5, 6 }, p.Lines.Select(l => l.Line));      // END ON is a stop
         Assert.Equal(3, p.LineAt(p.Lines[0].Address + 1));
+    }
+
+    [Fact]
+    public void ElseIfTestsAreStops()
+    {
+        var p = Run.Compile("DIM a\nON START\n IF a = 1 THEN\n  a = 2\n ELSEIF a = 0 THEN\n  a = 3\n END IF\nEND ON\n");
+        Assert.Equal(new[] { 3, 4, 5, 6, 8 }, p.Lines.Select(l => l.Line));
     }
 
     [Theory]
