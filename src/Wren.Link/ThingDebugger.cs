@@ -145,6 +145,7 @@ public sealed class ThingDebugger : IDisposable
         blocks = ProgramStore.ProgramBlocks(link.Target.Read(ProgramStore.FatAddress, ProgramStore.FatSize));
         if (!debug)
         {
+            Trace("Start: without debugging");
             link.Programmer.Run();
             return;
         }
@@ -158,6 +159,7 @@ public sealed class ThingDebugger : IDisposable
         pausedAtStatement = pausedBeforeFetch = false;
         targetLine = runTo;
         started = true;
+        Trace($"Start: debug, stopAtFirst {stopAtFirst}, runTo {runTo}, breakpoints [{string.Join(", ", Breakpoints.OrderBy(l => l))}], blocks [{string.Join(" ", blocks)}]");
         if (stopAtFirst) Go(StepKind.Into, 0, ThingRunState.Stepping);
         else Go(StepKind.None, 0, ThingRunState.Running);
     }
@@ -192,6 +194,7 @@ public sealed class ThingDebugger : IDisposable
         ReadRam();
         if (view.Fault(Read) != 0)
         {
+            Trace($"Refresh: the program faulted (ERR {view.Fault(Read)}) at vpc ${Vpc:X4}");
             State = ThingRunState.Paused;              // the program has stopped with a fault
             pausedAtStatement = pausedBeforeFetch = false;
             return;
@@ -221,6 +224,7 @@ public sealed class ThingDebugger : IDisposable
     public void Pause()
     {
         if (State == ThingRunState.Paused) return;
+        Trace("Pause");
         link.Target.WriteByte(DmCsr2, Stall);
         if ((link.Target.ReadByte(DmCsr1) & BreakFlags) != 0)
         {
@@ -238,6 +242,7 @@ public sealed class ThingDebugger : IDisposable
     /// </summary>
     public void Stop()
     {
+        Trace("Stop");
         link.Target.WriteByte(DmCr1, 0x00);
         link.Target.WriteByte(DmEnfctr, 0xFF);
         link.Programmer.Run();
@@ -247,6 +252,7 @@ public sealed class ThingDebugger : IDisposable
     public void UpdateBreakpoints()
     {
         if (!started) return;
+        Trace($"UpdateBreakpoints: [{string.Join(", ", Breakpoints.OrderBy(l => l))}] while {State}, step {step}");
         if (State == ThingRunState.Running && step == StepKind.None)
         {
             link.Target.WriteByte(DmCsr2, Stall);
@@ -275,6 +281,7 @@ public sealed class ThingDebugger : IDisposable
         // Leaving a pause before a statement's first bytecode is fetched (a step stopped
         // there), the breakpoint on that bytecode must not stop the program again at once.
         skipVpc = State == ThingRunState.Paused && pausedBeforeFetch ? Vpc : -1;
+        Trace($"Go: {kind}, depth {depth}, → {state}, skipVpc {(skipVpc < 0 ? "none" : $"${skipVpc:X4}")}");
         Arm();
         State = state;
         link.Target.WriteByte(DmCsr2, 0x00);
@@ -287,6 +294,7 @@ public sealed class ThingDebugger : IDisposable
             WriteAddress(DmBk1, vmNext);
             WriteAddress(DmBk2, vmDone);                // the handler finishing
             link.Target.WriteByte(DmCr1, InstructionFetchOnEither);
+            Trace("Arm: instruction break on vm_next and vm_done (stepping)");
             return;
         }
         var lines = Lines(Breakpoints).ToList();
@@ -296,11 +304,14 @@ public sealed class ThingDebugger : IDisposable
         if (armed.Count == 0)
         {
             link.Target.WriteByte(DmCr1, 0x00);
+            Trace("Arm: no breakpoints");
             return;
         }
         WriteAddress(DmBk1, Physical(FirstAddress(armed[0])));
         WriteAddress(DmBk2, Physical(FirstAddress(armed[^1])));
         link.Target.WriteByte(DmCr1, DataReadOnEither);
+        Trace($"Arm: data read at line {armed[0]} (${Physical(FirstAddress(armed[0])):X4}) and line {armed[^1]} (${Physical(FirstAddress(armed[^1])):X4})" +
+            (targetLine > 0 ? $", run to line {targetLine}" : ""));
     }
 
     /// <summary>The CPU is stalled: decide whether this is a stop for the user, or go on.</summary>
@@ -309,15 +320,20 @@ public sealed class ThingDebugger : IDisposable
         ReadRam();
         int vpc = Vpc;
         bool atStatement = statementStarts.Contains(vpc);
+        if (DiagnosticLog.Enabled)
+            Trace($"Stalled: PC ${Pc():X6}{(Pc() == vmNext ? " (vm_next)" : Pc() == vmDone ? " (vm_done)" : "")}, vpc ${vpc:X4}" +
+                $"{(atStatement ? $" (line {program!.LineAt(vpc)})" : "")}, depth {CallDepth}, step {step}/{stepDepth}");
         if (step != StepKind.None && (step == StepKind.Into || stepDepth > 0) && Pc() == vmDone)
         {
             link.Target.WriteByte(DmCsr2, 0x00);       // a handler finished: F11 waits for the next statement anywhere
+            Trace("  → the handler finished; the step waits for the next statement");
             return;
         }
         if (step != StepKind.None && Pc() == vmDone)
         {
             // Stepped over or out of the end of an event handler: there is no caller, so the
             // program runs on, stopping only at breakpoints (as Visual Studio does).
+            Trace("  → stepped off the end of the handler: runs on");
             step = StepKind.None;
             Arm();
             State = ThingRunState.Running;
@@ -347,6 +363,7 @@ public sealed class ThingDebugger : IDisposable
             stop = fetching && vpc != skipVpc && (Breakpoints.Contains(line) || line == targetLine);
             if (fetching && vpc == skipVpc) skipVpc = -1;
         }
+        Trace(stop ? $"  → paused at line {program!.LineAt(vpc)}" : "  → runs on");
         if (stop)
         {
             State = ThingRunState.Paused;
@@ -412,6 +429,8 @@ public sealed class ThingDebugger : IDisposable
         link.Target.WriteByte(register + 1, (byte)(address >> 8));
         link.Target.WriteByte(register + 2, (byte)address);
     }
+
+    private static void Trace(string text) => DiagnosticLog.Write($"Debugger: {text}");
 
     public void Dispose() => link.Dispose();
 }

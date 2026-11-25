@@ -56,12 +56,15 @@ public partial class LinkWindow : Window
         wearWindow?.KeepLayout();
     }
 
-    private void Log(string message) =>
+    private void Log(string message)
+    {
+        DiagnosticLog.Write($"Firmware: {message}");
         Dispatcher.UIThread.Post(() =>
         {
             LogBox.Text += message + Environment.NewLine;
             LogBox.CaretIndex = LogBox.Text?.Length ?? 0;
         });
+    }
 
     private void UpdateButtons()
     {

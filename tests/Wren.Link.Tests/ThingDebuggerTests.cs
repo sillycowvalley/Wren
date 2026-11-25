@@ -267,4 +267,39 @@ public class ThingDebuggerTests
         Assert.Equal(ThingRunState.Running, d.State);
         Assert.Equal(4, Global(d, "n"));
     }
+
+    [Fact]
+    public void ARemovedBreakpointInAHandlerStopsNoMore()
+    {
+        var (thing, d) = Ready();
+        d.Breakpoints.Add(3);
+        d.Start(Compile("DIM n\nON CHANGE\n n = n + 1\nEND ON\n"), debug: true);
+        UntilPaused(thing, d);                       // the CHANGE at start
+        Assert.Equal(3, d.CurrentLine);
+        d.Breakpoints.Clear();                       // removed while paused
+        d.UpdateBreakpoints();
+        d.Continue();
+        RunPolling(thing, d, 0.02);
+        thing.SetInputs(0x0F);
+        RunPolling(thing, d, 0.05);
+        thing.SetInputs(0xF0);
+        RunPolling(thing, d, 0.05);
+        d.Refresh();
+        Assert.Equal(ThingRunState.Running, d.State);
+        Assert.Equal(3, Global(d, "n"));
+
+        d.Breakpoints.Add(3);                        // set and removed again while running
+        d.UpdateBreakpoints();
+        thing.SetInputs(0x0F);
+        UntilPaused(thing, d);
+        d.Continue();
+        RunPolling(thing, d, 0.02);
+        d.Breakpoints.Clear();
+        d.UpdateBreakpoints();
+        thing.SetInputs(0xF0);
+        RunPolling(thing, d, 0.05);
+        d.Refresh();
+        Assert.Equal(ThingRunState.Running, d.State);
+        Assert.Equal(5, Global(d, "n"));
+    }
 }

@@ -22,6 +22,7 @@ public partial class MainWindow
         IReadOnlyList<Variable> Globals, IReadOnlyList<Variable> Locals, IReadOnlyList<int> Armed);
 
     private bool thingBusy => thingPending > 0;
+    private string? thingSeen;
 
     /// <summary>
     /// How the window reaches the Thing, all on its own: the programmer that worked last if it
@@ -120,6 +121,10 @@ public partial class MainWindow
     private void FollowThing()
     {
         if (thing == null || thingView == null) return;
+        var v = thingView;
+        string seen = $"{v.State} line {v.Line} depth {v.Depth} fault {v.Fault} armed [{string.Join(", ", v.Armed)}]";
+        if (seen != thingSeen) DiagnosticLog.Write($"Thing: {seen}");
+        thingSeen = seen;
         if (thingView.State == ThingRunState.Paused) mode = Mode.Paused;
         else if (thingView.State == ThingRunState.Stepping) mode = Mode.Stepping;
         else if (mode != Mode.Design) mode = Mode.Debugging;

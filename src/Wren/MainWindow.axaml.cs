@@ -100,6 +100,12 @@ public partial class MainWindow : Window
         SetUpEditor();
 
         var settings = SavedSettings.Current;
+        if (settings.DiagnosticLog && !DiagnosticLog.Enabled) DiagnosticLog.Start();
+        DiagnosticLogMenu.IsChecked = DiagnosticLog.Enabled;
+        AddHandler(MenuItem.ClickEvent, (_, e) =>
+        {
+            if (e.Source is MenuItem { Header: string header }) DiagnosticLog.Write($"Menu: {header.Replace("_", "")}");
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
         layout = new WindowLayout(this, settings.MainWindow);
         Closing += (_, e) =>
         {
@@ -398,7 +404,11 @@ public partial class MainWindow : Window
     private bool Build()
     {
         string text = Editor.Text ?? "";
+        UpdateView();                                  // logs the messages about to be cleared
         messages.Clear();
+        if (DiagnosticLog.Enabled)
+            DiagnosticLog.Write($"Build {FileName}, the source as built:\n" +
+                string.Join("\n", text.Replace("\r\n", "\n").Split('\n').Select((l, i) => $"  {i + 1,3}| {l}")));
         errorLine = 0;
         sourceLines = text.Replace("\r\n", "\n").Split('\n');
         var program = Compiler.Compile(text);
@@ -453,6 +463,9 @@ public partial class MainWindow : Window
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
         var m = e.KeyModifiers;
+        if (DiagnosticLog.Enabled && (e.Key is >= Key.F1 and <= Key.F12 || (m & (KeyModifiers.Control | KeyModifiers.Alt)) != 0) &&
+            e.Key is not (Key.LeftCtrl or Key.RightCtrl or Key.LeftShift or Key.RightShift or Key.LeftAlt or Key.RightAlt))
+            DiagnosticLog.Write($"Key: {(m == KeyModifiers.None ? "" : m.ToString().Replace(", ", "+") + "+")}{e.Key} (line {Editor.TextArea.Caret.Line}, mode {mode})");
         const KeyModifiers None = KeyModifiers.None, Ctrl = KeyModifiers.Control, Shift = KeyModifiers.Shift;
         switch (e.Key)
         {
@@ -488,6 +501,39 @@ public partial class MainWindow : Window
             return;
         }
         Process.Start(new ProcessStartInfo(found) { UseShellExecute = true });
+    }
+
+    private void OnDiagnosticLog(object? sender, RoutedEventArgs e)
+    {
+        if (DiagnosticLog.Enabled) DiagnosticLog.Stop();
+        else DiagnosticLog.Start();
+        DiagnosticLogMenu.IsChecked = DiagnosticLog.Enabled;
+        SavedSettings.Current.DiagnosticLog = DiagnosticLog.Enabled;
+        SavedSettings.Save();
+        messages.Add(DiagnosticLog.Enabled
+            ? $"Diagnostic log on: {DiagnosticLog.FilePath}. Tools → Copy diagnostic log copies it."
+            : "Diagnostic log off.");
+        UpdateView();
+    }
+
+    private async void OnCopyDiagnosticLog(object? sender, RoutedEventArgs e)
+    {
+        string text = DiagnosticLog.Text;
+        if (text.Length == 0)
+        {
+            messages.Add("The diagnostic log is off: turn it on with Tools → Diagnostic log, then do what went wrong again.");
+            UpdateView();
+            return;
+        }
+        if (Clipboard is { } clipboard) await clipboard.SetTextAsync(text);
+        messages.Add($"Copied the diagnostic log ({text.Count(c => c == '\n')} lines) to the clipboard.");
+        UpdateView();
+    }
+
+    private void OnOpenLogFolder(object? sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(DiagnosticLog.DefaultFolder);
+        Process.Start(new ProcessStartInfo(DiagnosticLog.DefaultFolder) { UseShellExecute = true });
     }
 
     private void OnAbout(object? sender, RoutedEventArgs e) => new SplashWindow { IsAbout = true, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(this);
@@ -527,6 +573,7 @@ public partial class MainWindow : Window
 
     private void SetMode(Mode next)
     {
+        if (next != mode) DiagnosticLog.Write($"Mode: {mode} → {next}");
         mode = next;
         clock.Restart();
     }
@@ -798,6 +845,7 @@ public partial class MainWindow : Window
     {
         if (session == null) return;
         if (!session.Breakpoints.Remove(line)) session.Breakpoints.Add(line);
+        DiagnosticLog.Write($"Breakpoint {(session.Breakpoints.Contains(line) ? "set" : "removed")} at line {line}: now [{string.Join(", ", session.Breakpoints.OrderBy(l => l))}]");
         session.UpdateBreakpoints();
         ThingBreakpointsChanged();
         shownLine = -1;
@@ -806,8 +854,12 @@ public partial class MainWindow : Window
 
     // ---- View ----
 
+    private int messagesLogged;
+
     private void UpdateView()
     {
+        if (messagesLogged > messages.Count) messagesLogged = 0;       // the list was cleared
+        for (; messagesLogged < messages.Count; messagesLogged++) DiagnosticLog.Write($"Message: {messages[messagesLogged]}");
         var board = session?.Board;
         if (board != null)
         {
@@ -865,7 +917,18 @@ public partial class MainWindow : Window
         breakpointMargin.InvalidateVisual();
         int show = current > 0 ? current : errorLine;
         if (show > 0 && show <= Editor.Document.LineCount) Editor.ScrollToLine(show);
+        // Stopping at a line puts the caret on it, as Visual Studio does, so F9 there takes the
+        // breakpoint off. Only when the stop moves, so the caret is not pulled back otherwise.
+        if (current > 0 && current != caretStop && current <= Editor.Document.LineCount)
+        {
+            Editor.TextArea.Caret.Line = current;
+            Editor.TextArea.Caret.Column = 1;
+            Editor.TextArea.Focus();
+        }
+        caretStop = current;
     }
+
+    private int caretStop;
 
     private string NowDescription(int current)
     {

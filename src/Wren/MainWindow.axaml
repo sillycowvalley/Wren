@@ -81,6 +81,13 @@
       <MenuItem Header="_Tools">
         <MenuItem Header="_Firmware…" Click="OnOpenLink"
                   ToolTip.Tip="Sets a real Thing up: installs Wren's kernel, restores the factory firmware, and checks the Thing" />
+        <Separator />
+        <MenuItem Name="DiagnosticLogMenu" Header="_Diagnostic log" ToggleType="CheckBox" Click="OnDiagnosticLog"
+                  ToolTip.Tip="Records what happens in this session (commands, keys, breakpoints, the program, the debugger's decisions) to a file, to pass along with a problem" />
+        <MenuItem Name="CopyLogMenu" Header="_Copy diagnostic log" Click="OnCopyDiagnosticLog"
+                  ToolTip.Tip="Copies this session's diagnostic log to the clipboard" />
+        <MenuItem Header="_Open log folder" Click="OnOpenLogFolder"
+                  ToolTip.Tip="Opens the folder of diagnostic logs, one file per session" />
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="Wren BASIC _quick reference" Click="OnQuickReference" />

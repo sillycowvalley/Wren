@@ -67,6 +67,9 @@ public sealed class AppSettings
     /// <summary>The programmer last connected to, as the Firmware window names it.</summary>
     public string? LastProgrammer { get; set; }
 
+    /// <summary>Tools → Diagnostic log: each run writes its session to a file in DiagnosticLog.DefaultFolder.</summary>
+    public bool DiagnosticLog { get; set; }
+
     /// <summary>The program file last opened.</summary>
     public string? LastFile { get; set; }
 
