@@ -45,8 +45,7 @@ with a white second half, Liberation Sans and DejaVu Sans Mono), with these for 
   Green is left out: the Reggie-16 videos use it a lot.
 - **The channel's mark**: the colour wren from `art/wren.svg`, top right on a slide, beside
   "WREN BASIC" on a thumbnail.
-- **The recurring motif**: the OLED itself, black glass with lit pixels, and on a thumbnail
-  a row of OLED pixels at the bottom right.
+- **The recurring motif**: the OLED itself, black glass with lit pixels.
 - **The screens on the slides are the emulator's**, never drawn by hand: the program as it
   is in `programs/`, run on Wren's kernel in Wren.Emu, its 64 x 32 panel written as one SVG
   rect per run of lit pixels between `<!--OLED:name-->` and `<!--/OLED-->`. Each HTML's

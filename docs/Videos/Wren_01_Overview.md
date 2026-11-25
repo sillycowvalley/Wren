@@ -26,11 +26,11 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ---
 
-## SNAKE IN BASIC
+## WREN BASIC
 
-> This is Snake, playing itself on a screen the size of a fingernail, on a chip with one kilobyte of RAM.
+> This is Wren BASIC, for two little boards from Digicool Things, each with one kilobyte of RAM.
 
-> It's written in BASIC. And so is everything else you'll see today.
+> By the end, they'll be playing Snake and Pong, written in BASIC and debugged on the chip itself.
 
 ## Two little Things, one chip
 
