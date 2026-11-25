@@ -1,6 +1,6 @@
 # Wren project plan
 
-**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer, and programs are debugged on it from the main window. The LED Thing's kernel and `LedThing.bas` are built and tested in the emulator.**
+**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer, and programs are debugged on it from the main window. The LED Thing's kernel and `LedThing.bas` run on a real LED Thing too.**
 
 Wren is a C# / .NET 8 development environment for STM8S003F3-class microcontrollers.
 It is driven through an ST-LINK V2 over SWIM. Its targets are Digicool's "8-bit OLED
@@ -143,10 +143,10 @@ The detailed design, for approval, is in [Design.md](Design.md).
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.
-5. **The LED Thing.** Built and tested in the emulator (`docs/LedThing.md`): the kernel's
+5. **The LED Thing.** Built and tested in the emulator and running on a real LED Thing (`docs/LedThing.md`): the kernel's
    LED build, `LEDS` and the mode pins `M0`-`M2`, **Board → LED Thing**, Install kernel and
    debugging through the programmer, and `programs/LedThing/LedThing.bas` checked against
-   what Digicool's firmware showed. Open: try it on Michael's LED Things; and a larger program store
+   what Digicool's firmware showed. Open: a larger program store
    on this board (its kernel leaves about 4.6 KB unused), which needs a second table layout.
    Digicool's firmware is fetched from Digicool's GitHub when the Firmware window opens
-   (`docs/Design.md`). Open: try the fetch on Windows.
+   (`docs/Design.md`).
