@@ -86,6 +86,10 @@ If Connect says the target did not answer in time, check:
 - that SWIM goes to GP16 and NRST to GP17;
 - that the Thing has 3.3 V on VCC.
 
+If the Pico's COM port does not come back after unplugging it, close any program still
+holding the port (a Wren stopped in Visual Studio's debugger does), then unplug and replug
+the USB hub it is on, not just the Pico.
+
 ## Read-out protection and factory firmware
 
 - **If the Thing refuses memory access** (SWIM_CSR's NO_ACCESS bit stays set for half a
