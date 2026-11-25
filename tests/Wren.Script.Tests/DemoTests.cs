@@ -307,4 +307,32 @@ public class DemoTests
         Assert.Equal((byte)'R', run.Element("written", 1));
         Assert.Equal((byte)'W', run.Element("written", 4));
     }
+
+    [Fact]
+    public void TheSerialDecoderAssemblesBytesABitAtATime()
+    {
+        var run = Run.Start(Program("OledThing", "SerialDecoder.bas"), t => t.Pd3Low = true, seconds: 0.1);
+        string message = "WREN";
+        foreach (char ch in message)
+        {
+            run.Thing.Pd2Low = true;                            // the select
+            run.For(0.002);
+            for (int bit = 7; bit >= 0; bit--)
+            {
+                int noise = (ch * 37 + bit * 11) & 0xFE;        // b1-b7 are noise; b0 is the data
+                run.Thing.SetInputs((byte)(noise | ((ch >> bit) & 1)));
+                run.For(0.002);
+                run.Thing.Pd3Low = false;                       // the clock's rising edge
+                run.For(0.002);
+                run.Thing.Pd3Low = true;
+            }
+            run.Thing.Pd2Low = false;
+            run.For(0.03);
+        }
+        Assert.Equal(0, run.VmFault);
+        Assert.Equal(4, run.Global("taken"));
+        Assert.Equal((byte)'W', run.Element("heard", 0));
+        Assert.Equal((byte)'R', run.Element("heard", 1));
+        Assert.Equal((byte)'N', run.Element("heard", 3));
+    }
 }

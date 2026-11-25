@@ -17,6 +17,7 @@ script and slides are left as they were recorded.
 | 8. A frequency counter in BASIC | [Wren_08_Frequency.md](Wren_08_Frequency.md) | `Infographics/Wren_08` | Script and slides ready, built round `programs/OledThing/Frequency.bas`; not yet recorded |
 | 9. An 8-channel logic analyzer | [Wren_09_Logic.md](Wren_09_Logic.md) | `Infographics/Wren_09` | Script and slides ready, built round `programs/OledThing/LogicAnalyzer.bas` and `firmware/LogicSource`; not yet recorded |
 | 10. A bus sniffer | [Wren_10_Bus.md](Wren_10_Bus.md) | `Infographics/Wren_10` | Script and slides ready, built round `programs/OledThing/BusSniffer.bas` and `firmware/BusSource`; not yet recorded |
+| 11. A serial decoder | [Wren_11_Serial.md](Wren_11_Serial.md) | `Infographics/Wren_11` | Script and slides ready, built round `programs/OledThing/SerialDecoder.bas` and `firmware/SerialSource`; not yet recorded |
 
 ## The playlist, planned
 
@@ -36,7 +37,7 @@ dives after, for those who stay. Each headline leads with a name or a claim, nev
 | 8 | A frequency counter | Ready: above. A slow 555 clock (about 3 to 50 Hz) on PD3, the Thing powered from the clock board's 5 V; a reciprocal counter (timestamped edges over 2 seconds, not a 1-second count); long division in 16-bit integers. |
 | 9 | A logic analyzer | Ready: above. b0-b7 sampled as one byte every ms into 64 bytes, triggered by the first change, drawn as eight traces of four pixels, held 3 s; an Arduino Mega (`firmware/LogicSource`) plays a counter, a walking one and eight PWM lines, changing on its own. |
 | 10 | A bus sniffer | Ready: above. `ON LATCH PD3 RISING WHILE PD2 LOW`: an Arduino Mega plays a CPU reading and writing memory; the Thing logs only the writes. |
-| 11 | A serial decoder | Clock on PD3, data on b0, select on PD2: bytes assembled a bit at a time from an Arduino Mega. |
+| 11 | A serial decoder | Ready: above. SPI-style: an Arduino Mega (`firmware/SerialSource`) sends "HELLO WREN " at 20 bits a second, the select on PD2, the clock on PD3, the data on b0 (b1-b7 noise); `ON LATCH PD2 FALLING` starts a byte, `ON LATCH PD3 RISING WHILE PD2 LOW` shifts each bit in; the bits so far in binary, the last ten bytes in hex. |
 
 Open: whether to make a video on how the project was built with Claude.
 
