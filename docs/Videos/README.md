@@ -2,13 +2,14 @@
 
 The Wren BASIC series and its YouTube playlist: videos about Wren, made as
 [How_We_Make_Videos.md](../How_We_Make_Videos.md) says. Each video is a script here,
-`Wren_NN_Name.md`, and a folder of slides, `Infographics/Wren_NN`.
+`Wren_NN_Name.md`, and a folder of slides, `Infographics/Wren_NN`. A recorded video's
+script and slides are left as they were recorded.
 
 | Video | Script | Slides | State |
 |---|---|---|---|
-| 1. Snake and Pong in BASIC on an 8 KB chip (the overview) | [Wren_01_Overview.md](Wren_01_Overview.md) | `Infographics/Wren_01` | Script and slides ready; not yet recorded |
-| 2. A Raspberry Pi Pico as the programmer | [Wren_02_Pico.md](Wren_02_Pico.md) | `Infographics/Wren_02` | Script and slides ready; the LED Thing's header pin order to confirm; not yet recorded |
-| 3. BASIC in 1 KB of RAM | [Wren_03_Basic.md](Wren_03_Basic.md) | `Infographics/Wren_03` | Script and slides ready, built round `programs/OledThing/Stopwatch.bas`; not yet recorded |
+| 1. Snake and Pong in BASIC on an 8 KB chip (the overview) | [Wren_01_Overview.md](Wren_01_Overview.md) | `Infographics/Wren_01` | Recorded |
+| 2. A Raspberry Pi Pico as the programmer | [Wren_02_Pico.md](Wren_02_Pico.md) | `Infographics/Wren_02` | Recorded |
+| 3. BASIC in 1 KB of RAM | [Wren_03_Basic.md](Wren_03_Basic.md) | `Infographics/Wren_03` | Recorded, built round `programs/OledThing/Stopwatch.bas` |
 | 4. Snake, inside the emulator | [Wren_04_Emulator.md](Wren_04_Emulator.md) | `Infographics/Wren_04` | Script and slides ready; not yet recorded |
 | 5. A hundred writes (wear levelling) | [Wren_05_Wear.md](Wren_05_Wear.md) | `Infographics/Wren_05` | Script and slides ready; not yet recorded |
 
