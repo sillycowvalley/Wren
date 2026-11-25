@@ -267,7 +267,7 @@ public partial class MainWindow : Window
         messages.Clear();
         built = null;
         builtText = "";
-        SetMode(Mode.Design);
+        StopForAnotherProgram();
         messages.Add("A new program. Press F5 to build it and run it.");
         UpdateTitle();
         shownLine = -1;
@@ -410,11 +410,22 @@ public partial class MainWindow : Window
         errorLine = 0;
         built = null;
         builtText = "";
-        SetMode(Mode.Design);
+        StopForAnotherProgram();
         messages.Clear();
         messages.Add($"Opened {FileName}. F5 builds it and runs it with the debugger, Ctrl+F5 without.");
         shownLine = -1;
         UpdateView();
+    }
+
+    /// <summary>
+    /// Another program is in the editor: whatever ran stops, as Shift+F5 stops it. On the
+    /// Thing that means the debugger lets go (the Thing runs on by itself), so F5 and Ctrl+F5
+    /// can take it again for the new program.
+    /// </summary>
+    private void StopForAnotherProgram()
+    {
+        if (thing != null) ThingStop();
+        SetMode(Mode.Design);
     }
 
     // ---- Building ----
