@@ -146,4 +146,193 @@ public class DemoTests
         var now = Pixels(run);
         Assert.Contains(Enumerable.Range(0, 64 * 32), i => now[i % 64, i / 64] != at0[i % 64, i / 64]);
     }
+
+    [Fact]
+    public void TheStopwatchKeepsTimeAndRemembersTheBest()
+    {
+        var run = Run.Start(Program("OledThing", "Stopwatch.bas"), seconds: 0.1);
+        // A button: the pin pulled low for 50 ms, bouncing for the first 3 ms.
+        void Press(Action<bool> pin)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                pin(true);
+                run.For(0.0005);
+                pin(false);
+                run.For(0.0005);
+            }
+            pin(true);
+            run.For(0.05);
+            pin(false);
+            run.For(0.05);
+        }
+        void StartStop() => Press(low => run.Thing.Pd3Low = low);
+        int Time() => run.Global("seconds") * 100 + run.Global("hundredths");
+
+        StartStop();
+        run.For(3.0);
+        StartStop();
+        Assert.Equal(0, run.VmFault);
+        Assert.InRange(Time(), 306, 314);                   // 3.1 s from press to press, give or take the debounce
+        int best = (run.Mcu.Read(Run.Kernel.Symbol("SETTINGS")) << 8) | run.Mcu.Read(Run.Kernel.Symbol("SETTINGS") + 1);
+        Assert.Equal(Time(), best);
+
+        Press(low => run.Thing.Pd2Low = low);                // back to 0
+        Assert.Equal(0, Time());
+    }
+
+    [Fact]
+    public void TheVoltmeterShowsTheVoltageOnPd2()
+    {
+        foreach (var (level, mv) in new[] { (0, 0), (512, 1652), (767, 2474), (1023, 3300) })
+        {
+            var run = Run.Start(Program("OledThing", "Voltmeter.bas"), t => t.AnalogPd2 = level, seconds: 0.3);
+            Assert.Equal(0, run.VmFault);
+            Assert.Equal(level, run.Global("raw"));
+            Assert.Equal(mv, run.Global("mv"));
+        }
+    }
+
+    [Fact]
+    public void TheLatchCatchesTheInputsAtPd3sRisingEdge()
+    {
+        var run = Run.Start(Program("OledThing", "Latch.bas"), seconds: 0.1);
+        run.Thing.SetInputs(0x5A);
+        run.For(0.05);
+        Assert.Equal(0, run.Global("count"));                // no edge yet
+        run.Thing.Pd3Low = true;
+        run.For(0.05);
+        Assert.Equal(0, run.Global("count"));                // a falling edge: not latched
+        run.Thing.Pd3Low = false;
+        run.For(0.05);
+        Assert.Equal(0x5A, run.Global("captured"));
+        Assert.Equal(1, run.Global("count"));
+        run.Thing.SetInputs(0xC3);
+        run.For(0.05);
+        Assert.Equal(0x5A, run.Global("captured"));          // held until the next edge
+        Assert.Equal(0, run.VmFault);
+    }
+
+    [Theory]
+    [InlineData(3.0, 30, 3333)]
+    [InlineData(4.7, 47, 2128)]
+    [InlineData(27.3, 273, 366)]
+    [InlineData(50.0, 500, 200)]
+    public void TheFrequencyCounterTimesAClockOnPd3(double hertz, int tenths, int periodTenths)
+    {
+        var run = Run.Start(Program("OledThing", "Frequency.bas"), seconds: 0.1);
+        double half = 0.5 / hertz;
+        for (int i = 0; i < (int)(5 * hertz) + 2; i++)
+        {
+            run.Thing.Pd3Low = true;
+            run.For(half);
+            run.Thing.Pd3Low = false;
+            run.For(half);
+        }
+        Assert.Equal(0, run.VmFault);
+        Assert.Equal(tenths, run.Global("tenths"));
+        Assert.InRange(run.Global("ptenths"), periodTenths - 1, periodTenths + 1);
+        run.For(3.5);                                          // the clock stops
+        Assert.Equal(0, run.Global("running"));
+    }
+
+    [Fact]
+    public void TheLatchTestStopsAtTheFirstByteMissed()
+    {
+        var run = Run.Start(Program("OledThing", "LatchTest.bas"), t => t.Pd3Low = true, seconds: 0.1);
+        void Strobe(int value)
+        {
+            run.Thing.SetInputs((byte)value);
+            run.For(0.0001);
+            run.Thing.Pd3Low = false;                           // the rising edge
+            run.For(0.0001);
+            run.Thing.Pd3Low = true;
+            run.Thing.SetInputs((byte)~value);                  // noise between strobes
+            run.For(0.0048);                                    // 200 strobes a second
+        }
+        for (int v = 250; v < 250 + 40; v++) Strobe(v & 255);  // round past FF
+        Assert.Equal(0, run.Global("failed"));
+        Strobe((250 + 41) & 255);                                // one missed
+        Assert.Equal(-1, run.Global("failed"));
+        Assert.Equal((250 + 41) & 255, run.Global("got"));
+        Assert.Equal((250 + 40) & 255, run.Global("want"));
+
+        run.Thing.Pd2Low = true;                                 // PD2 starts it again
+        run.For(0.05);
+        run.Thing.Pd2Low = false;
+        run.For(0.05);
+        Assert.Equal(0, run.Global("failed"));
+        Assert.Equal(0, run.VmFault);
+    }
+
+    [Fact]
+    public void TheLogicAnalyzerCapturesACounterOnAChange()
+    {
+        var run = Run.Start(Program("OledThing", "LogicAnalyzer.bas"), t => t.SetInputs(0), seconds: 0.3);
+        Assert.Equal(0, run.Global("taken"));                     // the start-up call is not a trigger
+        for (int c = 1; c <= 60; c++)                              // a binary count, a step every 2 ms
+        {
+            run.Thing.SetInputs((byte)c);
+            run.For(0.002);
+        }
+        Assert.Equal(0, run.VmFault);
+        Assert.Equal(64, run.Global("taken"));
+        for (int i = 2; i < 64; i++)
+        {
+            int now = run.Element("samples", i), earlier = run.Element("samples", i - 2);
+            Assert.Equal((earlier + 1) & 255, now);                // one count every two samples
+        }
+    }
+
+    [Fact]
+    public void TheBusSnifferLogsTheWritesAndNotTheReads()
+    {
+        var run = Run.Start(Program("OledThing", "BusSniffer.bas"), t => t.Pd3Low = true, seconds: 0.1);
+        string message = "WREN";
+        for (int cycle = 0; cycle < 40; cycle++)
+        {
+            bool write = cycle % 8 == 7;
+            run.Thing.Pd2Low = write;                            // the write enable
+            run.Thing.SetInputs(write ? (byte)message[cycle / 8 % 4] : (byte)(cycle * 37));
+            run.For(0.00005);
+            run.Thing.Pd3Low = false;                           // the clock's rising edge
+            run.For(0.0001);
+            run.Thing.Pd3Low = true;
+            run.Thing.Pd2Low = false;
+            run.For(0.005);
+        }
+        Assert.Equal(0, run.VmFault);
+        Assert.Equal(5, run.Global("writes"));                  // 40 cycles, one in eight a write
+        Assert.Equal((byte)'W', run.Element("written", 0));
+        Assert.Equal((byte)'R', run.Element("written", 1));
+        Assert.Equal((byte)'W', run.Element("written", 4));
+    }
+
+    [Fact]
+    public void TheSerialDecoderAssemblesBytesABitAtATime()
+    {
+        var run = Run.Start(Program("OledThing", "SerialDecoder.bas"), t => t.Pd3Low = true, seconds: 0.1);
+        string message = "WREN";
+        foreach (char ch in message)
+        {
+            run.Thing.Pd2Low = true;                            // the select
+            run.For(0.002);
+            for (int bit = 7; bit >= 0; bit--)
+            {
+                int noise = (ch * 37 + bit * 11) & 0xFE;        // b1-b7 are noise; b0 is the data
+                run.Thing.SetInputs((byte)(noise | ((ch >> bit) & 1)));
+                run.For(0.002);
+                run.Thing.Pd3Low = false;                       // the clock's rising edge
+                run.For(0.002);
+                run.Thing.Pd3Low = true;
+            }
+            run.Thing.Pd2Low = false;
+            run.For(0.03);
+        }
+        Assert.Equal(0, run.VmFault);
+        Assert.Equal(4, run.Global("taken"));
+        Assert.Equal((byte)'W', run.Element("heard", 0));
+        Assert.Equal((byte)'R', run.Element("heard", 1));
+        Assert.Equal((byte)'N', run.Element("heard", 3));
+    }
 }

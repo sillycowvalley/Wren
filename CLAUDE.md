@@ -5,9 +5,11 @@ microcontrollers, driven through an ST-LINK V2 or a Pico over SWIM. Its targets 
 Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.md`.
 
 ## Working with the maintainer
-- Everything that lands in the repository is C#, plus STM8 assembly for firmware, and one
-  Arduino sketch for the Pico programmer (`firmware/PicoLink`, using pico-swimlib's BSD
-  SWIM code; also shipped as a .uf2). No Python, no JavaScript, no leading
+- Everything that lands in the repository is C#, plus STM8 assembly for firmware, and
+  Arduino sketches: the Pico programmer (`firmware/PicoLink`, using pico-swimlib's BSD
+  SWIM code; also shipped as a .uf2), and Arduino Mega signal sources for the videos'
+  instrument programs (`firmware/LatchFeeder`, `firmware/LogicSource` and the like; the
+  maintainer compiles them in the Arduino IDE). No Python, no JavaScript, no leading
   underscore in names.
 - The maintainer works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps
   written for him are GUI steps, never command lines.
@@ -33,7 +35,9 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
   them for the protocol, never copy their code into this MIT repository.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
   `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink` (Wren's Pico
-  programmer sketch and its .uf2; its wiring is in `docs/PicoLink.md`).
+  programmer sketch and its .uf2; its wiring is in `docs/PicoLink.md`), and the Arduino Mega
+  sketches for the videos (`firmware/LatchFeeder`, `firmware/LogicSource`, ...; each one's wiring
+  is in its opening comment).
 - `programs/` holds Wren BASIC programs in a folder for each board (`programs/OledThing`,
   `programs/LedThing`); `OledThing.bas` and `LedThing.bas` in them are the two
   Things' own behaviour. The kernel builds for either board (`BOARD` in `Kernel.asm`; the
@@ -45,7 +49,9 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
   `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` and `docs/LedThing.md`
   (the two Digicool boards' pins).
 - `docs/How_We_Make_Videos.md` is how the project's YouTube videos are made: read it before
-  writing a video's script, slides or thumbnail.
+  writing a video's script, slides or thumbnail. The Wren BASIC series is in `docs/Videos`:
+  its `README.md` sets the series' colours, mark and motif; each video is a script there and
+  a folder of slides in `docs/Videos/Infographics`.
 - Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
   rendered from, and the render steps are in that file's opening comment.
 - The maintainer works in Wren BASIC; the app never shows assembly or CPU registers.

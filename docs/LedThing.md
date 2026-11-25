@@ -121,6 +121,5 @@ and pulls M0-M2 up.
 
 ## Open issues
 
-- Not yet tried on a real LED Thing.
 - The store could be about 4.6 KB larger on this board (the kernel leaves $89CC-$926F
   unused), which needs a second program table layout.

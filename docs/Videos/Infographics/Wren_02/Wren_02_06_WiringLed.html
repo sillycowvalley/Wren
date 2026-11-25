@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<!--
+  Wren BASIC 2, slide 6/9: Wiring the LED Thing. The source of Wren_02_06_WiringLed.png beside it.
+
+  Shown live from Wren_02_00_Thumbnail.html (Chrome, F11): the right half of the page is the
+  next slide, the left half the one before; F5 plays the slide again.
+
+  To render the PNG in Edge or Chrome: F12, then Ctrl+Shift+M; Responsive, 1920 x 1080; from
+  the toolbar's menu "Add device pixel ratio", 2; wait about 3 seconds for the animation, then
+  "Capture screenshot" from the same menu. Save the 3840 x 2160 result over the PNG.
+
+  Sources:
+    - The LED Thing's programming header carries SWIM (PD1), NRST, GND and VDD: docs/LedThing.md
+      (Pins, the SWIM row; Parts). The Pico's side is the OLED Thing's (docs/PicoLink.md).
+    - OPEN: the order of the header's pins is not yet in docs/LedThing.md; the slide names the
+      signals only, so a viewer wires them by the board's own silk.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wren BASIC 2: Wiring the LED Thing</title>
+<style>
+/*HOUSE*/
+  /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
+     Blue: Wren BASIC and the programs. Gold: the kernel and the point being made.
+     Violet: the boards and their parts. Red: faults and flash wear. Pixel white: an OLED's pixels. */
+  :root {
+    --navy: #0f1b2d; --panel: #15243b; --panel-2: #1b2e4a; --line: #2b4063;
+    --ink: #e5e7eb; --muted: #94a3b8;
+    --gold: #fde68a; --gold-deep: #f59e0b;
+    --basic: #60a5fa; --basic-soft: rgba(96, 165, 250, 0.16);
+    --thing: #c4b5fd; --thing-soft: rgba(196, 181, 253, 0.14);
+    --fault: #f87171;
+    --pixel: #e6f0ff; --glass: #05070c;
+    --led: #ff4b3e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body {
+    position: relative;
+    background-color: var(--navy);
+    background-image:
+      radial-gradient(1100px 700px at 100% 0%, rgba(96, 165, 250, 0.16), transparent 62%),
+      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: auto, 40px 40px, 40px 40px;
+    color: var(--ink);
+    font-family: "Liberation Sans", Arial, sans-serif;
+  }
+  .mono { font-family: "DejaVu Sans Mono", Consolas, monospace; }
+
+  /* The chip, the channel's mark, the headline */
+  .chip {
+    position: absolute; left: 48px; top: 40px;
+    padding: 10px 22px; border: 2px solid var(--gold); border-radius: 999px;
+    color: var(--gold); font-size: 22px; font-weight: 700; letter-spacing: 0.12em;
+  }
+  .mark { position: absolute; right: 44px; top: 18px; display: flex; align-items: center; gap: 16px;
+    color: var(--muted); font-size: 20px; font-weight: 700; letter-spacing: 0.16em; }
+  .bird { width: 96px; height: 96px; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.45)); }
+  h1 { position: absolute; left: 48px; top: 104px; font-size: 76px; line-height: 1.05; font-weight: 700; color: var(--gold); letter-spacing: -0.01em; }
+  h1 span { color: #ffffff; }
+
+  /* An OLED: black glass, white pixels with a little glow */
+  .oled { background: var(--glass); border: 4px solid #334155; border-radius: 14px; box-shadow: 0 0 0 10px #0b1322, 0 20px 50px rgba(0,0,0,0.5); }
+  .oled .px { display: block; width: 100%; height: 100%; }
+  .px rect { fill: var(--pixel); }
+  .px g { filter: drop-shadow(0 0 0.35px rgba(200, 225, 255, 0.9)); }
+
+  /* LEDs: a red bar, lit or dark */
+  .leds .led-off { fill: #3b1512; stroke: #5b2420; stroke-width: 2; }
+  .leds .led-on { fill: var(--led); filter: drop-shadow(0 0 8px rgba(255, 75, 62, 0.9)); }
+
+  /* Cards and labels */
+  .card { position: absolute; background: var(--panel); border: 2px solid var(--line); border-radius: 18px; padding: 28px 32px; }
+  .card h2 { font-size: 34px; font-weight: 700; margin-bottom: 14px; }
+  .label { font-size: 22px; font-weight: 700; letter-spacing: 0.14em; color: var(--muted); }
+  .basic { color: var(--basic); } .kernel { color: var(--gold); } .thing { color: var(--thing); } .fault { color: var(--fault); }
+  .caption { position: absolute; left: 48px; right: 48px; bottom: 40px; padding: 20px 28px; background: rgba(21, 36, 59, 0.92);
+    border-left: 6px solid var(--gold); border-radius: 10px; font-size: 30px; line-height: 1.3; }
+
+  /* Backdrops: the frames OBS fills (docs/How_We_Make_Videos.md section 6) */
+  .frame { position: absolute; background: #000; border-radius: 6px; box-shadow: 0 0 0 3px #334155, 0 18px 40px rgba(0,0,0,0.5); }
+  .console { left: 48px; top: 152px; width: 1114px; height: 762px; }
+  .camera { left: 1210px; top: 152px; width: 662px; height: 372px; }
+  .frame-label { position: absolute; font-size: 18px; font-weight: 700; letter-spacing: 0.16em; color: var(--muted); }
+  .bar-title { position: absolute; left: 48px; top: 40px; display: flex; align-items: center; gap: 24px; }
+  .bar-title .chip { position: static; }
+  .bar-title .t { font-size: 46px; font-weight: 700; color: var(--gold); }
+  .bar-title .t span { color: #fff; }
+
+  /* A slide draws itself in about three seconds */
+  .rise { animation: rise 0.6s ease-out both; }
+  .pop { animation: pop 0.45s cubic-bezier(.2,1.4,.4,1) both; }
+  .fade { animation: fade 0.8s ease-out both; }
+  .draw { stroke-dasharray: 3000; stroke-dashoffset: 3000; animation: draw 1.1s ease-in-out forwards; }
+  .grow { transform-origin: left center; animation: grow 0.9s ease-out both; }
+  .d1 { animation-delay: 0.3s; } .d2 { animation-delay: 0.6s; } .d3 { animation-delay: 0.9s; }
+  .d4 { animation-delay: 1.2s; } .d5 { animation-delay: 1.5s; } .d6 { animation-delay: 1.8s; }
+  .d7 { animation-delay: 2.1s; } .d8 { animation-delay: 2.4s; } .d9 { animation-delay: 2.7s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes grow { from { transform: scaleX(0); } to { transform: none; } }
+
+  /* The slideshow: the right half is the next slide, the left half the one before */
+  .nav { position: fixed; top: 0; bottom: 0; width: 50%; z-index: 100; cursor: default; }
+  .nav.prev { left: 0; } .nav.next { right: 0; }
+/*END HOUSE*/
+  .pico { position: absolute; left: 120px; top: 260px; width: 340px; height: 732px; }
+  .wiresvg { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; }
+  .pl { position: absolute; width: 200px; text-align: right; font-size: 20px; font-weight: 700; color: #fff; font-family: "DejaVu Sans Mono", Consolas, monospace; }
+  .board { position: absolute; left: 1150px; top: 300px; width: 720px; height: 470px; background: var(--panel); border: 3px solid var(--thing); border-radius: 22px; }
+  .board h3 { position: absolute; left: 30px; top: 22px; font-size: 34px; color: var(--thing); }
+  .hdr { position: absolute; left: 30px; width: 300px; }
+  .hp { display: flex; align-items: center; gap: 14px; height: 56px; font-size: 26px; color: #fff; }
+  .hp i { width: 26px; height: 26px; border-radius: 4px; background: #e8c565; }
+  .warn { position: absolute; left: 1150px; top: 800px; width: 720px; padding: 22px 28px; border: 3px solid var(--fault); border-radius: 16px; background: rgba(248, 113, 113, 0.08); font-size: 26px; line-height: 1.35; color: #fecaca; }
+  .warn b { color: var(--fault); font-size: 32px; display: block; margin-bottom: 4px; }
+  .resnote { position: absolute; font-size: 22px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="chip fade">WREN BASIC · THE PICO · 6/9</div>
+<div class="mark fade"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
+ <g transform="translate(-6 -16)">
+  <defs>
+    <g id="silhouette">
+      <rect x="-17" y="-66" width="34" height="96" rx="16" transform="translate(76 124) rotate(-28)" />
+      <ellipse cx="120" cy="150" rx="76" ry="60" />
+      <circle cx="170" cy="110" r="46" />
+    </g>
+    <clipPath id="bodyClip">
+      <ellipse cx="120" cy="150" rx="76" ry="60" />
+      <circle cx="170" cy="110" r="46" />
+    </clipPath>
+    <clipPath id="tailClip">
+      <rect x="-17" y="-66" width="34" height="96" rx="16" transform="translate(76 124) rotate(-28)" />
+    </clipPath>
+  </defs>
+  <g stroke="#7A4E2C" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M110 200 L104 236 M92 238 L104 236 L114 240" />
+    <path d="M138 202 L140 236 M128 239 L140 236 L152 239" />
+  </g>
+  <path d="M196 100 Q228 102 250 116 Q228 122 196 120 Z" fill="#3A2414" stroke="#3A2414" stroke-width="2" stroke-linejoin="round" />
+  <use href="#silhouette" fill="#4A2C14" stroke="#4A2C14" stroke-width="10" stroke-linejoin="round" />
+  <use href="#silhouette" fill="#A0663A" />
+  <g clip-path="url(#tailClip)" stroke="#5A3618" stroke-width="5" stroke-linecap="round">
+    <g transform="translate(76 124) rotate(-28)">
+      <line x1="-20" y1="-50" x2="20" y2="-50" />
+      <line x1="-20" y1="-34" x2="20" y2="-34" />
+      <line x1="-20" y1="-18" x2="20" y2="-18" />
+    </g>
+  </g>
+  <g clip-path="url(#bodyClip)">
+    <ellipse cx="150" cy="176" rx="58" ry="38" fill="#EBC99B" />
+    <ellipse cx="186" cy="138" rx="30" ry="22" fill="#EBC99B" />
+    <g stroke="#C79A68" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M128 196 q8 4 16 0" />
+      <path d="M152 200 q8 4 16 0" />
+      <path d="M140 184 q8 4 16 0" />
+    </g>
+    <ellipse cx="104" cy="146" rx="50" ry="30" transform="rotate(-14 104 146)" fill="#83502A" />
+    <g stroke="#4A2C14" stroke-width="4" stroke-linecap="round">
+      <line x1="72" y1="132" x2="80" y2="152" />
+      <line x1="86" y1="128" x2="94" y2="150" />
+      <line x1="100" y1="124" x2="108" y2="147" />
+      <line x1="114" y1="121" x2="122" y2="144" />
+      <line x1="128" y1="119" x2="136" y2="140" />
+    </g>
+    <g fill="#6E431F">
+      <circle cx="150" cy="82" r="3" />
+      <circle cx="164" cy="74" r="3" />
+      <circle cx="140" cy="96" r="3" />
+    </g>
+  </g>
+  <path d="M146 96 Q172 80 204 92" stroke="#F4E3C3" stroke-width="7" stroke-linecap="round" fill="none" />
+  <circle cx="176" cy="126" r="9" fill="#E8907A" opacity="0.45" />
+  <circle cx="186" cy="106" r="9" fill="#1E120A" />
+  <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
+ </g>
+</svg><!--/WREN--></div>
+<h1 class="rise">Wiring <span>the LED Thing</span></h1>
+<div class="pop d1"><svg class="pico" viewBox="0 0 260 560">
+  <rect x="30" y="0" width="70" height="36" rx="6" fill="#c0c7d2" stroke="#8b95a5" stroke-width="3"/>
+  <rect x="10" y="26" width="240" height="524" rx="14" fill="#1f6b3a" stroke="#14532d" stroke-width="4"/>
+  <g fill="#e8c565"><rect x="18" y="46" width="14" height="14" rx="2"/><rect x="228" y="46" width="14" height="14" rx="2"/><rect x="18" y="71" width="14" height="14" rx="2"/><rect x="228" y="71" width="14" height="14" rx="2"/><rect x="18" y="96" width="14" height="14" rx="2"/><rect x="228" y="96" width="14" height="14" rx="2"/><rect x="18" y="121" width="14" height="14" rx="2"/><rect x="228" y="121" width="14" height="14" rx="2"/><rect x="18" y="146" width="14" height="14" rx="2"/><rect x="228" y="146" width="14" height="14" rx="2"/><rect x="18" y="171" width="14" height="14" rx="2"/><rect x="228" y="171" width="14" height="14" rx="2"/><rect x="18" y="196" width="14" height="14" rx="2"/><rect x="228" y="196" width="14" height="14" rx="2"/><rect x="18" y="221" width="14" height="14" rx="2"/><rect x="228" y="221" width="14" height="14" rx="2"/><rect x="18" y="246" width="14" height="14" rx="2"/><rect x="228" y="246" width="14" height="14" rx="2"/><rect x="18" y="271" width="14" height="14" rx="2"/><rect x="228" y="271" width="14" height="14" rx="2"/><rect x="18" y="296" width="14" height="14" rx="2"/><rect x="228" y="296" width="14" height="14" rx="2"/><rect x="18" y="321" width="14" height="14" rx="2"/><rect x="228" y="321" width="14" height="14" rx="2"/><rect x="18" y="346" width="14" height="14" rx="2"/><rect x="228" y="346" width="14" height="14" rx="2"/><rect x="18" y="371" width="14" height="14" rx="2"/><rect x="228" y="371" width="14" height="14" rx="2"/><rect x="18" y="396" width="14" height="14" rx="2"/><rect x="228" y="396" width="14" height="14" rx="2"/><rect x="18" y="421" width="14" height="14" rx="2"/><rect x="228" y="421" width="14" height="14" rx="2"/><rect x="18" y="446" width="14" height="14" rx="2"/><rect x="228" y="446" width="14" height="14" rx="2"/><rect x="18" y="471" width="14" height="14" rx="2"/><rect x="228" y="471" width="14" height="14" rx="2"/><rect x="18" y="496" width="14" height="14" rx="2"/><rect x="228" y="496" width="14" height="14" rx="2"/><rect x="18" y="521" width="14" height="14" rx="2"/><rect x="228" y="521" width="14" height="14" rx="2"/></g>
+  <rect x="80" y="210" width="100" height="100" rx="8" fill="#16181d"/>
+  <text x="130" y="256" fill="#cbd5e1" font-size="20" font-weight="700" text-anchor="middle" font-family="Liberation Sans, Arial">RP2040</text>
+  <text x="130" y="282" fill="#94a3b8" font-size="15" text-anchor="middle" font-family="Liberation Sans, Arial">Pico</text>
+  <rect x="150" y="70" width="44" height="30" rx="5" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="172" y="122" fill="#d1fae5" font-size="14" font-weight="700" text-anchor="middle" font-family="Liberation Sans, Arial">BOOTSEL</text>
+</svg>
+</div>
+<div class="pl fade d2" style="left: 205px; top: 448px;">36 3V3</div>
+<div class="pl fade d2" style="left: 205px; top: 873px;">23 GND</div>
+<div class="pl fade d2" style="left: 205px; top: 905px;">22 GP17</div>
+<div class="pl fade d2" style="left: 205px; top: 938px;">21 GP16</div>
+<div class="board rise d1"><h3>8-bit LED Thing</h3>
+  <div class="hdr" style="top: 120px;"><div style="font-size: 22px; color: var(--muted); font-weight: 700; letter-spacing: .1em; margin-bottom: 8px;">PROGRAMMING HEADER</div>
+    <div class="hp"><i></i>VDD</div><div class="hp"><i></i>GND</div><div class="hp"><i></i>SWIM</div><div class="hp"><i></i>NRST</div></div>
+  <div style="position: absolute; left: 360px; top: 190px; width: 330px; font-size: 24px; color: var(--muted); line-height: 1.35;">Match each wire to the name on the board's silk.</div>
+</div>
+<svg class="wiresvg" viewBox="0 0 1920 1080"><g fill="none" stroke-width="7" stroke-linecap="round">
+  <path class="draw d3" d="M427 460 C 900 460, 1000 495, 1193 495" stroke="#ef4444"/>
+  <path class="draw d4" d="M427 885 C 800 885, 1000 551, 1193 551" stroke="#374151"/>
+  <path class="draw d5" d="M427 950 C 850 950, 1000 607, 1193 607" stroke="#facc15"/>
+  <path class="draw d6" d="M427 917 C 900 917, 1000 663, 1193 663" stroke="#3b82f6"/>
+  <path class="draw d7" d="M820 990 L1020 990" stroke="#9ca3af" stroke-width="5"/>
+  <rect class="fade d7" x="870" y="976" width="100" height="28" rx="12" fill="#e7cf9f"/>
+</g></svg>
+<div class="resnote fade d7" style="left: 820px; top: 1014px;">470 Ω from SWIM to 3V3</div>
+<div class="warn rise d8"><b>3.3 V only</b>The same rule: nothing else powers the board.</div>
+<!--NAV--><a class="nav prev" href="Wren_02_05b_Install.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_02_06b_LedThing.html" aria-label="Next slide"></a><!--/NAV-->
+</body>
+</html>
