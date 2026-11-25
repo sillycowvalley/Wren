@@ -89,9 +89,9 @@ public class DemoTests
         Assert.True(balls.Min() < 16 && balls.Max() > 48, "the ball did not cross the court");
     }
 
-    /// <summary>The seven-segment readout at a quarter-turn angle set by PA1 and PA2 (both open: 90 degrees).</summary>
-    private static Run SevenSegment(byte inputs, bool pa1Low, bool pa2Low) =>
-        Run.Start(Program("OledThing", "SevenSegment.bas"), t =>
+    /// <summary>The seven-segment readout with ANGLE set to angle (-1: chosen by PA1 and PA2).</summary>
+    private static Run SevenSegment(byte inputs, int angle, bool pa1Low = false, bool pa2Low = false) =>
+        Run.Start(Program("OledThing", "SevenSegment.bas").Replace("CONST ANGLE = 90", $"CONST ANGLE = {angle}"), t =>
         {
             t.SetInputs(inputs);
             t.HexLow = pa1Low;
@@ -109,17 +109,20 @@ public class DemoTests
     [Fact]
     public void TheSevenSegmentReadoutTurnsAndFollowsTheInputs()
     {
-        var at0 = Pixels(SevenSegment(0x5A, true, true));
-        var at90 = Pixels(SevenSegment(0x5A, false, false));
-        var at180 = Pixels(SevenSegment(0x5A, true, false));
-        var at270 = Pixels(SevenSegment(0x5A, false, true));
+        var at0 = Pixels(SevenSegment(0x5A, 0));
+        var at90 = Pixels(SevenSegment(0x5A, 90));
+        var at180 = Pixels(SevenSegment(0x5A, 180));
+        var at270 = Pixels(SevenSegment(0x5A, 270));
         for (int x = 0; x < 64; x++)
             for (int y = 0; y < 32; y++)
             {
                 Assert.Equal(at0[x, y], at180[63 - x, 31 - y]);         // half a turn apart
                 Assert.Equal(at90[x, y], at270[63 - x, 31 - y]);
             }
-        var run = SevenSegment(0x5A, true, true);
+        // With ANGLE -1 the mode pins choose: both low is 0 degrees, PA1 low 180.
+        Assert.Equal(at0.Cast<bool>(), Pixels(SevenSegment(0x5A, -1, true, true)).Cast<bool>());
+        Assert.Equal(at180.Cast<bool>(), Pixels(SevenSegment(0x5A, -1, true, false)).Cast<bool>());
+        var run = SevenSegment(0x5A, 0);
         run.Thing.SetInputs(0xC3);
         run.For(0.05);
         Assert.Equal(0, run.VmFault);

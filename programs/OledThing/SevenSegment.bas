@@ -1,15 +1,20 @@
-' The inputs as two hex digits in the style of a seven-segment display, with b0-b7 as bit
-' cells below them, like Digicool's own readout, at any of four angles. No font is used:
-' each digit is seven bars, and every bar and cell is a rectangle drawn through Area,
-' which turns the upright picture to the angle. Turned 90 or 270 degrees the picture is
-' 32 wide and 64 tall, and the digits stand one above the other.
+' The inputs as two hex digits in the style of a seven-segment display, at any of four
+' angles. No font is used: each digit is seven bars, and every bar is a rectangle drawn
+' through Seg, which turns the upright picture to the angle. Turned 90 or 270 degrees the
+' picture is 32 wide and 64 tall, and the digits stand one above the other.
+'
+' ANGLE sets the angle: 0, 90, 180 or 270 (clockwise). Set it to -1 to choose the angle
+' with the mode pins instead:
 '
 '   PA1 (HEX)  PA2 (BAR)   angle
-'     open       open        90   (the Thing standing on its side)
+'     open       open        90
 '     low        open       180
 '     open       low        270
 '     low        low          0
-'   PA3 (INV) low inverts the display.
+'
+' PA3 (INV) low inverts the display.
+
+CONST ANGLE = 90
 
 DIM turn                ' quarter turns clockwise: 0 to 3
 DIM shown               ' the byte on screen
@@ -29,40 +34,35 @@ ON PINS
 END ON
 
 SUB Draw
-  DIM i
-  turn = (1 + (1 - PIN(PA1)) + 2 * (1 - PIN(PA2))) AND 3
+  IF ANGLE < 0 THEN
+    turn = (1 + (1 - PIN(PA1)) + 2 * (1 - PIN(PA2))) AND 3
+  ELSE
+    turn = (ANGLE / 90) AND 3
+  END IF
   CLS
   IF turn = 0 OR turn = 2 THEN
-    ' 64 x 32: the digits side by side, the bit cells across the bottom
-    Digit shown SHR 4, 11, 1, 18, 22, 3
-    Digit shown AND 15, 35, 1, 18, 22, 3
-    FOR i = 0 TO 7
-      Area 8 * i + 1, 26, 6, 5, (shown SHR (7 - i)) AND 1
-    NEXT
+    Digit shown SHR 4, 9, 1                  ' 64 x 32: side by side
+    Digit shown AND 15, 37, 1
   ELSE
-    ' 32 x 64: the digits one above the other, the bit cells across the bottom
-    Digit shown SHR 4, 5, 1, 22, 24, 4
-    Digit shown AND 15, 5, 29, 22, 24, 4
-    FOR i = 0 TO 7
-      Area 4 * i, 57, 3, 6, (shown SHR (7 - i)) AND 1
-    NEXT
+    Digit shown SHR 4, 7, 1                  ' 32 x 64: one above the other
+    Digit shown AND 15, 7, 33
   END IF
   INVERSE NOT PIN(PA3)
   SHOW
 END SUB
 
-' Hex digit n with its top-left at (x, y) on the upright picture, w x h, bars t thick.
-SUB Digit(n, x, y, w, h, t)
-  DIM bars, mid
+' Hex digit n, 18 wide and 30 tall with bars 4 thick, its top-left at (x, y) on the
+' upright picture. The bars stop short of each other, as on a real display.
+SUB Digit(n, x, y)
+  DIM bars
   bars = Bars(n)
-  mid = (h - t) / 2                           ' the middle bar's top
-  IF bars AND 1 THEN Area x + t, y, w - 2 * t, t, 1                         ' a: top
-  IF bars AND 2 THEN Area x + w - t, y + t, t, mid - t, 1                   ' b: top right
-  IF bars AND 4 THEN Area x + w - t, y + mid + t, t, h - mid - 2 * t, 1     ' c: bottom right
-  IF bars AND 8 THEN Area x + t, y + h - t, w - 2 * t, t, 1                 ' d: bottom
-  IF bars AND 16 THEN Area x, y + mid + t, t, h - mid - 2 * t, 1            ' e: bottom left
-  IF bars AND 32 THEN Area x, y + t, t, mid - t, 1                          ' f: top left
-  IF bars AND 64 THEN Area x + t, y + mid, w - 2 * t, t, 1                  ' g: middle
+  IF bars AND 1 THEN Seg x + 4, y, 10, 4                ' a: top
+  IF bars AND 2 THEN Seg x + 14, y + 4, 4, 9            ' b: top right
+  IF bars AND 4 THEN Seg x + 14, y + 17, 4, 9           ' c: bottom right
+  IF bars AND 8 THEN Seg x + 4, y + 26, 10, 4           ' d: bottom
+  IF bars AND 16 THEN Seg x, y + 17, 4, 9               ' e: bottom left
+  IF bars AND 32 THEN Seg x, y + 4, 4, 9                ' f: top left
+  IF bars AND 64 THEN Seg x + 4, y + 13, 10, 4          ' g: middle
 END SUB
 
 ' The bars lit for hex digit n: bit 0 is a, the top, round to bit 6, g, the middle.
@@ -85,18 +85,16 @@ FUNCTION Bars(n)
   RETURN $71                                  ' F
 END FUNCTION
 
-' A rectangle of the upright picture, filled (full = 1) or outlined (full = 0), drawn on
-' the screen turned clockwise by turn quarter turns. A turned rectangle is a rectangle.
-SUB Area(x, y, w, h, full)
-  DIM sx, sy, sw, sh
+' A bar of the upright picture, filled on the screen turned clockwise by turn quarter
+' turns. A turned rectangle is a rectangle.
+SUB Seg(x, y, w, h)
   IF turn = 0 THEN
-    sx = x : sy = y : sw = w : sh = h
+    FILL x, y, w, h
   ELSEIF turn = 1 THEN
-    sx = 64 - y - h : sy = x : sw = h : sh = w
+    FILL 64 - y - h, x, h, w
   ELSEIF turn = 2 THEN
-    sx = 64 - x - w : sy = 32 - y - h : sw = w : sh = h
+    FILL 64 - x - w, 32 - y - h, w, h
   ELSE
-    sx = y : sy = 32 - x - w : sw = h : sh = w
+    FILL y, 32 - x - w, h, w
   END IF
-  IF full THEN FILL sx, sy, sw, sh ELSE BOX sx, sy, sw, sh
 END SUB
