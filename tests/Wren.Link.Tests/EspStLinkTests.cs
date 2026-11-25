@@ -137,7 +137,7 @@ public class EspStLinkTests
         link.Link.Sleep = _ => { };
         link.Target.Connect();
 
-        link.Programmer.RestoreFactory(Factory);
+        link.Programmer.ReplaceFirmware(Factory, "factory firmware");
         Assert.All(Factory.Bytes, kv => Assert.Equal(kv.Value, thing.Mcu.Read(kv.Key)));
         Assert.Equal(0x00, thing.Mcu.Read(0x4800));
         Assert.Equal(ThingProgrammer.DefaultOptions, link.Target.Read(0x4801, 10));
@@ -150,7 +150,7 @@ public class EspStLinkTests
         link.Programmer.InstallKernel(Kernel.Image);
         link.Programmer.UploadProgram(Compiler.Compile("DIM a\nON START\n a = 1\nEND ON\n").Image);
 
-        link.Programmer.RestoreFactory(Factory);
+        link.Programmer.ReplaceFirmware(Factory, "factory firmware");
         Assert.All(Factory.Bytes, kv => Assert.Equal(kv.Value, thing.Mcu.Read(kv.Key)));
         Assert.Equal(0, thing.Mcu.ProtectedBlocks);
         Assert.All(Enumerable.Range(0x4000, 128), a => Assert.Equal(0, thing.Mcu.Read(a)));

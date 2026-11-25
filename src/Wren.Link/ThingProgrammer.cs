@@ -297,15 +297,16 @@ public sealed class ThingProgrammer
     }
 
     /// <summary>
-    /// Puts a Thing back to its factory behaviour, without read-out protection: removes the
-    /// protection first if the chip refuses memory access (which erases it), writes the
-    /// factory firmware, clears the EEPROM (where Wren keeps its program table) and leaves
-    /// ST's default option bytes. Only blocks that differ are written.
+    /// Write image: replaces the Thing's firmware with another (such as Digicool's factory
+    /// firmware), without read-out protection: removes the protection first if the chip
+    /// refuses memory access (which erases it), writes the image, clears the EEPROM (Wren's
+    /// program table means nothing to other firmware) and leaves ST's default option bytes.
+    /// Only blocks that differ are written.
     /// </summary>
-    public void RestoreFactory(MemoryImage factory)
+    public void ReplaceFirmware(MemoryImage image, string name)
     {
         if (target.NoAccess) RemoveReadOutProtection();
-        WriteImage(factory, "factory firmware");
+        WriteImage(image, name);
         var eeprom = Enumerable.Range(EepromStart, EepromSize).Select(a => new KeyValuePair<int, byte>(a, 0)).ToList();
         int cleared = WriteChangedBlocks(eeprom, TargetMemory.Eeprom, "EEPROM");
         if (cleared > 0) Say($"EEPROM cleared: {cleared} blocks");
@@ -314,7 +315,7 @@ public sealed class ThingProgrammer
             if (target.ReadByte(OptionUbc + i) != DefaultOptions[i]) target.WriteOptionByte(OptionUbc + i, DefaultOptions[i]);
         }
         Verify(eeprom, "EEPROM");
-        Say("Factory firmware restored, without read-out protection. Disconnect (or close this window) and it runs.");
+        Say($"{name} written, without read-out protection. Disconnect (or close this window) and it runs.");
     }
 
     /// <summary>ST's default option bytes from $4801 on: everything off, each with its complement.</summary>

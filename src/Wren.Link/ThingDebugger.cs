@@ -70,6 +70,12 @@ public sealed class ThingDebugger : IDisposable
     public IReadOnlyList<int> ArmedBreakpoints { get; private set; } = Array.Empty<int>();
 
     public ThingRunState State { get; private set; }
+
+    /// <summary>The programmer's serial port has gone: it was unplugged.</summary>
+    public bool Vanished => link.Vanished;
+
+    /// <summary>The programmer's serial port; null for an ST-LINK.</summary>
+    public string? PortName => link.PortName;
     public CompiledProgram? Program => program;
 
     /// <summary>

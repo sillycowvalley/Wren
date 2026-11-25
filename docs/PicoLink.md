@@ -2,7 +2,7 @@
 
 A Raspberry Pi Pico, or a Pico-compatible board such as the Waveshare RP2040 Plus, stands in
 for an ST-LINK V2. Wren finds it as a serial port. **Tools → Firmware…** sets a Thing up
-through it (install the kernel, write images, restore factory settings, read the wear
+through it (install the kernel, write images, read the wear
 history, the checks), and on **Debug → Target → Thing on the programmer** the main window
 uploads, runs and debugs programs through it. Two firmwares are available. Both use the same wiring, and
 Wren recognises either.
@@ -64,15 +64,17 @@ must not be powered from anything else while the board is connected. The OLED is
    **Pico on COMn**.
 3. Choose it and click **Connect**.
    - The log names the firmware and the sync pulse (16 µs is right).
-   - It then names the board (an OLED Thing or an LED Thing) and says what the Thing holds:
-     empty, Wren's kernel (this build, another build or an older one), or other firmware.
+   - It then shows the board, its EEPROM, the firmware (empty, Wren's kernel up to date or
+     out of date, or other firmware) and the program's size.
    - While connected, the Thing's program is stopped. **Disconnect**, or closing the
      window, lets it run again.
+   - The list follows the serial ports: a Pico plugged in appears within a second, and one
+     unplugged while connected is let go.
 4. **Install kernel** checks the board and the EEPROM, then writes only the kernel blocks
    that differ, keeping the program.
-5. **Restore factory settings** writes Digicool's firmware (`firmware/digicool`) back, two
-   clicks. If read-out protection is on, it is removed first, which erases the chip. The
-   EEPROM is cleared, and the Thing is left unprotected.
+5. **Write image…** opens `firmware/digicool`, so putting Digicool's firmware back is a
+   choice of file and two clicks. If read-out protection is on, it is removed first, which
+   erases the chip. The EEPROM is cleared, and the Thing is left unprotected.
 6. **Wear report…**, under Wren's kernel, shows the 54 program-store blocks. It reads the
    writes the Thing itself has recorded for each block and marks the current program's
    blocks. It reads only.
@@ -87,17 +89,19 @@ If Connect says the target did not answer in time, check:
 ## Read-out protection and factory firmware
 
 - **If the Thing refuses memory access** (SWIM_CSR's NO_ACCESS bit stays set for half a
-  second after Connect), its read-out protection is likely on. Only **Remove protection**
-  is then available. After two clicks it:
+  second after Connect), its read-out protection is likely on. Only **Write image…** is
+  then available. After two clicks it:
   1. writes $00 to the read-out protection byte, which makes the chip erase all its
      flash and EEPROM;
   2. resets the chip and connects again;
-  3. writes ST's default option bytes.
+  3. writes ST's default option bytes;
+  4. writes the image and clears the EEPROM.
 
-  The chip is left blank and unprotected.
+  Then Install kernel, if Wren's kernel is wanted.
 - **Write image…** writes any firmware file (.s19 or .hex), such as the Thing's factory
   firmware. It works like Install kernel: only blocks that differ are written, then
-  checked. An image without option bytes, like Digicool's, leaves read-out protection off.
+  checked. The EEPROM is cleared (Wren's program table means nothing to other firmware).
+  An image without option bytes, like Digicool's, leaves read-out protection off.
 
 ## How Wren talks to it
 

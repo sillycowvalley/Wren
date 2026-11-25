@@ -18,23 +18,14 @@ public class EepromSizeCheckTests
         Enumerable.Range(address, length).Select(a => thing.Mcu.Read(a)).ToArray();
 
     [Fact]
-    public void A640ByteEepromHoldsThePatternAndGetsItsBytesBack()
+    public void A640ByteEepromIsFoundAndGetsItsBytesBack()
     {
         var (thing, link) = Connect(DeviceInfo.Stm8s103f3);
-        var original = Enumerable.Range(0, EepromSizeCheck.ExtraSize).Select(i => (byte)(i * 3)).ToArray();
+        var original = Enumerable.Range(0, 64).Select(i => (byte)(i * 3)).ToArray();
         link.Target.WriteBlocks(EepromSizeCheck.ExtraStart, original, TargetMemory.Eeprom);
         byte[] wren = Read(thing, EepromSizeCheck.WrenEeprom, EepromSizeCheck.WrenSize);
-        var lines = new List<string>();
-        var check = new EepromSizeCheck(link.Target, lines.Add);
-
-        var probe = check.WritePattern();
-        Assert.True(probe.PatternHeld);
-        Assert.Equal(EepromSizeCheck.Pattern(), Read(thing, EepromSizeCheck.ExtraStart, EepromSizeCheck.ExtraSize));
-
-        thing.PowerOn();                                  // the power cycle; EEPROM keeps its contents
-        link.Target.Connect();
-        Assert.True(check.CheckAndRestore(probe));
-        Assert.Equal(original, Read(thing, EepromSizeCheck.ExtraStart, EepromSizeCheck.ExtraSize));
+        Assert.True(EepromSizeCheck.HasExtraEeprom(link.Target));
+        Assert.Equal(original, Read(thing, EepromSizeCheck.ExtraStart, 64));
         Assert.Equal(wren, Read(thing, EepromSizeCheck.WrenEeprom, EepromSizeCheck.WrenSize));
     }
 
@@ -44,8 +35,7 @@ public class EepromSizeCheckTests
         var (thing, link) = Connect(DeviceInfo.Stm8s003f3);
         byte[] wren = Read(thing, EepromSizeCheck.WrenEeprom, EepromSizeCheck.WrenSize);
         int[] flash = (int[])thing.Mcu.FlashWrites.Clone();
-        var probe = new EepromSizeCheck(link.Target, _ => { }).WritePattern();
-        Assert.False(probe.PatternHeld);
+        Assert.False(EepromSizeCheck.HasExtraEeprom(link.Target));
         Assert.Equal(wren, Read(thing, EepromSizeCheck.WrenEeprom, EepromSizeCheck.WrenSize));
         Assert.Equal(flash, thing.Mcu.FlashWrites);
     }

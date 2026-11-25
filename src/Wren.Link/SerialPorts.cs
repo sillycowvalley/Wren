@@ -26,6 +26,10 @@ public static class SerialPorts
             try
             {
                 port.Open();
+                // .NET's serial stream closes its handle again from its finalizer, which throws on
+                // the finalizer thread, ending the app, when the USB device was unplugged; the
+                // port is closed by Dispose (ThingLink) instead.
+                GC.SuppressFinalize(port.BaseStream);
                 port.DiscardInBuffer();
                 return port;
             }
@@ -39,6 +43,19 @@ public static class SerialPorts
                 }
                 throw new LinkException($"Cannot open {portName}: {ex.Message} (is the Arduino IDE's Serial Monitor or another program using it?)", ex);
             }
+        }
+    }
+
+    /// <summary>The serial ports Windows lists now; empty if they cannot be listed.</summary>
+    public static HashSet<string> Names()
+    {
+        try
+        {
+            return new HashSet<string>(SerialPort.GetPortNames(), StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException or System.ComponentModel.Win32Exception)
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
     }
 

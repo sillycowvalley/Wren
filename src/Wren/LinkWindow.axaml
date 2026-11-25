@@ -21,24 +21,23 @@
         <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect"
                 ToolTip.Tip="Lets go of the Thing, which then runs (connected, its program is stopped)" />
       </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="FactoryButton" Content="Restore factory settings" Click="OnRestoreFactory"
-                ToolTip.Tip="Writes Digicool's factory firmware back (removing read-out protection first if it is on, which erases the chip), clears the EEPROM and leaves the Thing unprotected" />
-        <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
-                ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
-      </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"
-                ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as the Thing's factory firmware) like Install kernel: only blocks that differ, then checked. Leaves read-out protection off." />
-        <Button Name="WearButton" Content="Wear report…" Click="OnWearReport"
-                ToolTip.Tip="Shows the writes the Thing has recorded for each of its 54 program-store blocks; reads only" />
-        <Button Name="DebugChecksButton" Content="Debug module checks" Click="OnDebugChecks"
-                ToolTip.Tip="Checks the chip's debug module for debugging on the Thing: a breakpoint on reading the program, reading RAM while it runs, stopping it, and freezing its 1 ms timer. Writes no flash or EEPROM." />
-        <Button Name="EepromButton" Content="EEPROM size check" Click="OnEepromCheck"
-                ToolTip.Tip="Finds out whether this Thing has 640 bytes of EEPROM rather than 128: writes a test pattern above Wren's 128 bytes, asks you to power-cycle the Thing, reads it back and puts the original bytes back. Writes no flash." />
-        <Button Name="UnprotectButton" Content="Remove protection" Click="OnRemoveProtection"
-                ToolTip.Tip="Turns read-out protection off. The chip erases all its flash and EEPROM as it does so." />
-      </StackPanel>
+      <HeaderedContentControl Classes="group" Header="Write FLASH">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
+                  ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
+          <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"
+                  ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as Digicool's factory firmware in firmware\digicool) like Install kernel: only blocks that differ, then checked. Removes read-out protection first if it is on (which erases the chip), clears the EEPROM and leaves protection off." />
+          <TextBlock Text="Warning: FLASH can only be written ~100 times." VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#A0522D" />
+        </StackPanel>
+      </HeaderedContentControl>
+      <HeaderedContentControl Classes="group" Header="Diagnostics">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Name="WearButton" Content="Wear report…" Click="OnWearReport"
+                  ToolTip.Tip="Shows the writes the Thing has recorded for each of its 54 program-store blocks; reads only" />
+          <Button Name="DebugChecksButton" Content="Debug module checks" Click="OnDebugChecks"
+                  ToolTip.Tip="Checks the chip's debug module for debugging on the Thing: a breakpoint on reading the program, reading RAM while it runs, stopping it, and freezing its 1 ms timer. Writes no flash or EEPROM." />
+        </StackPanel>
+      </HeaderedContentControl>
       <TextBlock Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold" />
     </StackPanel>
     <HeaderedContentControl Classes="group" Header="Log" Margin="0,8,0,0">

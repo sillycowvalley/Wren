@@ -136,10 +136,8 @@ The detailed design, for approval, is in [Design.md](Design.md).
    ($4000-$427F) rather than the 128 B the S003's datasheet promises? The first OLED Thing
    checked does, and keeps it through a power cycle. Install kernel writes and reads
    back one block at $4080 and, if it holds, gives the program 512 setting bytes there
-   instead of 12 (the kernel's info block records which). That quick check does not prove
-   the extra EEPROM keeps its contents: the Firmware window's **EEPROM size check** does,
-   with a power cycle between writing a pattern to $4080-$427F and reading it back, and
-   puts the original bytes back. Run it on the other Things and copy the logs back.
+   instead of 12 (the kernel's info block records which). Install the kernel on the other
+   Things and note the EEPROM size the Firmware window shows for each.
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.

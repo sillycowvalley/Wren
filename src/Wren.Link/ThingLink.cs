@@ -134,6 +134,15 @@ public sealed class ThingLink : IDisposable
 
     private string? heldPort;
 
+    /// <summary>The serial port this link holds; null for an ST-LINK.</summary>
+    public string? PortName => heldPort;
+
+    /// <summary>
+    /// True when the link's serial port is no longer listed: its programmer was unplugged.
+    /// (An ST-LINK unplugged shows as a failed transfer instead.)
+    /// </summary>
+    public bool Vanished => heldPort != null && !SerialPorts.Names().Contains(heldPort);
+
     private static ThingLink OpenSerial(SerialProgrammerInfo serial)
     {
         // pico-swimlib's firmware answers the esp-stlink version request; anything else on the
@@ -161,7 +170,10 @@ public sealed class ThingLink : IDisposable
 
     private bool disposed;
 
-    /// <summary>Closes the programmer's port (once; later calls do nothing) and lets Wren open it again.</summary>
+    /// <summary>
+    /// Closes the programmer's port (once; later calls do nothing) and lets Wren open it again.
+    /// Never throws: a port whose programmer was unplugged has nothing left to close.
+    /// </summary>
     public void Dispose()
     {
         if (disposed) return;
@@ -169,6 +181,10 @@ public sealed class ThingLink : IDisposable
         try
         {
             Link.Dispose();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or LinkException
+            or TimeoutException or System.ComponentModel.Win32Exception)
+        {
         }
         finally
         {

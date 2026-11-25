@@ -23,6 +23,7 @@ public partial class MainWindow
 
     private bool thingBusy => thingPending > 0;
     private string? thingSeen;
+    private DateTime thingPortChecked;
 
     /// <summary>
     /// How the window reaches the Thing, all on its own: the programmer that worked last if it
@@ -88,6 +89,9 @@ public partial class MainWindow
             return d;
         }, _ => done?.Invoke());
     }
+
+    /// <summary>A failure the app caught at its last line of defence (App), shown in the Messages pane.</summary>
+    internal void Report(string text) => Say(text);
 
     private void Say(string text) => Dispatcher.UIThread.Post(() =>
     {
@@ -210,6 +214,16 @@ public partial class MainWindow
     private void ThingTick()
     {
         if (thing == null || thingBusy) return;
+        if (DateTime.Now - thingPortChecked > TimeSpan.FromSeconds(1))
+        {
+            thingPortChecked = DateTime.Now;
+            if (thing.Vanished)
+            {
+                ThingFailed($"the programmer on {thing.PortName} was unplugged. Plug it in again and press F5.");
+                UpdateView();
+                return;
+            }
+        }
         if (mode == Mode.Debugging && DateTime.Now - thingRefreshed > TimeSpan.FromMilliseconds(250))
         {
             thingRefreshed = DateTime.Now;

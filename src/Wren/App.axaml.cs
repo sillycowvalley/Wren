@@ -16,6 +16,18 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        // A last line of defence for the programmer's port: a failure talking to it that a
+        // handler missed is reported in the Messages pane (and the diagnostic log) rather than
+        // ending the app.
+        Dispatcher.UIThread.UnhandledException += (_, e) =>
+        {
+            if (e.Exception is not (IOException or UnauthorizedAccessException or TimeoutException or ObjectDisposedException
+                or Wren.Link.LinkException)) return;
+            Wren.Script.DiagnosticLog.Write($"Unhandled: {e.Exception}");
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime { MainWindow: MainWindow main })
+                main.Report($"The programmer: {e.Exception.Message}");
+            e.Handled = true;
+        };
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // The splash is the main window until the real one is ready. Closing it must not
