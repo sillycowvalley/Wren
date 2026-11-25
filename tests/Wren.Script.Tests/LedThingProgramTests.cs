@@ -1,4 +1,3 @@
-using Wren.Asm;
 using Wren.Emu;
 using Xunit;
 
@@ -6,15 +5,13 @@ namespace Wren.Script.Tests;
 
 /// <summary>
 /// programs/LedThing/LedThing.bas: the LED Thing's own behaviour in Wren BASIC, on the LED kernel,
-/// checked against Digicool's factory firmware (firmware/digicool) run in the emulator.
+/// checked against what Digicool's factory firmware showed when run in the emulator (recorded
+/// here, so the firmware itself is not needed).
 /// </summary>
 public class LedThingProgramTests
 {
     private static readonly Lazy<Kernel> LedKernel = new(() =>
         Kernel.Assemble(Path.Combine(AppContext.BaseDirectory, "firmware"), Board.LedThing));
-
-    private static readonly Lazy<MemoryImage> Factory = new(() => MemoryImage.Parse(File.ReadAllText(
-        Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", "8-bit_led_thing.s19"))));
 
     /// <summary>Sets the mode pins for mode 0-7 (M0 + 2 M1 + 4 M2): a 0 pulls the pin to GND, a 1 lets it float high.</summary>
     private static void SetMode(LedThing thing, int mode)
@@ -30,16 +27,6 @@ public class LedThingProgramTests
         var program = session.Upload(Run.ProgramText(Path.Combine("LedThing", "LedThing.bas")));
         Assert.True(program.Success, string.Join("\n", program.Errors));
         var thing = session.Leds!;
-        thing.SetInputs(inputs);
-        SetMode(thing, mode);
-        thing.PowerOn();
-        return thing;
-    }
-
-    private static LedThing Digicool(int mode, byte inputs = 0)
-    {
-        var thing = new LedThing();
-        thing.Mcu.Load(Factory.Value.Bytes);
         thing.SetInputs(inputs);
         SetMode(thing, mode);
         thing.PowerOn();
@@ -78,6 +65,17 @@ public class LedThingProgramTests
 
     private static string Hex(IEnumerable<byte> values) => string.Join(" ", values.Select(v => v.ToString("X2")));
 
+    /// <summary>The patterns Digicool's firmware showed over 1.8 s in modes 0-5, sampled as <see cref="Patterns"/> does.</summary>
+    private static readonly string[] DigicoolPatterns =
+    {
+        "81 C3 E7 FF E7 C3 81 00 81 C3 E7 FF E7 C3 81 00 81 C3 E7 FF",
+        "81 42 24 18 24 42 81 00 81 42 24 18 24 42 81 00 81 42 24 18",
+        "00 01 02 03 04 05 06 07 08 09",
+        "01 02 04 08 10 20 40 80 40 20 10 08 04 02 01 02 04 08",
+        "81 C3 E7 FF 7E 3C 18 00 81 C3 E7 FF 7E 3C 18 00 81 C3 E7 FF",
+        "01 03 07 0F 1F 3F 7F FF FE FC F8 F0 E0 C0 80 00 80 C0 E0 F0",
+    };
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -88,10 +86,10 @@ public class LedThingProgramTests
     public void EachPatternIsDigicools(int mode)
     {
         var wren = Patterns(Wren(mode), 1.8);
-        var digicool = Patterns(Digicool(mode), 1.8);
-        int n = Math.Min(wren.Count, digicool.Count) - 1;    // the last may be cut short
+        var digicool = DigicoolPatterns[mode].Split(' ');
+        int n = Math.Min(wren.Count, digicool.Length) - 1;    // the last may be cut short
         Assert.True(n >= 8, $"too few patterns: {Hex(wren)}");
-        Assert.Equal(Hex(digicool.Take(n)), Hex(wren.Take(n)));
+        Assert.Equal(string.Join(" ", digicool.Take(n)), Hex(wren.Take(n)));
     }
 
     [Fact]
@@ -102,14 +100,7 @@ public class LedThingProgramTests
         Assert.Equal(0x5A, Sample(thing));
         thing.SetInputs(0x81);
         thing.Mcu.Run(0.02);
-        Assert.Equal(0x81, Sample(thing));
-        Assert.Equal(Sample(Run7(Digicool(7, 0x81))), Sample(thing));
-    }
-
-    private static LedThing Run7(LedThing thing)
-    {
-        thing.Mcu.Run(0.05);
-        return thing;
+        Assert.Equal(0x81, Sample(thing));                    // as Digicool's firmware shows them
     }
 
     private static readonly byte[] Faces = { 0x10, 0x18, 0x34, 0x3C, 0x7A, 0x7E };
@@ -125,10 +116,7 @@ public class LedThingProgramTests
         for (int i = 1; i < 7; i++) Assert.NotEqual(shown[i - 1], shown[i]);
         Assert.Equal(0, shown[7]);
         Assert.Equal(shown[6], shown[8]);
-        Assert.Equal(shown[8], Sample(thing));
-
-        var digicool = Patterns(Digicool(6), 2.6);
-        Assert.Equal(9, digicool.Count);                      // the same shape of roll
+        Assert.Equal(shown[8], Sample(thing));                // Digicool's roll has this shape too: nine patterns
     }
 
     [Fact]

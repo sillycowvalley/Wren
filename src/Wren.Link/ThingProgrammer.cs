@@ -125,9 +125,29 @@ public sealed class ThingProgrammer
     /// <summary>The kernel's info block, or null when the flash holds no Wren kernel with one.</summary>
     public KernelInfo? ReadInfo() => KernelInfo.Parse(target.Read(KernelInfo.Address, KernelInfo.Size));
 
-    /// <summary>The first 8 bytes of each Digicool factory image: their reset and TRAP vectors.</summary>
-    private static readonly byte[] DigicoolOled = { 0x82, 0x00, 0x8C, 0xCB, 0x82, 0x00, 0x9E, 0x7D },
-        DigicoolLed = { 0x82, 0x00, 0x81, 0x50, 0x82, 0x00, 0x85, 0x24 };
+    /// <summary>
+    /// Digicool's factory images by their first 8 bytes (the reset and TRAP vectors): the three
+    /// published when this was written (OLED Thing v1.0 and v1.1, LED Thing), and any fetched
+    /// since (<see cref="DigicoolFirmware"/> adds them).
+    /// </summary>
+    private static readonly Dictionary<string, Board> DigicoolImages = new()
+    {
+        ["82008CC582009D57"] = Board.OledThing,
+        ["82008CCB82009E7D"] = Board.OledThing,
+        ["8200815082008524"] = Board.LedThing,
+    };
+
+    /// <summary>Remembers a Digicool image's first 8 bytes, so a Thing holding it is known as this board.</summary>
+    public static void KnowDigicoolImage(ReadOnlySpan<byte> vectors, Board board)
+    {
+        if (vectors.Length < 8 || board == Board.Unknown) return;
+        lock (DigicoolImages) DigicoolImages[Convert.ToHexString(vectors[..8])] = board;
+    }
+
+    private static Board DigicoolBoard(byte[] vectors)
+    {
+        lock (DigicoolImages) return DigicoolImages.TryGetValue(Convert.ToHexString(vectors), out var board) ? board : Board.Unknown;
+    }
 
     /// <summary>
     /// Which board this is: from Digicool's factory firmware if it is there, else from a Wren
@@ -136,9 +156,11 @@ public sealed class ThingProgrammer
     /// </summary>
     public BoardFinding DetectBoard()
     {
-        byte[] vectors = target.Read(FlashStart, DigicoolOled.Length);
-        if (vectors.AsSpan().SequenceEqual(DigicoolOled)) return new BoardFinding(Board.OledThing, "it holds Digicool's OLED Thing firmware");
-        if (vectors.AsSpan().SequenceEqual(DigicoolLed)) return new BoardFinding(Board.LedThing, "it holds Digicool's LED Thing firmware");
+        switch (DigicoolBoard(target.Read(FlashStart, 8)))
+        {
+            case Board.OledThing: return new BoardFinding(Board.OledThing, "it holds Digicool's OLED Thing firmware");
+            case Board.LedThing: return new BoardFinding(Board.LedThing, "it holds Digicool's LED Thing firmware");
+        }
         var info = ReadInfo();
         if (info != null && info.Board != Board.Unknown) return new BoardFinding(info.Board, $"it holds Wren's {info}");
         return OledAnswers()

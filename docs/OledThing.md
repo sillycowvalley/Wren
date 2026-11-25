@@ -39,8 +39,9 @@ Unused b inputs need an external pull-up or pull-down, or a tie to GND.
 
 ## Digicool's firmware
 
-The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT). It is
-compiled C and runs the CPU at 8 MHz. One main loop
+Wren does not carry it: the Firmware window fetches it from the Firmware folder of
+Digicool's GitHub repository into `%LocalAppData%\Wren\firmware\digicool`
+(`docs/Design.md`, "Digicool's firmware on this machine"). It is compiled C and runs the CPU at 8 MHz. One main loop
 reads everything raw, about every 37 µs, with no debounce; the only interrupt is PD3's.
 
 - **Views** (HEX PA1, BAR PA2): both high, two hex digits (about 12 x 18 pixels, cells at

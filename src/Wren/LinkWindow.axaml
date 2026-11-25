@@ -26,7 +26,7 @@
           <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
                   ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
           <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"
-                  ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as Digicool's factory firmware in firmware\digicool) like Install kernel: only blocks that differ, then checked. Removes read-out protection first if it is on (which erases the chip), clears the EEPROM and leaves protection off." />
+                  ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as Digicool's factory firmware, which this window fetches from Digicool's GitHub into %LocalAppData%\Wren\firmware\digicool) like Install kernel: only blocks that differ, then checked. Removes read-out protection first if it is on (which erases the chip), clears the EEPROM and leaves protection off." />
           <TextBlock Text="Warning: FLASH can only be written ~100 times." VerticalAlignment="Center" Margin="8,0,0,0" Foreground="{DynamicResource Win7Warning}" />
         </StackPanel>
       </HeaderedContentControl>

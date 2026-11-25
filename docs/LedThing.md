@@ -1,7 +1,7 @@
 # The 8-bit LED Thing v1.0
 
 Digicool Things' second board, from its schematic (Rev 1.0, 2019-12-12) and its factory
-firmware (`firmware/digicool/8-bit_led_thing.s19`). Wren's model is `Wren.Emu.LedThing`;
+firmware (`8-bit_led_thing.s19`, from Digicool's GitHub). Wren's model is `Wren.Emu.LedThing`;
 **Board → LED Thing** builds and runs programs for it (below, "Wren on the LED Thing").
 
 ## Parts
@@ -58,8 +58,9 @@ time.
 
 ## Digicool's firmware
 
-The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT). It is
-compiled C and runs the CPU at 8 MHz with no interrupts,
+Wren does not carry it: the Firmware window fetches it from the Firmware folder of
+Digicool's GitHub repository into `%LocalAppData%\Wren\firmware\digicool` (`docs/Design.md`,
+"Digicool's firmware on this machine"). It is compiled C and runs the CPU at 8 MHz with no interrupts,
 timers, watchdog or EEPROM use: one busy loop is the time base. It leaves b0-b7 floating
 and pulls M0-M2 up.
 
@@ -112,9 +113,9 @@ and pulls M0-M2 up.
   holding Digicool's LED firmware or Wren's LED kernel. A blank LED Thing cannot be told
   from a blank OLED Thing whose display is not answering, so it is refused: write
   Digicool's LED firmware with **Write image…** first.
-- **`programs/LedThing/LedThing.bas`** recreates the eight modes. Its tests run it and Digicool's
-  firmware side by side in the emulator: modes 0-5 show the same patterns in the same
-  order, and the roll has the same shape. It differs from Digicool's in three ways:
+- **`programs/LedThing/LedThing.bas`** recreates the eight modes. Its tests check it against what
+  Digicool's firmware showed in the emulator, recorded in the tests: modes 0-5 show the same
+  patterns in the same order, and the roll has the same shape. It differs from Digicool's in three ways:
   mode 7 lights each LED fully while its input is high, rather than dimming it by the
   input's duty cycle; a mode change waits for the 20 ms debounce; and the new pattern's
   first step can be shorter than 91 ms, since `ON EVERY` keeps its own time.

@@ -310,7 +310,7 @@ public class ThingDebuggerTests
     {
         var ledKernel = Kernel.Assemble(Path.Combine(AppContext.BaseDirectory, "firmware"), Board.LedThing);
         var thing = new LedThing();
-        thing.Mcu.Load(MemoryImageOf("8-bit_led_thing.s19").Bytes);
+        thing.Mcu.Load(DigicoolStandIn.Image(DigicoolStandIn.Led).Bytes);
         var link = new ThingLink(new PicoLink(new FakePico(thing.Mcu)), "COM9");
         link.Link.Sleep = _ => { };
         link.Target.Connect();
@@ -339,7 +339,4 @@ public class ThingDebuggerTests
         var seen = thing.TakeBrightness();
         Assert.True(seen[0] > 0.05 && seen[1] > 0.05 && seen[2] > 0.05 && seen[3] < 0.01);
     }
-
-    private static Wren.Asm.MemoryImage MemoryImageOf(string file) => Wren.Asm.MemoryImage.Parse(
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", file)));
 }
