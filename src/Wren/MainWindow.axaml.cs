@@ -890,9 +890,11 @@ public partial class MainWindow : Window
         StatusText.Text = board == null ? "" :
             $"{state}   {target}" + (OutOfDate && (Editor.Text ?? "").Length > 0 ? "   Edited since the last build" : "") +
             (mode == Mode.Design || OnThingTarget ? "" : $"   {board.Mcu.Seconds:F2} s since reset   OLED {(board.Oled.Lit ? "on" : "off")}");
-        ThingNote.IsVisible = OnThingTarget;
-        BoardPanel.Opacity = OnThingTarget ? 0.45 : 1;
-        BoardPanel.IsEnabled = !OnThingTarget;
+        if (BoardColumn.IsVisible == OnThingTarget)
+        {
+            BoardColumn.IsVisible = !OnThingTarget;           // the Thing's own OLED and pins show what it does
+            Dispatcher.UIThread.Post(FitSidePanel, DispatcherPriority.Background);
+        }
 
         bool emulator = Target == RunTarget.Emulator;
         StartMenu.Header = mode == Mode.Paused ? "_Continue" : "_Start Debugging";

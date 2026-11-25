@@ -119,14 +119,10 @@
         </Border>
       </HeaderedContentControl>
 
-      <!-- Middle: the board -->
-      <Border Grid.Column="1" Padding="10,0">
-        <DockPanel>
-          <TextBlock Name="ThingNote" DockPanel.Dock="Top" IsVisible="False" TextWrapping="Wrap" MaxWidth="460"
-                     Margin="0,0,0,6" FontWeight="SemiBold"
-                     Text="The program runs on the Thing: its own OLED and pins show what it does. This is the emulator's board." />
+      <!-- Middle: the emulator's board, shown only when the emulator is the target -->
+      <Border Name="BoardColumn" Grid.Column="1" Padding="10,0">
         <ScrollViewer>
-          <StackPanel Name="BoardPanel" Spacing="2">
+          <StackPanel Spacing="2">
             <HeaderedContentControl Classes="group" Header="OLED">
               <Border Background="#1B2A4A" Padding="8" HorizontalAlignment="Left" BorderBrush="#0E1626" BorderThickness="1">
                 <local:OledView Name="Oled" Width="448" Height="224" />
@@ -188,7 +184,6 @@
             </HeaderedContentControl>
           </StackPanel>
         </ScrollViewer>
-        </DockPanel>
       </Border>
 
       <GridSplitter Name="Splitter" Grid.Column="2" ResizeDirection="Columns" Background="Transparent"
