@@ -2,7 +2,7 @@
 # Windows, checks the built Wren.exe starts, zips it with the firmware, the programs and the reference sheets, and creates a
 # GitHub release with the zip. A version with a suffix (v0.1.0-beta.1) makes a pre-release.
 #
-# A release is made when new release notes, docs/Releases/<tag>.md, reach main: the release
+# A release is made when new release notes, docs/ReleaseNotes/<tag>.md, reach main: the release
 # takes the file's name as its tag (created on that commit) and the file as its notes. Pushing
 # a version tag (v*) by hand makes one too, with that tag's notes file if there is one.
 name: Release
@@ -10,7 +10,7 @@ name: Release
 on:
   push:
     branches: [main]
-    paths: ['docs/Releases/*.md']
+    paths: ['docs/ReleaseNotes/*.md']
     tags: ['v*']
 
 permissions:
@@ -38,8 +38,8 @@ jobs:
             $tag = '${{ github.ref_name }}'
           } else {
             # The release notes added by this push to main; none (an edit) means no release.
-            $added = git diff --name-only --diff-filter=A '${{ github.event.before }}' '${{ github.sha }}' -- docs/Releases |
-              Where-Object { $_ -like 'docs/Releases/v*.md' } | Select-Object -Last 1
+            $added = git diff --name-only --diff-filter=A '${{ github.event.before }}' '${{ github.sha }}' -- docs/ReleaseNotes |
+              Where-Object { $_ -like 'docs/ReleaseNotes/v*.md' } | Select-Object -Last 1
             $tag = if ($added) { [IO.Path]::GetFileNameWithoutExtension($added) } else { '' }
           }
           "tag=$tag" >> $env:GITHUB_OUTPUT
@@ -101,7 +101,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = '${{ steps.version.outputs.tag }}'
-          $notes = "docs/Releases/$tag.md"
+          $notes = "docs/ReleaseNotes/$tag.md"
           $flags = @()
           if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $flags += '--prerelease' }
           if (Test-Path $notes) { $flags += @('--notes-file', $notes) } else { $flags += @('--notes', "Wren $tag") }
