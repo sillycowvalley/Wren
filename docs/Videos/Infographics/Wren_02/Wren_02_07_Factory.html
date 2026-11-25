@@ -11,10 +11,12 @@
 
   Sources:
     - Write image…: docs/PicoLink.md (Using it in Wren; Read-out protection and factory firmware):
-      it opens firmware/digicool; a choice of file and two clicks; only blocks that differ are
+      it opens the folder of Digicool's firmware fetched from Digicool's GitHub; a choice of
+      file and two clicks; only blocks that differ are
       written, then checked; the EEPROM is cleared; an image without option bytes, like
       Digicool's, leaves read-out protection off; a protected chip is erased first.
-    - The files: firmware/digicool/README.md (with Greg's permission; not MIT).
+    - The files and where they come from: docs/Design.md (Digicool's firmware on this machine):
+      fetched from the Firmware folders of Digicool's GitHub; Digicool's, not MIT.
     - The last log line: the run against the simulated Pico, writing 8-bit_oled_thing_v1.1.s19.
 -->
 <html lang="en">
@@ -182,13 +184,13 @@
 </svg><!--/WREN--></div>
 <h1 class="rise">Back <span>to the factory</span></h1>
 <div class="flow">
-  <div class="fl rise d1"><div class="k">ONE</div><h3 class="kernel">Write image…</h3><p>It opens <code>firmware\digicool</code>.</p></div>
+  <div class="fl rise d1"><div class="k">ONE</div><h3 class="kernel">Write image…</h3><p>It opens the firmware Wren fetched from Digicool's GitHub.</p></div>
   <div class="fl rise d2"><div class="k">TWO</div><h3 class="thing">Choose the board's file</h3><p><code>8-bit_oled_thing_v1.1.s19</code> or <code>8-bit_led_thing.s19</code></p></div>
   <div class="fl rise d3"><div class="k">THEN</div><h3>Only what differs</h3><p>Blocks that already match aren't written again.</p></div>
   <div class="fl rise d4"><div class="k">AND</div><h3>EEPROM cleared</h3><p>Wren's program table goes with Wren's kernel.</p></div>
 </div>
 <div class="log rise d5"><div class="label">THE LOG'S LAST LINE</div>8-bit_oled_thing_v1.1.s19 written, without read-out protection. Disconnect (or close this window) and it runs.</div>
-<div class="credit fade d6">Digicool's firmware ships with Wren by kind permission of Greg at Digicool. It is Digicool's, not MIT.</div>
+<div class="credit fade d6">Wren fetches Digicool's firmware straight from Digicool's GitHub. It is Digicool's, not MIT.</div>
 <!--NAV--><a class="nav prev" href="Wren_02_06b_LedThing.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_02_07b_Factory.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>
