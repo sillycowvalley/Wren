@@ -58,8 +58,8 @@ time.
 
 ## Digicool's firmware
 
-The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT), with
-its annotated disassembly. It is compiled C and runs the CPU at 8 MHz with no interrupts,
+The factory firmware is in `firmware/digicool` (with Digicool's permission; not MIT). It is
+compiled C and runs the CPU at 8 MHz with no interrupts,
 timers, watchdog or EEPROM use: one busy loop is the time base. It leaves b0-b7 floating
 and pulls M0-M2 up.
 
