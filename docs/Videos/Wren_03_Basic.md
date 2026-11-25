@@ -92,9 +92,9 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 *In Wren: Debug → Target → Thing on the programmer, then Ctrl+F5 to upload and run.*
 
-*On the board, a jumper wire is the button: touch J5 pin 4 (PD3) to J5 pin 1 (GND) and take it away to start; again to stop. J5 pin 3 (PD2) to GND sets it back to 0.*
+*Press the PD3 button to start, again to stop. Press the PD2 button to set it back to 0.*
 
-> On the real board, a wire to ground is the button. And it's the same three hundred and forty-eight bytes, doing exactly what it did on screen.
+> On the real board, two pushbuttons on a breadboard, one on each pin. And it's the same three hundred and forty-eight bytes, doing exactly what it did on screen.
 
 ## The limits
 
