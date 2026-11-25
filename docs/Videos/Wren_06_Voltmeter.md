@@ -39,7 +39,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > The wiper goes to PD2. The two ends go to three point three volts and to ground, the same supply the Pico gives the board.
 
-> And the button from last time stays on PD3. Here it switches between two views.
+> And the stopwatch's PD3 button from video three stays where it is. Its PD2 button comes off, because PD2 is now the input. Here, PD3 switches between two views.
 
 ## 0 to 1023
 
@@ -51,11 +51,11 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Volts in 16-bit integers
 
-> Turning steps into millivolts means multiplying by three point two two five eight. With no floating point, the obvious way is to multiply by three thousand three hundred first, then divide.
+> Turning steps into millivolts means multiplying by three point two two five eight. With no floating point, the obvious way is to multiply by thirty-three hundred first, then divide.
 
-> But a thousand and twenty-three times three thousand three hundred is over three million, and a sixteen-bit number tops out at thirty-two thousand.
+> But a thousand and twenty-three times thirty-three hundred is over three million, and a sixteen-bit number tops out at thirty-two thousand.
 
-> So it's done in two parts: three times the reading, plus twenty-nine hundred-and-twenty-eighths of it. Nothing overflows, and it's never out by more than a millivolt.
+> So it's done in two parts: three times the reading, plus the reading times twenty-nine, divided by a hundred and twenty-eight. Nothing overflows, and it's never out by more than a millivolt.
 
 ## Steadier digits
 

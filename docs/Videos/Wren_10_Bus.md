@@ -27,7 +27,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## BUS SNIFFER
 
-> A computer talks to its memory hundreds of times a second. Today the OLED Thing listens in, and only to the writes.
+> A computer talks to its memory millions of times a second. Today an Arduino does it slowly, and the OLED Thing listens in, but only to the writes.
 
 ## A bus cycle
 
@@ -37,7 +37,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Latch, while
 
-> Last time, the latch caught every edge. This time it has a condition: catch the edge on PD3, but only while PD2 is low.
+> Back in episode seven, the latch caught every edge, and I said a second pin could act as a gate. Here it is: catch the clock edge on PD3, but only while the write pin, PD2, is low.
 
 > That check happens in the interrupt, the instant the edge arrives. A read never even reaches the program. There's nothing to filter out, because it was never let in.
 
@@ -45,7 +45,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Each write goes into a ring of twenty bytes, the same trick as the snake's body and the voltmeter's graph. The oldest is overwritten by the newest.
 
-> Ten times a second, if anything's new, the screen shows them in hex, five to a row, with a count of every write so far.
+> Ten times a second, if anything's new, the screen shows the bytes in hex, five to a row, with a count of every write so far.
 
 ## The sniffer, live
 
@@ -55,10 +55,10 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > The Thing counts only the writes, and the Mega's own count agrees, exactly.
 
-> And there's the message, in hex: four eight, four five, four C, four C, four F. H, E, L, L, O.
+> And there's the message, in hex: four eight... four five... four C... four C... four F. H, E, L, L, O.
 
 ## What the sniffer brings
 
-> An edge, a condition, and a ring of twenty bytes: the writes on a bus, and none of the reads. In a hundred and twenty-seven bytes.
+> An edge, a condition, and a ring of twenty bytes: every write on the bus, and none of the reads. All in a program of a hundred and twenty-seven bytes.
 
 > Next time: one wire instead of eight. Thanks for watching.

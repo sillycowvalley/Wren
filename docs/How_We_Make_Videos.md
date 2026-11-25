@@ -118,6 +118,27 @@ slide is said only where the point rests on it.
 **Every console line and figure is from a run** of the exact keystrokes
 on the image the video is shot on, never written from memory.
 
+### Reviewing the narration
+
+Once the slides are built, and before the script goes to Michael, its narration (the `> ` lines only)
+is reviewed three ways, by reviewers who did not write it:
+
+- **Natural to say**: no sentence that reads like writing, runs past a
+  breath, or is ambiguous heard rather than seen; numbers, hex, units,
+  pin names and file names put the way they're spoken (hex digit by
+  digit: "five seven", never "fifty-seven"); no unclear "it" or "two".
+- **No tongue twisters**: runs of like sounds (s, sh, ch, th; p and b),
+  consonant pile-ups across words, and anything easy to trip on at
+  speed.
+- **Correct**: every claim checked against the code, the docs and the
+  slides (sizes, pins, keys, menus, timings, what a program really
+  does, what's on screen), and every "last time" and "next time"
+  against the neighbouring scripts.
+
+A skeptic then re-checks each finding and drops what is only taste or
+not actually wrong; the rest are fixed in the script, and in any slide,
+program comment or doc that makes the same claim.
+
 ---
 
 ## 5. Slides
@@ -320,5 +341,7 @@ the closing backdrop's right 40%, and post it where it will be passed on.
 5. Build the slides, backdrops, closing backdrop and thumbnail in the
    house style, each HTML's opening comment naming its sources and its
    render steps; render every PNG.
-6. Check the folder steps through in playing order.
-7. Hand Michael the script and the slides.
+6. Review the narration (section 4, Reviewing the narration) and fix
+   what survives, in the script and wherever else the claim appears.
+7. Check the folder steps through in playing order.
+8. Hand Michael the script and the slides.

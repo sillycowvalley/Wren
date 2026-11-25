@@ -27,19 +27,19 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## LOGIC ANALYZER
 
-> Eight wires, and what each of them did over the last sixty-four milliseconds. Today the OLED Thing becomes a logic analyzer.
+> Eight wires, and what each of them did in sixty-four milliseconds. Today the OLED Thing becomes a logic analyzer.
 
 ## Eight lines against time
 
 > A logic analyzer doesn't care about voltages, only about high and low. It samples every line at once, over and over, and draws them one above the other, so you can see what happened when.
 
-> Sixty-four samples across, eight lines down, four pixels each. That's exactly this screen.
+> Sixty-four samples across, eight lines down, each line four pixels tall. That's exactly this screen.
 
 ## One byte a sample
 
 > The eight inputs are one byte, so a single sample is a single number. Sixty-four of them fit in a sixty-four byte array.
 
-> A sample is taken every millisecond, by a timer. Nothing else happens while it's taking them: no drawing, nothing to make a tick late.
+> A sample is taken every millisecond, by a timer. While it's sampling, nothing else runs: no drawing, nothing to make a sample late.
 
 ## A trigger
 
@@ -49,7 +49,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Drawing the traces
 
-> Each line is drawn on its own. A mask picks out one bit from every sample: a pixel on the top row when it's high, two rows down when it's low, and an edge where it changes.
+> Each line is drawn on its own. A mask picks out one bit from every sample. High puts a pixel on the top row, low puts one two rows down, and a change draws an edge.
 
 > The mask doubles each time round, so the same few lines of code draw all eight channels.
 
@@ -57,14 +57,14 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 *Upload LogicAnalyzer.bas with the Pico, then unplug the Pico. Ribbon from the Mega's A0–A7 to J1, 5 V and GND. Power the Mega with LogicSource on it; it changes pattern every 6 seconds.*
 
-> First, a counter. The top line toggles every two milliseconds, and every line below it at half the speed: the picture in every digital electronics textbook.
+> First, a counter. The top line toggles every two milliseconds, and each line below runs at half the speed of the one above, so the bottom lines barely move: the picture in every digital electronics textbook.
 
-> Now a single one, walking from line to line.
+> Now a single high bit, walking from line to line.
 
-> And eight PWM signals, all on the same period, each high a little longer than the one above.
+> And eight PWM signals, all with the same period, each high a little longer than the one above, until the bottom one is high all the time.
 
 ## What the analyzer brings
 
 > Eight lines sampled as one byte, a trigger, and sixty-four bytes of memory: a logic analyzer in two hundred and thirty-six bytes.
 
-> Next time: watching a computer write to memory. Thanks for watching.
+> Next time: catching a computer writing to memory. Thanks for watching.

@@ -31,7 +31,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Powered by the circuit
 
-> Until now the Pico has powered the board. But the Thing runs on anything from three to five and a half volts.
+> Last time the Mega powered the Thing. This time, the circuit it's measuring does. The Thing runs on anything from three to five and a half volts.
 
 > So once the program is on it, the Pico comes off, and the Thing takes its power from the clock board. Same supply, same ground, and the clock goes straight into PD3. No level shifting needed.
 
@@ -39,17 +39,17 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > The obvious way to measure frequency is to count edges for one second. At a megahertz that's wonderfully precise.
 
-> But this clock ticks a few times a second. Count for one second, and three hertz could read two, three or four, depending on where the second happens to start and end.
+> But this clock ticks a few times a second. Count for one second, and you only ever get a whole number: a clock at three and a half hertz reads three or four, depending on where the second starts and ends.
 
 ## Timing instead
 
 > So turn it around: time the edges. Every rising edge gets a timestamp, and every couple of seconds the program divides the periods it counted by the time they took.
 
-> That's called a reciprocal counter, and it gives a tenth of a hertz across the whole range.
+> That's called a reciprocal counter, and it reads to a tenth of a hertz across the whole range.
 
 ## Long division, 16 bits at a time
 
-> The sum is periods times ten thousand, over the time. At fifty hertz that's a million, and a sixteen-bit number stops at thirty-two thousand.
+> The calculation is the periods times ten thousand, divided by the time. At fifty hertz that's a million, and a sixteen-bit number stops at thirty-two thousand.
 
 > So the program does it the way we learned at school: one digit at a time, carrying the remainder. No step ever gets big enough to overflow. And the last digit is rounded, not chopped.
 
@@ -63,6 +63,6 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## What the counter brings
 
-> A clock, one pin, a timestamp on every edge, and long division done by hand. The OLED Thing as a frequency counter, in three hundred and seventy-six bytes.
+> A clock, one pin, a timestamp on every edge, and long division one digit at a time. The OLED Thing as a frequency counter, in three hundred and seventy-six bytes.
 
 > Next time: eight channels at once, a logic analyzer. Thanks for watching.

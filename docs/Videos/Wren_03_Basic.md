@@ -38,11 +38,11 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Events, not loops
 
-> This is the heart of it. You say what should happen when something happens, and the kernel does the waiting for you.
+> This is the heart of it. You say what to do when something happens, and the kernel does the waiting for you.
 
 > It runs one handler at a time, start to finish. Anything that happens meanwhile waits its turn in a queue, so a handler never has to worry about being interrupted halfway through.
 
-> And between events the chip simply sleeps.
+> And between events, the kernel just waits for the next one.
 
 ## 16-bit integers, and nothing else
 
@@ -50,7 +50,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > That sounds limiting, but it's what fits. And there are tricks: Pong keeps its ball in quarter pixels, and the stopwatch counts hundredths of a second, so a whole number is all it ever needs.
 
-> One thing to watch: true is minus one, and AND works on the bits. So it works for tests and for masks alike.
+> One thing to watch: AND works on the bits, and true is minus one, all ones. So the same AND works for tests and for masks.
 
 ## The stopwatch, on the emulator
 
@@ -64,7 +64,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > The stopwatch draws its digits in pairs, so that's a SUB, called four times, in two fonts.
 
-> And the best time is a FUNCTION with no parameters, so it reads like a variable. That's how the line that keeps the record ends up reading almost like English.
+> And the best time is a FUNCTION with no parameters, so it reads like a variable. That's why the line that keeps the record comes out almost like plain English.
 
 ## Drawing on 64 × 32
 
@@ -74,7 +74,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Four fonts, and numbers
 
-> There are four fonts, from tiny capitals to digits the full height of the screen.
+> There are four fonts, from tiny capitals to digits nearly the full height of the screen.
 
 > And numbers have statements of their own. The same byte, in hex, decimal, binary, as eight cells, and as a bar. The hex digits and the eight cells are the board's own factory views.
 
@@ -90,7 +90,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 *Press the PD3 button to start, again to stop. Press the PD2 button to set it back to 0.*
 
-> On the real board, two pushbuttons on a breadboard, one on each pin. And it's the same three hundred and forty-eight bytes, doing exactly what it did on screen.
+> On the real Thing, two push buttons on a breadboard, one on each pin. And it's the same three hundred and forty-eight bytes, doing exactly what it did on screen.
 
 *Shift+F5, so Wren lets go of the Pico. Unplug the Pico's USB cable, and plug it back in.*
 

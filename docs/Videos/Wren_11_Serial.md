@@ -31,7 +31,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## One wire, a bit at a time
 
-> Serial means sending a byte down a single wire, one bit after another. Two more wires keep it in step.
+> Serial means a byte goes down one wire, one bit after another. Two more wires keep it in step.
 
 > The select goes low: a byte is coming. Then for each bit, the data goes on the wire, and the clock's rising edge says "take it". Eight edges, eight bits, most significant first. That's how SPI works.
 
@@ -39,9 +39,9 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Two handlers. When the select falls, a new byte starts from nothing.
 
-> At each clock edge while the select is low, the byte so far is doubled, which moves every bit one place left, and the new bit from b0 goes on the end. After the eighth, the byte is done, and it goes into a ring of the last ten.
+> At each clock edge, while the select is low, the byte so far is doubled. That moves every bit one place left, and the new bit, from bit zero, goes on the end. After the eighth bit, the byte is done, and it goes into a ring of the last ten bytes.
 
-> The Mega fills the other seven wires with noise, all the time. AND 1 keeps only b0, so none of it gets in.
+> The Mega fills the other seven wires with noise, all the time. AND one keeps only bit zero, so none of that noise gets in.
 
 ## The screen
 
@@ -57,7 +57,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Eight, and it's a byte. The Mega prints each one as it sends it, and the Thing agrees.
 
-> And there's the message: four eight, four five, four C, four C, four F. H, E, L, L, O.
+> And there's the message: four eight, four five, four C, four C, four F: H, E, L, L, O. Then a space, and W, R, E, N. Hello, Wren.
 
 ## What the decoder brings
 

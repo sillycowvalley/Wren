@@ -39,9 +39,9 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Everything you can touch
 
-> This is the whole window. The program on the left, the board in the middle, and on the right, where the program is and what its variables hold.
+> This is the whole window. The program on the left, the board in the middle, and on the right, the line it's on and what its variables hold.
 
-> Every pin the real board has, you can set from here, and the debugging keys are the ones you already know.
+> Every pin a program can read, you can set from here, and the debugging keys are the ones you already know.
 
 ## Snake on the emulator
 
@@ -53,15 +53,15 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Every seventy milliseconds the snake asks the same question: which way next? It never turns straight back, and it never moves into a wall or into itself.
 
-> Each of the other ways gets a score. Being close to the food is good, and so is having lots of room around you. A dead end is heavily punished, and going straight on wins a tie. The lowest score wins.
+> Every way that's left gets a score. Being close to the food brings the score down, and so does having lots of room around you. A dead end adds a big penalty, and going straight on breaks a tie. The lowest score wins.
 
-> Here it's heading right, and the food is just above. Up wins, by a mile.
+> Here it's heading right, and the food is just above. Up has the lowest score, so up wins.
 
 ## Inside Move
 
 *Click left of line 68 for a breakpoint, F5.*
 
-> I'll stop it right where it compares the scores. These are the locals of Move: which way it's trying, where that would take it, and the score.
+> I'll stop it right where it compares the scores. These are Move's own variables: which way it's trying, where that would take it, and the score.
 
 *F5, F5.*
 
@@ -75,19 +75,19 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > The board is thirty-one cells by fifteen. Four hundred and sixty-five cells, and the snake needs to know, for each one, whether it's taken.
 
-> So every cell is one bit. Sixty bytes for the whole board. Checking a cell is a multiply, a shift and a mask, never a search through the snake.
+> So every cell is one bit. Sixty bytes for the whole board. Checking a cell is a multiply, a shift and a mask; it never has to look through the snake.
 
 > Here's the snake from a moment ago: six cells, which land in just two bytes.
 
 ## A ring for the body
 
-> The body is a ring of sixty-four places. The head moves on one place each step, and the tail is a fixed distance behind it.
+> The body is a ring of sixty-four places. The head moves on one place each step, and the tail follows on behind it.
 
 > Nothing is ever shifted along. When the snake moves, one cell is written at the head, and one is cleared at the tail. That's why a long snake costs no more time than a short one.
 
 ## Catching the end
 
-> Sooner or later the snake traps itself. In the code, that's the moment no direction is left: the best direction is still minus one.
+> Sooner or later the snake traps itself. In the code, that's the moment no direction is left: the best direction is still minus one, which means none was found.
 
 > Put a breakpoint on that line, and you catch the very last move of the game.
 
@@ -99,13 +99,13 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 *F11.*
 
-> One step more, and it's GAME OVER.
+> One step more, and we're into GameOver, the code that puts up GAME OVER and the score.
 
 ## No board needed
 
 > Everything today happened with no board at all, and every pin the program reads can be set from the window.
 
-> When it's right, the board gets it. One upload, and no wasted writes.
+> When the program's right, the board gets it. One upload, and no wasted writes.
 
 ## What the emulator brings
 

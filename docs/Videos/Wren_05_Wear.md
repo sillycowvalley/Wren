@@ -32,7 +32,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Flash is written in blocks of sixty-four bytes, and every time a block is rewritten, it wears a little.
 
-> Firmware is usually written as one image. Change a single line, and the whole chip is written again. A hundred changes, and you're past what the chip is rated for.
+> Firmware is usually built as one image. Change a single line, and the whole chip is written again. A hundred changes, and you're past what the chip is rated for.
 
 ## Why an interpreter helps
 
@@ -42,11 +42,11 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Only what changed
 
-> Before an upload, Wren reads what's already on the board. Any block of the new program that's already there, byte for byte, is used where it is.
+> Before an upload, Wren reads what's already on the board. Any block of the new program that's already there, byte for byte, just stays where it is.
 
 > Change something near the end, and one block is written. Upload the same program again, and nothing is written at all.
 
-> An edit near the start shifts everything after it, so that one costs every block. But undo it, and the old blocks are still sitting there. Going back costs nothing.
+> An edit near the start moves everything after it, so that edit costs every block. But undo it, and the old blocks are still sitting there. Going back costs nothing.
 
 ## Uploading, block by block
 
@@ -58,7 +58,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## The table in the EEPROM
 
-> All of this is kept track of in the chip's other memory, the EEPROM, which takes about a hundred thousand writes instead of a hundred.
+> Wren keeps track of all this in the chip's other memory, the EEPROM, which takes about a hundred thousand writes instead of a hundred.
 
 > One hundred and sixteen bytes: where the program starts, how long it is, a checksum, which block follows which, and how many times every block has been written.
 
@@ -66,7 +66,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > When a block does have to be written, Wren picks the one that's been written least.
 
-> So the wear spreads across all fifty-four blocks, never more than one write apart. For a program the size of the board's own, that's six hundred and seventy-five uploads, each one completely different, before any block reaches its hundred.
+> So the wear spreads across all fifty-four blocks, never more than one write apart. Take a program the size of the board's own. That's six hundred and seventy-five completely different uploads before any block reaches a hundred writes.
 
 ## The Wear report
 

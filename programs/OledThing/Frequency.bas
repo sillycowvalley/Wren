@@ -2,7 +2,8 @@
 ' Pico, and power the Thing from the clock board (the Thing runs on 2.95 to 5.5 V): its 5 V
 ' to the Thing's VCC, GND to GND (J5 pin 1), and the clock straight to PD3 (J5 pin 4).
 '
-' At these speeds, counting edges for one second would be coarse: 3 Hz could read 2, 3 or 4.
+' At these speeds, counting edges for one second would be coarse: only whole hertz, so 3.5 Hz
+' reads 3 or 4.
 ' So this times them instead: every 2 seconds or so it divides the periods counted by the
 ' time they took, to a tenth of a hertz.
 

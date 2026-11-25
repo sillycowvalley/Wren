@@ -49,7 +49,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > The whole program is a handler and a timer. The handler runs at every rising edge on PD3: it keeps the inputs, and counts.
 
-> The timer draws the screen twenty times a second: the byte in hex, and the count beside it. Even mid-drawing, the inputs are caught at the edge itself; the handler just runs a moment later.
+> The timer draws the screen twenty times a second: the byte in hex, and the count beside it. Even while it's drawing, the inputs are caught right at the edge. The handler just runs a moment later.
 
 ## A bus that never sits still
 
@@ -69,7 +69,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 *Upload Latch.bas with the Pico, then unplug the Pico. Wire the ribbon, D2 to PD3, 5 V and GND. Power the Mega; open its Serial Monitor beside Wren.*
 
-> Once a second, a byte. Fifty-seven, fifty-two, forty-five, four E: W, R, E, N.
+> Once a second, a byte. Five seven, five two, four five, four E: W, R, E, N.
 
 > The Mega's own log agrees, byte for byte. And the count goes up by exactly one each time: no bounces here, just one clean edge.
 
@@ -81,7 +81,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > For that, the Mega counts: nought, one, two, all the way to two hundred and fifty-five and round again. The Thing knows exactly which byte should come next, so the first one that's wrong, or missing, stops it cold.
 
-> It shows what came, what it wanted, and how fast the bytes were coming when it failed.
+> It shows what came, what it wanted, and how fast the bytes were arriving in the second before.
 
 ## The sweep, live
 
@@ -89,13 +89,13 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Every strobe checked, and the rate climbing. All good.
 
-> And there it is: it's stopped. What came, what it wanted, and the rate when it happened.
+> And there it is: it's stopped. What came, what it wanted, and the rate in the second before.
 
 ## Where it breaks
 
-> The latch itself never misses. The interrupt catches every edge, and puts the byte in a queue with its event.
+> The latch itself never misses. The interrupt catches every edge, and puts the byte in a queue for its handler.
 
-> But the queue has room for seven, and once a second the program stops to draw the screen. If more than seven bytes arrive while it's drawing, the next ones have nowhere to go. LOST counts them.
+> But the queue has room for seven, and once a second the test program stops to draw the screen. If more than seven bytes arrive while it's drawing, the next ones have nowhere to go. LOST counts them.
 
 > So the limit isn't the latch. It's seven bytes, in the time it takes to draw one screen.
 

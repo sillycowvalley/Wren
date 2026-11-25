@@ -33,15 +33,15 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 > Every chip like this has a programming pin. One wire carries the whole conversation: write the flash, read the RAM, stop the processor, start it again.
 
-> That wire's timing is exacting, and the Pico has a trick for exactly that: little state machines that run beside its processor and keep perfect time.
+> That wire's timing is strict, and the Pico has a trick for exactly that: little state machines that run beside its processor and keep perfect time.
 
 > So Wren talks to the Pico over USB, and the Pico talks to the Thing.
 
 ## A Pico, a resistor and four wires
 
-> That's the whole shopping list. Any Pico will do, or a board with the same pinout.
+> That's the whole shopping list. An original Pico will do, or any RP2040 board with the same pinout.
 
-> The resistor matters more than it looks. The Thing's programming pin has a capacitor on it, so the line needs a firm pull back up between pulses. Too weak, and the edges arrive late. Too strong, and the Thing can't pull it back down.
+> The resistor matters more than it looks. The Thing's programming line is slow to rise on its own, so it needs a strong pull up to three point three volts between pulses. Too weak, and the edges arrive late. Too strong, and the Thing can't pull it back down.
 
 ## PicoLink on the Pico
 
@@ -55,7 +55,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## Wiring the OLED Thing
 
-> Four wires. Two of them carry the conversation, one is ground, and one powers the Thing from the Pico.
+> Four wires. One carries the conversation, one is reset, one is ground, and one powers the Thing from the Pico.
 
 > That last one comes with the only rule that really matters. While the Pico's connected, nothing else may power the board: the Pico's pins aren't built for five volts.
 
@@ -69,15 +69,15 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## Install kernel, once
 
-> This is the one big write the board will ever need. Wren works out which Thing it's talking to from what's already on it, and checks how much EEPROM this particular chip really has.
+> This is the one big write, and normally you only do it once. Wren works out which Thing it's talking to from what's already on it, and checks how much EEPROM this particular chip really has.
 
-> Then it locks the kernel in place. From then on, nothing a program does can overwrite it. Only the programmer can.
+> Then it locks the kernel in place. From then on, nothing a program does can overwrite it. Only a programmer like the Pico can.
 
 ## Installing the kernel
 
 *Install kernel, then Install kernel again to go ahead.*
 
-> It asks twice, because this one costs a write.
+> It asks twice, because each install uses up one of the chip's limited flash writes.
 
 *Wait for the log; cut the wait in the edit.*
 
@@ -111,7 +111,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## When Connect says no
 
-> If Connect can't reach the Thing, it's almost always one of three things, and they're all on screen.
+> If Connect can't reach the Thing, it's almost always one of three causes, and they're all on screen.
 
 > And if the Pico's port won't come back after you unplug it, something is still holding on to it. A Wren paused in a debugger will do that.
 

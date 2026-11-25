@@ -50,11 +50,11 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## What fits in 8 KB of flash
 
-> The kernel goes on once. It's a small virtual machine, the screen driver, the fonts and the drawing, and it takes just over half the flash.
+> The kernel goes on once. It holds a small virtual machine, the screen driver, the fonts and the drawing, and it takes just over half the flash.
 
-> Your program lives in the rest. Look at the comparison on the right: the factory firmware is compiled C. The same behaviour in Wren BASIC is a fifteenth of the size, because the kernel does the heavy lifting.
+> Your program lives in the rest. Look at the comparison on the right: the factory firmware is compiled C. The same behaviour in Wren BASIC is fifteen times smaller, because the kernel does the heavy lifting.
 
-> Even the biggest program today leaves a lot of the store free.
+> Even the biggest program here leaves most of that space free.
 
 ## The emulator: OledThing.bas
 
@@ -64,13 +64,13 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Not a picture of one. The emulator runs the real kernel's machine code, instruction by instruction, and the display chip is modelled too.
 
-> I can wire it up, roll the dice and flip the mode pins as often as I like, and nothing wears out. That matters: this chip's flash is only good for about a hundred writes, so I try everything here first.
+> I can wire it up, roll the die, flip the mode pins, change the program and run it again, as often as I like. That matters: every upload writes the chip's flash, and it's only good for about a hundred writes, so I try everything here first.
 
 ## Snake that plays itself
 
 > Snake plays itself. It heads for the food, but it also counts the ways out of every square, so it doesn't steer itself into a dead end.
 
-> The trick for a small chip is the grid. Every cell is one bit, so checking a move is a lookup, not a search through the snake's body.
+> The trick for a small chip is the grid. Every cell is one bit, so checking a move is a lookup, not a walk along the snake's body.
 
 ## Snake on the Thing
 
@@ -86,7 +86,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Debuggers for chips this small usually need a monitor built into the firmware, eating memory you don't have. This one costs nothing, because the silicon was built for it.
 
-> The catch is in the middle: two at a time. For a program this size, two go a long way.
+> The catch: only two breakpoints at a time. For a program this size, two go a long way.
 
 ## Debugging Snake on the real chip
 
@@ -108,7 +108,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Pong, also playing itself. If both paddles were perfect, it would never end.
 
-> So each paddle guesses, and it's a little slow. A steep shot or a bad guess beats it, and that's what makes it fun to watch.
+> So each paddle guesses, and it's a little slow. A steep angle or a bad guess gets past it, and that's what makes it fun to watch.
 
 ## Pong on the Thing
 
@@ -118,9 +118,9 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## Hex digits in a font of their own
 
-> The kernel has fonts of its own. This program ignores them, and draws every digit from a font it defines itself, one row to a binary number.
+> The kernel has fonts of its own. This program ignores them, and draws every digit from a font it defines itself, each row a binary number.
 
-> Look at the gold pixels. Without them, the curves would be staircases. And because every rectangle goes through one routine that turns it, the other angles cost no second font.
+> Look at the gold pixels. Without them, the curves would be staircases. And because every rectangle goes through one routine that turns it, the other angles don't need a second font.
 
 ## RotatedHex: any of four angles
 
@@ -128,7 +128,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > Angles are cheap in the emulator, so I try them there.
 
-> Ninety is the program's own setting, so that's the one that goes on the board.
+> Ninety degrees is the program's own setting, so that's the one that goes on the board.
 
 ## The LED Thing: the same kernel
 
@@ -140,7 +140,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 *Board → LED Thing. Open LedThing.bas, Ctrl+F5, pull M0 low.*
 
-> This is the LED Thing's own behaviour, rewritten in BASIC like the other one. Change the mode pins, and the pattern changes.
+> This is the LED Thing's own behaviour, rewritten in BASIC like the other one. Out of the box, each LED shows its input. Pull M0 low, and it rolls a die.
 
 *Open Cylon.bas, Ctrl+F5.*
 
