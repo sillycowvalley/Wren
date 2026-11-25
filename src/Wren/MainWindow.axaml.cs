@@ -1,10 +1,12 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Wren.Emu;
 using Wren.Link;
@@ -158,7 +160,8 @@ public partial class MainWindow : Window
         ThingMenu.IsChecked = boardChoice == BoardChoice.Thing;
         DevBoardMenu.IsChecked = boardChoice == BoardChoice.DevelopmentBoard;
         LedThingMenu.IsChecked = boardChoice == BoardChoice.LedThing;
-        Editor.SyntaxHighlighting = WrenHighlighting.For(BuildBoard);
+        DarkModeMenu.IsChecked = settings.DarkMode;
+        ApplyHighlighting();
 
         Pd2Button.PropertyChanged += (_, e) =>
         {
@@ -535,6 +538,22 @@ public partial class MainWindow : Window
         Process.Start(new ProcessStartInfo(found) { UseShellExecute = true });
     }
 
+    private static bool Dark => Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
+
+    /// <summary>The editor's colours for the board being built for, in the current theme.</summary>
+    private void ApplyHighlighting() => Editor.SyntaxHighlighting = WrenHighlighting.For(BuildBoard, Dark);
+
+    /// <summary>View → Dark Mode: the whole application switches, and remembers it.</summary>
+    private void OnDarkMode(object? sender, RoutedEventArgs e)
+    {
+        bool dark = DarkModeMenu.IsChecked;
+        if (Application.Current != null) Application.Current.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
+        SavedSettings.Current.DarkMode = dark;
+        SavedSettings.Save();
+        ApplyHighlighting();
+        breakpointMargin.InvalidateVisual();
+    }
+
     private void OnDiagnosticLog(object? sender, RoutedEventArgs e)
     {
         if (DiagnosticLog.Enabled) DiagnosticLog.Stop();
@@ -828,7 +847,7 @@ public partial class MainWindow : Window
         NewSession();
         SetMode(Mode.Design);
         built = null;                                  // build again, for this board
-        Editor.SyntaxHighlighting = WrenHighlighting.For(BuildBoard);
+        ApplyHighlighting();
         messages.Add($"Board: {chosen switch { BoardChoice.DevelopmentBoard => "the development board", BoardChoice.LedThing => "the LED Thing", _ => "the OLED Thing" }}. Press F5 to run the program on it.");
         UpdateView();
     }

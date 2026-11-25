@@ -16,32 +16,41 @@ namespace Wren;
 /// </summary>
 public static class WrenHighlighting
 {
-    private static readonly Dictionary<Board, IHighlightingDefinition> Made = new();
+    private static readonly Dictionary<(Board, bool), IHighlightingDefinition> Made = new();
 
-    public static IHighlightingDefinition For(Board board)
+    /// <summary>The colours for a board, light or dark (Visual Studio's dark theme's colours).</summary>
+    public static IHighlightingDefinition For(Board board, bool dark = false)
     {
-        if (!Made.TryGetValue(board, out var definition))
+        if (!Made.TryGetValue((board, dark), out var definition))
         {
-            using var reader = XmlReader.Create(new StringReader(Xshd(board)));
+            using var reader = XmlReader.Create(new StringReader(Xshd(board, dark)));
             definition = HighlightingLoader.Load(reader, HighlightingManager.Instance);
-            Made[board] = definition;
+            Made[(board, dark)] = definition;
         }
         return definition;
     }
 
     /// <summary>The definition in AvaloniaEdit's XML format.</summary>
-    public static string Xshd(Board board)
+    public static string Xshd(Board board, bool dark = false)
     {
+        string C(string light, string night) => dark ? night : light;
         var words = Names.Categories(board);
         var sb = new StringBuilder();
         sb.AppendLine("<SyntaxDefinition name=\"Wren BASIC\" xmlns=\"http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008\">");
-        sb.AppendLine("  <Color name=\"Comment\" foreground=\"#008000\" />");
-        sb.AppendLine("  <Color name=\"String\" foreground=\"#A31515\" />");
-        sb.AppendLine("  <Color name=\"Number\" foreground=\"#098658\" />");
-        sb.AppendLine("  <Color name=\"Keyword\" foreground=\"#0000FF\" />");
-        sb.AppendLine("  <Color name=\"Builtin\" foreground=\"#008080\" />");
-        sb.AppendLine("  <Color name=\"Constant\" foreground=\"#6F008A\" />");
-        sb.AppendLine("  <Color name=\"OtherBoard\" foreground=\"#A0A0A0\" fontStyle=\"italic\" />");
+        string commentColour = C("#008000", "#6A9955");
+        sb.AppendLine($"  <Color name=\"Comment\" foreground=\"{commentColour}\" />");
+        string stringColour = C("#A31515", "#CE9178");
+        sb.AppendLine($"  <Color name=\"String\" foreground=\"{stringColour}\" />");
+        string numberColour = C("#098658", "#B5CEA8");
+        sb.AppendLine($"  <Color name=\"Number\" foreground=\"{numberColour}\" />");
+        string keywordColour = C("#0000FF", "#569CD6");
+        sb.AppendLine($"  <Color name=\"Keyword\" foreground=\"{keywordColour}\" />");
+        string builtinColour = C("#008080", "#4EC9B0");
+        sb.AppendLine($"  <Color name=\"Builtin\" foreground=\"{builtinColour}\" />");
+        string constantColour = C("#6F008A", "#C586C0");
+        sb.AppendLine($"  <Color name=\"Constant\" foreground=\"{constantColour}\" />");
+        string otherboardColour = C("#A0A0A0", "#6E6E6E");
+        sb.AppendLine($"  <Color name=\"OtherBoard\" foreground=\"{otherboardColour}\" fontStyle=\"italic\" />");
         sb.AppendLine("  <RuleSet ignoreCase=\"true\">");
         sb.AppendLine("    <Span color=\"Comment\" begin=\"'\" />");
         sb.AppendLine("    <Span color=\"Comment\" begin=\"\\bREM\\b\" />");
