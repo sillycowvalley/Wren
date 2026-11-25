@@ -29,6 +29,8 @@ public partial class WearWindow : Window
         Fill(wear);
     }
 
+    private void OnClose(object? sender, Avalonia.Interactivity.RoutedEventArgs e) => Close();
+
     /// <summary>Puts this window's placement in the settings (saved when a window closes).</summary>
     public void KeepLayout() => SavedSettings.Current.WearWindow = layout.Placement;
 

@@ -23,7 +23,6 @@ public partial class LinkWindow : Window
 
     /// <summary>The Thing holds exactly the kernel this Wren installs: Install kernel has nothing to do.</summary>
     private bool kernelUpToDate;
-    private WearWindow? wearWindow;
     private string? imageToWrite;
 
     /// <summary>Watches the serial ports: the list follows them, and an unplugged programmer is let go.</summary>
@@ -64,7 +63,6 @@ public partial class LinkWindow : Window
     public void KeepLayout()
     {
         SavedSettings.Current.ProgrammerWindow = layout.Placement;
-        wearWindow?.KeepLayout();
     }
 
     private void Log(string message)
@@ -352,17 +350,7 @@ public partial class LinkWindow : Window
         StoreWear? wear = null;
         await Work("Wear report", () => wear = l.Programmer.ReadWear());
         if (wear == null) return;
-        if (wearWindow == null)
-        {
-            wearWindow = new WearWindow(wear);
-            wearWindow.Closed += (_, _) => wearWindow = null;
-            wearWindow.Show(this);
-        }
-        else
-        {
-            wearWindow.Fill(wear);
-            wearWindow.Activate();
-        }
+        await new WearWindow(wear).ShowDialog(this);            // modal: it keeps the focus until Close
     }
 
     private void OnPicoWiring(object? sender, RoutedEventArgs e) => OpenSheet("Pico_Programmer_Wiring.png");
