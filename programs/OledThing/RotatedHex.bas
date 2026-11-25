@@ -6,8 +6,8 @@
 
 CONST ANGLE = 90                ' 0, 90, 180 or 270 degrees, clockwise
 
-DIM font(48)                    ' three words a digit: rows 0-2, 3-5, 6-8, five bits a row
-DIM rows(9) AS BYTE             ' the digit being drawn, a byte a row, bit 4 the leftmost
+DIM font(144) AS BYTE           ' nine rows a digit, a byte a row, bit 4 the leftmost
+DIM rows(9) AS BYTE             ' the digit being drawn
 DIM turn                        ' quarter turns clockwise: 0 to 3
 DIM shown                       ' the byte on screen
 
@@ -39,7 +39,7 @@ END SUB
 SUB Digit(n, x, y)
   DIM r, c, run
   FOR r = 0 TO 8
-    rows(r) = (font(n * 3 + r / 3) SHR ((2 - r MOD 3) * 5)) AND 31
+    rows(r) = font(n * 9 + r)
   NEXT
   FOR r = 0 TO 8
     run = 0                                  ' the row's runs of lit pixels
@@ -92,30 +92,36 @@ SUB Seg(x, y, w, h)
   END IF
 END SUB
 
-SUB Glyph(n, a, b, c)
-  font(n * 3) = a
-  font(n * 3 + 1) = b
-  font(n * 3 + 2) = c
+SUB Glyph(n, r0, r1, r2, r3, r4, r5, r6, r7, r8)
+  DIM i
+  i = n * 9
+  font(i) = r0
+  font(i + 1) = r1
+  font(i + 2) = r2
+  font(i + 3) = r3
+  font(i + 4) = r4
+  font(i + 5) = r5
+  font(i + 6) = r6
+  font(i + 7) = r7
+  font(i + 8) = r8
 END SUB
 
-' The font, 0 to F. Each row is 5 bits, bit 4 the leftmost; a word holds three rows, the
-' first in bits 14-10. Zero, for one, is
-'   .###.  #...#  #...#  #...#  #...#  #...#  #...#  #...#  .###.
+' The font, 0 to F: each digit's nine rows, top to bottom, in binary (1 a lit pixel).
 SUB Fonts
-  Glyph 0, 14897, 17969, 17966
-  Glyph 1, 4500, 4228, 4255
-  Glyph 2, 14881, 1092, 8735
-  Glyph 3, 14881, 1217, 1582
-  Glyph 4, 2250, 19039, 2114
-  Glyph 5, 32272, 30753, 1582
-  Glyph 6, 6416, 17361, 17966
-  Glyph 7, 31777, 2116, 4228
-  Glyph 8, 14897, 17873, 17966
-  Glyph 9, 14897, 17889, 1100
-  Glyph 10, 14897, 18417, 17969
-  Glyph 11, 31281, 18385, 17982
-  Glyph 12, 14896, 16912, 16942
-  Glyph 13, 31281, 17969, 17982
-  Glyph 14, 32272, 17360, 16927
-  Glyph 15, 32272, 17360, 16912
+  Glyph  0, &B01110, &B10001, &B10001, &B10001, &B10001, &B10001, &B10001, &B10001, &B01110     ' 0
+  Glyph  1, &B00100, &B01100, &B10100, &B00100, &B00100, &B00100, &B00100, &B00100, &B11111     ' 1
+  Glyph  2, &B01110, &B10001, &B00001, &B00001, &B00010, &B00100, &B01000, &B10000, &B11111     ' 2
+  Glyph  3, &B01110, &B10001, &B00001, &B00001, &B00110, &B00001, &B00001, &B10001, &B01110     ' 3
+  Glyph  4, &B00010, &B00110, &B01010, &B10010, &B10010, &B11111, &B00010, &B00010, &B00010     ' 4
+  Glyph  5, &B11111, &B10000, &B10000, &B11110, &B00001, &B00001, &B00001, &B10001, &B01110     ' 5
+  Glyph  6, &B00110, &B01000, &B10000, &B10000, &B11110, &B10001, &B10001, &B10001, &B01110     ' 6
+  Glyph  7, &B11111, &B00001, &B00001, &B00010, &B00010, &B00100, &B00100, &B00100, &B00100     ' 7
+  Glyph  8, &B01110, &B10001, &B10001, &B10001, &B01110, &B10001, &B10001, &B10001, &B01110     ' 8
+  Glyph  9, &B01110, &B10001, &B10001, &B10001, &B01111, &B00001, &B00001, &B00010, &B01100     ' 9
+  Glyph 10, &B01110, &B10001, &B10001, &B10001, &B11111, &B10001, &B10001, &B10001, &B10001     ' A
+  Glyph 11, &B11110, &B10001, &B10001, &B10001, &B11110, &B10001, &B10001, &B10001, &B11110     ' B
+  Glyph 12, &B01110, &B10001, &B10000, &B10000, &B10000, &B10000, &B10000, &B10001, &B01110     ' C
+  Glyph 13, &B11110, &B10001, &B10001, &B10001, &B10001, &B10001, &B10001, &B10001, &B11110     ' D
+  Glyph 14, &B11111, &B10000, &B10000, &B10000, &B11110, &B10000, &B10000, &B10000, &B11111     ' E
+  Glyph 15, &B11111, &B10000, &B10000, &B10000, &B11110, &B10000, &B10000, &B10000, &B10000     ' F
 END SUB
