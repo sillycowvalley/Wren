@@ -16,8 +16,11 @@
       every 4 ms), PWM (16 ms period, line n high for 2(n + 1) ms), 6 s each.
     - The screens: the emulator's panels, LogicAnalyzer.bas fed the sketch's three patterns.
     - The scene: docs/Videos/Wren_09_Logic.md.
-  A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
-  (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its console frame (48, 152; up to 1114 x 762) shows the window whose title contains
+  its data-window text; its camera frame (1210, 152; 662 x 372) shows the webcam.
 -->
 <html lang="en">
 <head>
@@ -187,7 +190,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
+<div class="frame console" data-window="Wren"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
 <li>Counter: each line half the speed of the one above</li><li>Walking: a single 1, line to line</li><li>PWM: eight duties on one period</li><li>A new pattern every 6 seconds</li>

@@ -14,8 +14,11 @@
       (Wren's compiler); its test is DemoTests.TheVoltmeterShowsTheVoltageOnPd2: PD2 at 0, 512, 767
       and 1023 reads 0, 1652, 2474 and 3300 mV.
     - The scene: docs/Videos/Wren_06_Voltmeter.md.
-  A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
-  (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its console frame (48, 152; up to 1114 x 762) shows the window whose title contains
+  its data-window text; its camera frame (1210, 152; 662 x 372) shows the webcam.
 -->
 <html lang="en">
 <head>
@@ -185,7 +188,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
+<div class="frame console" data-window="Wren"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
 <li><code>Voltmeter.bas</code>, <kbd>Ctrl+F5</kbd></li><li>Turn the knob end to end: 0.00 to 3.30 V</li><li>The PD3 button: the graph</li><li>Turn it back and forth; the button again</li>

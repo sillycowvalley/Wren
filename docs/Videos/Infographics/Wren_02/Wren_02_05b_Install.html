@@ -13,8 +13,11 @@
     - The scene: docs/Videos/Wren_02_Pico.md.
     - The lines: the run against the simulated Pico (see Wren_02_05_Kernel.html); a real Thing
       may report a different EEPROM size (some have 640 bytes).
-  A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
-  (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its console frame (48, 152; up to 1114 x 762) shows the window whose title contains
+  its data-window text; its camera frame (1210, 152; 662 x 372) shows the webcam.
 -->
 <html lang="en">
 <head>
@@ -180,7 +183,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
+<div class="frame console" data-window="Firmware"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
 <li><b>Install kernel</b>, and again to go ahead</li><li>74 blocks, a few seconds</li><li><b>Close</b>; <b>Debug → Target → Thing on the programmer</b></li><li><code>OledThing.bas</code>, <kbd>Ctrl+F5</kbd></li>

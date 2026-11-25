@@ -14,8 +14,11 @@
     - The window and its lines: src/Wren/LinkWindow.axaml(.cs); "Board: OLED Thing" and "Firmware:
       not Wren's (Install kernel replaces it)" from a run of the same code against the simulated
       Pico (tests/Wren.Link.Tests, FakePico) on an emulated OLED Thing holding Digicool's firmware.
-  A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
-  (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its console frame (48, 152; up to 1114 x 762) shows the window whose title contains
+  its data-window text; its camera frame (1210, 152; 662 x 372) shows the webcam.
 -->
 <html lang="en">
 <head>
@@ -181,7 +184,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
+<div class="frame console" data-window="Wren"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
 <li><b>Tools → Firmware…</b></li><li><code>Pico on COMn</code>, <b>Connect</b></li><li>Board: OLED Thing</li><li>Firmware: not Wren's</li>

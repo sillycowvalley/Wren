@@ -19,8 +19,11 @@
       test harness as the sketch's w command does: 100 strobes a second, 50 more every 3 s, setup
       and hold 100 us, noise between: every byte right up to 550 strobes a second; at 600, 30.7 s in, it
       stopped: got $C4, wanted $C3, at 585 a second (the second before), LOST 1. PD2 cleared it.
-  A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
-  (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its console frame (48, 152; up to 1114 x 762) shows the window whose title contains
+  its data-window text; its camera frame (1210, 152; 662 x 372) shows the webcam.
 -->
 <html lang="en">
 <head>
@@ -190,7 +193,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
+<div class="frame console" data-window="Wren"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
 <li>Pico on: upload <code>LatchTest.bas</code>; back on the Mega</li><li>Serial Monitor: <code>w</code>, Enter</li><li>100 strobes a second, 50 more every 3 s</li><li>FAILED: got, wanted, the rate · PD2 to start again</li>

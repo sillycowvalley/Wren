@@ -232,8 +232,8 @@ speaker) a 16:9 camera frame. Otherwise a "what you'll see" card
 explaining the console's lines. Its chip carries the progress number of
 the slide it cuts away from.
 
-**Every backdrop keeps the same frames**, so one OBS scene serves all
-of them with only the image swapped:
+**Every backdrop keeps the same frames**, so the Recorder (TTLSim
+Tools/Recorder) fills every one of them the same way:
 
 | Frame | Position in the 1920 × 1080 canvas | Size |
 |---|---|---|
@@ -247,6 +247,12 @@ scene with nothing worth filming** (what Wren's own windows report, say)
 leaves the camera frame out too: the console frame stays where and as big
 as it always is, and the "what you'll see" card takes the whole
 right-hand column.
+
+**The console (or wide) frame names the window it shows**, as text
+found in that window's title: `<div class="frame console"
+data-window="Wren"></div>`. Where a scene changes window part-way, it
+names the one it starts on, and the script's italic hint says when the
+console moves to the next.
 
 The frames are black inside, so a source scaled to fit leaves no
 border. In an animated set a backdrop is a page in the sequence and
@@ -309,10 +315,11 @@ HTML naming the one it follows.
 
 ## 9. Recording
 
-- **Slides**: live in Chrome at F11 (animated), or the PNGs in the
-  Windows image viewer, stepped with the arrow key.
-- **Live scenes**: OBS, one scene per backdrop layout, the terminal
-  captured into the console frame and the camera into the camera frame.
+- **Slides and live scenes**: the Recorder (TTLSim Tools/Recorder)
+  plays the live HTML slides and draws the camera and the windows into
+  each backdrop's frames itself; OBS records one display and the
+  microphone, with no scenes. The Recorder's prompter shows each step's
+  narration, with its italic hint in a colour of its own.
 - **The pointer**: parked at the edge of the screen after each click,
   or hidden in the capture.
 - **Let each animated slide finish** its three seconds before speaking

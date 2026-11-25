@@ -49,7 +49,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## Flashing the Pico
 
-*Hold BOOTSEL, plug in the USB cable, let go. Drag PicoLink.uf2 onto the RPI-RP2 drive.*
+*Hold BOOTSEL, plug in the USB cable, let go. The console shows the RPI-RP2 drive's window once it opens. Drag PicoLink.uf2 onto it.*
 
 > Drag the file across, and that's it. The drive disappears, and the Pico comes back as a serial port. That's how Wren finds it.
 
@@ -61,7 +61,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## Connecting to the OLED Thing
 
-*Tools → Firmware…, choose the Pico, Connect.*
+*In Wren: Tools → Firmware…; the console moves to the Firmware window. Choose the Pico, Connect.*
 
 > Connect, and Wren asks the Thing what it is. This one's an OLED Thing, still running its factory firmware.
 
@@ -75,7 +75,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## Installing the kernel
 
-*Install kernel, then Install kernel again to go ahead.*
+*In the Firmware window: Install kernel, then Install kernel again to go ahead.*
 
 > It asks twice, because each install uses up one of the chip's limited flash writes.
 
@@ -83,7 +83,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 > A few seconds, and it's done.
 
-*Close. Debug → Target → Thing on the programmer. Open OledThing.bas, Ctrl+F5.*
+*Close; the console moves back to Wren. Debug → Target → Thing on the programmer. Open OledThing.bas, Ctrl+F5.*
 
 > From here on, it's the main window, and the same keys as the emulator.
 
@@ -93,7 +93,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## The LED Thing, live
 
-*Move the wires to the LED Thing. Connect, Install kernel twice, Close. Board → LED Thing, open LedThing.bas, Ctrl+F5.*
+*Move the wires to the LED Thing. In the Firmware window: Connect, Install kernel twice, Close; the console moves back to Wren. Board → LED Thing, open LedThing.bas, Ctrl+F5.*
 
 > The same steps. Wren recognises the board, and gives it the LED Thing's own kernel.
 
@@ -105,7 +105,7 @@ The wiring sheet: docs/Infographics/Pico_Programmer_Wiring.png in the repository
 
 ## Factory firmware, back
 
-*Move the wires back to the OLED Thing. Connect, Write image…, choose 8-bit_oled_thing_v1.1.s19, Write image again to go ahead. Disconnect.*
+*Move the wires back to the OLED Thing. In the Firmware window: Connect, Write image…, choose 8-bit_oled_thing_v1.1.s19, Write image again to go ahead. Disconnect.*
 
 > And there's the factory display, exactly as it shipped.
 

@@ -15,8 +15,11 @@
       50 Hz reads 3.0, 4.7, 27.3 and 50.0 Hz, periods 333.3, 212.8, 36.6 and 20.0 ms; 3 s without an
       edge, and it says No clock.
     - The scene: docs/Videos/Wren_08_Frequency.md.
-  A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
-  (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its console frame (48, 152; up to 1114 x 762) shows the window whose title contains
+  its data-window text; its camera frame (1210, 152; 662 x 372) shows the webcam.
 -->
 <html lang="en">
 <head>
@@ -186,7 +189,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
+<div class="frame console" data-window="Wren"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
 <li>Upload <code>Frequency.bas</code>; unplug the Pico</li><li>Clock board 5 V → VCC, GND → GND</li><li>The clock → PD3 (J5 pin 4)</li><li>Turn the 555's pot end to end</li>
