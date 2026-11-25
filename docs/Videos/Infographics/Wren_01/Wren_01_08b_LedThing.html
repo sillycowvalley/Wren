@@ -1,30 +1,27 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 1, slide 6/10: The debugger, on the real chip. The source of Wren_01_06_Debugger.png beside it.
+  Wren BASIC 1, the cut-away after slide 8/9: The LED Thing. The source of Wren_01_08b_LedThing.png beside it.
 
-  Shown live from Wren_01_00_Thumbnail.html (Chrome, F11): the right half of the page is the
-  next slide, the left half the one before; F5 plays the slide again.
+  A backdrop for OBS: the Wren window goes in the console frame (48, 152; up to 1114 x 762)
+  and the camera in the camera frame (1210, 152; 662 x 372). The frames are black inside, so
+  a source scaled to fit leaves no border; every backdrop in the set keeps them in place.
+  In the live slideshow it is a page of its own and stands still.
 
   To render the PNG in Edge or Chrome: F12, then Ctrl+Shift+M; Responsive, 1920 x 1080; from
-  the toolbar's menu "Add device pixel ratio", 2; wait about 3 seconds for the animation, then
-  "Capture screenshot" from the same menu. Save the 3840 x 2160 result over the PNG.
+  the toolbar's menu "Add device pixel ratio", 2; "Capture screenshot" from the same menu.
+  Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - How it works: docs/ProjectPlan.md (Build order, step 5, "Debugging on the Thing"): the
-      chip's debug module and no kernel code; a line breakpoint is a data-read breakpoint on
-      the line's first bytecode in flash, and the chip has two; stepping uses an instruction
-      breakpoint on the kernel's vm_next; the variables are read with the CPU stalled briefly,
-      a few times a second, with TIM4 frozen meanwhile, so MILLIS and EVERY pause with it.
-    - The path: docs/PicoLink.md (the Pico on USB as a serial port, SWIM to the Thing).
-    - The listing: programs/OledThing/Snake.bas, lines 82-84.
-    - The variables: Wren.Script's debugging session (ThingSession) on the emulator, stopped at
-      the breakpoint on line 83 in the first game: score 0, length 3, fx 4, fy 9. A real
-      Thing's game differs.
+    - The scene: docs/Videos/Wren_01_Overview.md.
+    - The modes and their pins: programs/LedThing/LedThing.bas and docs/LedThing.md.
+    - 625 bytes: Wren's compiler on programs/LedThing/LedThing.bas; 2,427 bytes: the kernel
+      assembled for the LED Thing ($8000-$89CA).
+    - Cylon.bas's glow: its opening comment (the side LEDs lit in every other 8 ms frame).
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Wren BASIC 1: The debugger</title>
+<title>Wren BASIC 1: The LED Thing</title>
 <style>
 /*HOUSE*/
   /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
@@ -114,30 +111,23 @@
   .nav { position: fixed; top: 0; bottom: 0; width: 50%; z-index: 100; cursor: default; }
   .nav.prev { left: 0; } .nav.next { right: 0; }
 /*END HOUSE*/
-  .code { position: absolute; left: 48px; top: 270px; width: 900px; padding: 24px 0; background: #0b1424; border: 2px solid #23395c; border-radius: 16px; font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 21px; line-height: 2.1; color: #cbd5e1; }
-  .code div { padding-left: 92px; position: relative; white-space: pre; }
-  .code .ln { position: absolute; left: 40px; color: #475569; font-size: 22px; }
-  .code .kw { color: var(--basic); font-weight: 700; }
-  .code .stop { background: rgba(253, 230, 138, 0.16); }
-  .code .dot { position: absolute; left: 12px; top: 14px; width: 18px; height: 18px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px rgba(253, 230, 138, 0.9); }
-  .vars { position: absolute; left: 48px; top: 520px; width: 900px; }
-  .vars table { width: 100%; border-collapse: collapse; font-size: 27px; }
-  .vars td { padding: 10px 22px; border-bottom: 1px solid #23395c; }
-  .vars td:first-child { font-family: "DejaVu Sans Mono", Consolas, monospace; color: var(--basic); width: 40%; }
-  .vars td:last-child { font-family: "DejaVu Sans Mono", Consolas, monospace; color: #fff; font-weight: 700; }
-  .vars .label { margin-bottom: 12px; }
-  .path { position: absolute; left: 1020px; top: 270px; width: 850px; height: 600px; }
-  .node { position: absolute; border: 3px solid; border-radius: 16px; background: var(--panel); padding: 16px 22px; }
-  .node h3 { font-size: 30px; }
-  .node p { font-size: 22px; color: var(--muted); margin-top: 6px; line-height: 1.3; }
-  .facts { position: absolute; left: 48px; right: 48px; top: 900px; display: flex; gap: 24px; }
-  .facts div { flex: 1; background: var(--panel); border: 2px solid var(--line); border-radius: 14px; padding: 18px 22px; font-size: 24px; line-height: 1.3; color: #cbd5e1; }
-  .facts b { color: var(--gold); font-size: 30px; display: block; margin-bottom: 4px; }
+  .see { position: absolute; left: 1210px; top: 556px; width: 662px; height: 358px; }
+  .see h2 { font-size: 24px; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 14px; }
+  .see ol { list-style: none; counter-reset: s; }
+  .see li { counter-increment: s; position: relative; padding-left: 52px; font-size: 24px; line-height: 1.25; margin-bottom: 12px; }
+  .see li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: #0f1b2d; font-weight: 700; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+  kbd { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 21px; font-weight: 700; color: #fff; background: #1f2f4b; border: 2px solid #3c5480; border-bottom-width: 4px; border-radius: 6px; padding: 1px 7px; }
+  code { font-family: "DejaVu Sans Mono", Consolas, monospace; color: var(--basic); font-size: 23px; }
+  .strip { position: absolute; left: 48px; right: 48px; top: 944px; height: 96px; display: flex; align-items: center; gap: 22px; padding: 0 28px; background: rgba(21, 36, 59, 0.92); border-left: 6px solid var(--gold); border-radius: 10px; font-size: 28px; }
+  .strip b { color: var(--gold); }
+  .nocam { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; background: var(--panel); box-shadow: 0 0 0 3px var(--line); }
+  .nocam .oled { width: 384px; height: 192px; }
+  .nocam span { font-size: 24px; color: var(--muted); letter-spacing: 0.1em; font-weight: 700; }
 </style>
 </head>
 <body>
-<div class="chip fade">WREN BASIC · OVERVIEW · 6/10</div>
-<div class="mark fade"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
+<div class="bar-title"><div class="chip">WREN BASIC · OVERVIEW · 8/9</div><div class="t">The LED Thing, <span>live</span></div></div>
+<div class="mark"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
     <g id="silhouette">
@@ -195,47 +185,15 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<h1 class="rise">The debugger, <span>on the real chip</span></h1>
-
-<div class="code rise d1">
-  <div><span class="ln">82</span>  <span class="kw">IF</span> nx = fx <span class="kw">AND</span> ny = fy <span class="kw">THEN</span></div>
-  <div class="stop"><span class="dot pop d3"></span><span class="ln">83</span>    score = score + 1</div>
-  <div><span class="ln">84</span>    <span class="kw">IF</span> length &lt; RING - 1 <span class="kw">THEN</span> length = length + 1 <span class="kw">ELSE</span> Unmark</div>
-</div>
-
-<div class="vars rise d4">
-  <div class="label">VARIABLES, READ FROM THE CHIP'S RAM</div>
-  <table>
-    <tr><td>score</td><td>0</td></tr>
-    <tr><td>length</td><td>3</td></tr>
-    <tr><td>fx</td><td>4</td></tr>
-    <tr><td>fy</td><td>9</td></tr>
-  </table>
-</div>
-
-<div class="path">
-  <div class="node rise d2" style="left: 0; top: 0; width: 360px; border-color: var(--basic);"><h3 class="basic">Wren</h3><p>F9, F5, F10, F11</p></div>
-  <div class="node rise d3" style="left: 490px; top: 0; width: 360px; border-color: var(--thing);"><h3 class="thing">Pico</h3><p>USB in, one wire out</p></div>
-  <div class="node rise d5" style="left: 120px; top: 250px; width: 730px; height: 250px; border-color: var(--thing);">
-    <h3 class="thing">The Thing's chip</h3>
-    <div class="node" style="left: 26px; top: 90px; width: 320px; border-color: var(--gold);"><h3 class="kernel">Debug module</h3><p>2 breakpoints, built in</p></div>
-    <div class="node" style="left: 380px; top: 90px; width: 320px; border-color: #475569;"><h3>CPU + RAM</h3><p>kernel, program, variables</p></div>
-  </div>
-  <svg viewBox="0 0 850 600" style="position: absolute; left: 0; top: 0; width: 850px; height: 600px; pointer-events: none;">
-    <g fill="none" stroke-width="5">
-      <path class="draw d3" d="M360 50 L490 50" stroke="#c4b5fd" />
-      <path class="draw d5" d="M670 110 L670 250" stroke="#c4b5fd" />
-      <path class="draw d6" d="M466 395 L500 395" stroke="#fde68a" stroke-dasharray="10 8" />
-    </g>
-    <text x="684" y="190" fill="#94a3b8" font-size="22" font-family="Liberation Sans, Arial">SWIM</text>
-  </svg>
-</div>
-
-<div class="facts">
-  <div class="rise d6"><b>No kernel code</b>The chip's own debug module does the work.</div>
-  <div class="rise d7"><b>Two at a time</b>A line breakpoint uses one of its two hardware breakpoints.</div>
-  <div class="rise d8"><b>A few times a second</b>The variables refresh; the timers freeze while they're read.</div>
-</div>
-<!--NAV--><a class="nav prev" href="Wren_01_05b_Snake.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_06b_DebugSnake.html" aria-label="Next slide"></a><!--/NAV-->
+<div class="frame console"></div>
+<div class="frame camera"></div>
+<div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
+<li><b>Board → LED Thing</b></li>
+<li><code>LedThing.bas</code>: the board's own eight patterns, 625 bytes</li>
+<li>M0 to GND: the mode changes, and the pattern with it</li>
+<li><code>Cylon.bas</code>: a bright eye with a soft glow either side</li>
+</ol></div>
+<div class="strip">The same keys, the same debugger · <b>a kernel of 2,427 bytes</b></div>
+<!--NAV--><a class="nav prev" href="Wren_01_08_LedThing.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_09_Closing.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>

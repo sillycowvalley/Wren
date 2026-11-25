@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 1, the cut-away after slide 4/10: Installing the kernel. The source of Wren_01_04b_Install.png beside it.
+  Wren BASIC 1, the cut-away after slide 4/9: Snake on the Thing. The source of Wren_01_04b_Snake.png beside it.
 
   A backdrop for OBS: the Wren window goes in the console frame (48, 152; up to 1114 x 762)
   and the camera in the camera frame (1210, 152; 662 x 372). The frames are black inside, so
@@ -12,16 +12,15 @@
   Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - The scene: docs/Videos/Wren_01_Overview.md, part 4b.
-    - The window, its buttons and the menu items: src/Wren/LinkWindow.axaml and
-      src/Wren/MainWindow.axaml.
-    - "A few seconds for the kernel": docs/PicoLink.md ("A whole kernel takes a few seconds, a
-      program upload well under one").
+    - The scene: docs/Videos/Wren_01_Overview.md.
+    - 834 bytes, 14 blocks: Wren's compiler on programs/OledThing/Snake.bas.
+    - The behaviour: the program's opening comment and its ON EVERY 70 MS handler.
+    - Ctrl+F5: the tooltip in src/Wren/MainWindow.axaml.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Wren BASIC 1: Installing the kernel</title>
+<title>Wren BASIC 1: Snake on the Thing</title>
 <style>
 /*HOUSE*/
   /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
@@ -126,7 +125,7 @@
 </style>
 </head>
 <body>
-<div class="bar-title"><div class="chip">WREN BASIC · OVERVIEW · 4/10</div><div class="t">Installing <span>the kernel</span></div></div>
+<div class="bar-title"><div class="chip">WREN BASIC · OVERVIEW · 4/9</div><div class="t">Snake <span>on the Thing</span></div></div>
 <div class="mark"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
@@ -188,12 +187,12 @@
 <div class="frame console"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
-<li><b>Tools → Firmware…</b>, Pico programmer, <b>Connect</b></li>
-<li><b>Install kernel</b>: the factory firmware out, Wren's kernel in. Once.</li>
-<li><b>Debug → Target → Thing on the programmer</b></li>
-<li><kbd>Ctrl+F5</kbd>: <code>OledThing.bas</code> on the real board</li>
+<li><code>Snake.bas</code>: 834 bytes, 14 blocks of the store</li>
+<li>A move every 70 ms, towards the food, away from dead ends</li>
+<li>A cell longer for each meal</li>
+<li>Boxed in: GAME OVER and the score, then a new game</li>
 </ol></div>
-<div class="strip">The board as it shipped, then the same program as on the emulator · <b>a few seconds for the kernel</b></div>
-<!--NAV--><a class="nav prev" href="Wren_01_04_HundredWrites.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_05_Snake.html" aria-label="Next slide"></a><!--/NAV-->
+<div class="strip"><kbd>Ctrl+F5</kbd> uploads only if the program changed, and runs it</div>
+<!--NAV--><a class="nav prev" href="Wren_01_04_Snake.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_05_Debugger.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>

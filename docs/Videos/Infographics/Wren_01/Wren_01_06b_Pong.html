@@ -1,27 +1,25 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 1, slide 7/10: Pong. The source of Wren_01_07_Pong.png beside it.
+  Wren BASIC 1, the cut-away after slide 6/9: Pong on the Thing. The source of Wren_01_06b_Pong.png beside it.
 
-  Shown live from Wren_01_00_Thumbnail.html (Chrome, F11): the right half of the page is the
-  next slide, the left half the one before; F5 plays the slide again.
+  A backdrop for OBS: the Wren window goes in the console frame (48, 152; up to 1114 x 762)
+  and the camera in the camera frame (1210, 152; 662 x 372). The frames are black inside, so
+  a source scaled to fit leaves no border; every backdrop in the set keeps them in place.
+  In the live slideshow it is a page of its own and stands still.
 
   To render the PNG in Edge or Chrome: F12, then Ctrl+Shift+M; Responsive, 1920 x 1080; from
-  the toolbar's menu "Add device pixel ratio", 2; wait about 3 seconds for the animation, then
-  "Capture screenshot" from the same menu. Save the 3840 x 2160 result over the PNG.
+  the toolbar's menu "Add device pixel ratio", 2; "Capture screenshot" from the same menu.
+  Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - The OLED screen: the emulator's panel, programs/OledThing/Pong.bas as it is, run on Wren's
-      kernel in Wren.Emu for 6 seconds.
-    - The rules: Pong.bas's opening comment: each paddle picks an error of up to 7 pixels
-      either way each time the ball heads for it and moves no faster than 1.25 pixels a frame;
-      where the ball meets the paddle sets its angle; every hit is a little faster; first to 9
-      wins; positions and speeds in quarter pixels. The frame: ON EVERY 30 MS.
-    - 513 bytes: Wren's compiler on Pong.bas.
+    - The scene: docs/Videos/Wren_01_Overview.md.
+    - 513 bytes: Wren's compiler on programs/OledThing/Pong.bas.
+    - The behaviour: the program's opening comment.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Wren BASIC 1: Pong</title>
+<title>Wren BASIC 1: Pong on the Thing</title>
 <style>
 /*HOUSE*/
   /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
@@ -111,18 +109,23 @@
   .nav { position: fixed; top: 0; bottom: 0; width: 50%; z-index: 100; cursor: default; }
   .nav.prev { left: 0; } .nav.next { right: 0; }
 /*END HOUSE*/
-  .screen { position: absolute; left: 400px; top: 250px; width: 1120px; height: 560px; }
-  .note { position: absolute; width: 330px; font-size: 26px; line-height: 1.3; color: #cbd5e1; }
-  .note b { display: block; font-size: 46px; color: #fff; margin-bottom: 6px; }
-  .note.l { left: 48px; text-align: left; } .note.r { left: 1550px; }
-  .strip { position: absolute; left: 400px; top: 860px; width: 1120px; display: flex; justify-content: space-between; font-size: 28px; color: var(--muted); }
+  .see { position: absolute; left: 1210px; top: 556px; width: 662px; height: 358px; }
+  .see h2 { font-size: 24px; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 14px; }
+  .see ol { list-style: none; counter-reset: s; }
+  .see li { counter-increment: s; position: relative; padding-left: 52px; font-size: 24px; line-height: 1.25; margin-bottom: 12px; }
+  .see li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: #0f1b2d; font-weight: 700; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+  kbd { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 21px; font-weight: 700; color: #fff; background: #1f2f4b; border: 2px solid #3c5480; border-bottom-width: 4px; border-radius: 6px; padding: 1px 7px; }
+  code { font-family: "DejaVu Sans Mono", Consolas, monospace; color: var(--basic); font-size: 23px; }
+  .strip { position: absolute; left: 48px; right: 48px; top: 944px; height: 96px; display: flex; align-items: center; gap: 22px; padding: 0 28px; background: rgba(21, 36, 59, 0.92); border-left: 6px solid var(--gold); border-radius: 10px; font-size: 28px; }
   .strip b { color: var(--gold); }
-  svg.leaders { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; }
+  .nocam { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; background: var(--panel); box-shadow: 0 0 0 3px var(--line); }
+  .nocam .oled { width: 384px; height: 192px; }
+  .nocam span { font-size: 24px; color: var(--muted); letter-spacing: 0.1em; font-weight: 700; }
 </style>
 </head>
 <body>
-<div class="chip fade">WREN BASIC · OVERVIEW · 7/10</div>
-<div class="mark fade"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
+<div class="bar-title"><div class="chip">WREN BASIC · OVERVIEW · 6/9</div><div class="t">Pong <span>on the Thing</span></div></div>
+<div class="mark"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
     <g id="silhouette">
@@ -180,16 +183,15 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<h1 class="rise">Pong, <span>with nobody playing</span></h1>
-
-<div class="oled screen pop d1"><!--OLED:pong_60--><svg class="px" viewBox="0 0 64 32" shape-rendering="crispEdges"><g><rect x="31" y="0" width="2" height="1"/><rect x="23" y="1" width="1" height="1"/><rect x="31" y="1" width="2" height="1"/><rect x="39" y="1" width="1" height="1"/><rect x="22" y="2" width="1" height="1"/><rect x="24" y="2" width="1" height="1"/><rect x="38" y="2" width="1" height="1"/><rect x="40" y="2" width="1" height="1"/><rect x="24" y="3" width="1" height="1"/><rect x="38" y="3" width="3" height="1"/><rect x="23" y="4" width="1" height="1"/><rect x="31" y="4" width="2" height="1"/><rect x="38" y="4" width="1" height="1"/><rect x="40" y="4" width="1" height="1"/><rect x="22" y="5" width="3" height="1"/><rect x="31" y="5" width="2" height="1"/><rect x="39" y="5" width="1" height="1"/><rect x="31" y="8" width="2" height="1"/><rect x="31" y="9" width="2" height="1"/><rect x="31" y="12" width="2" height="1"/><rect x="61" y="12" width="2" height="1"/><rect x="31" y="13" width="2" height="1"/><rect x="61" y="13" width="2" height="1"/><rect x="61" y="14" width="2" height="1"/><rect x="31" y="15" width="2" height="1"/><rect x="61" y="15" width="2" height="1"/><rect x="1" y="16" width="2" height="1"/><rect x="31" y="16" width="2" height="1"/><rect x="61" y="16" width="2" height="1"/><rect x="1" y="17" width="2" height="1"/><rect x="31" y="17" width="2" height="1"/><rect x="61" y="17" width="2" height="1"/><rect x="1" y="18" width="2" height="1"/><rect x="61" y="18" width="2" height="1"/><rect x="1" y="19" width="2" height="1"/><rect x="61" y="19" width="2" height="1"/><rect x="1" y="20" width="2" height="1"/><rect x="31" y="20" width="2" height="1"/><rect x="1" y="21" width="2" height="1"/><rect x="31" y="21" width="2" height="1"/><rect x="1" y="22" width="2" height="1"/><rect x="1" y="23" width="2" height="1"/><rect x="31" y="24" width="2" height="1"/><rect x="31" y="25" width="2" height="1"/><rect x="31" y="28" width="2" height="1"/><rect x="31" y="29" width="2" height="1"/></g><g></g></svg><!--/OLED--></div>
-
-<div class="note l rise d3" style="top: 330px;"><b>± 7 px</b>where each paddle aims, off the ball, picked afresh each return</div>
-<div class="note l rise d4" style="top: 600px;"><b>1.25 px</b>the most a paddle moves in a frame</div>
-<div class="note r rise d5" style="top: 330px;"><b>¼ px</b>the ball's position and speed, so it can fly at shallow angles</div>
-<div class="note r rise d6" style="top: 600px;"><b>First to 9</b>then a new game</div>
-
-<div class="strip fade d7"><span>a frame every <b>30 ms</b></span><span>every hit <b>a little faster</b></span><span><b>513 bytes</b> of BASIC</span></div>
-<!--NAV--><a class="nav prev" href="Wren_01_06b_DebugSnake.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_07b_Pong.html" aria-label="Next slide"></a><!--/NAV-->
+<div class="frame console"></div>
+<div class="frame camera"></div>
+<div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
+<li><code>Pong.bas</code>: 513 bytes</li>
+<li>Each paddle aims a little off, and can't move fast</li>
+<li>Every hit is a little faster</li>
+<li>First to 9 wins; then a new game</li>
+</ol></div>
+<div class="strip"><kbd>Ctrl+F5</kbd> · the ball's position is kept in quarter pixels</div>
+<!--NAV--><a class="nav prev" href="Wren_01_06_Pong.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_07_RotatedHex.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>

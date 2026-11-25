@@ -1,30 +1,28 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 1, slide 9/10: The LED Thing. The source of Wren_01_09_LedThing.png beside it.
+  Wren BASIC 1, the cut-away after slide 5/9: Debugging Snake. The source of Wren_01_05b_DebugSnake.png beside it.
 
-  Shown live from Wren_01_00_Thumbnail.html (Chrome, F11): the right half of the page is the
-  next slide, the left half the one before; F5 plays the slide again.
+  A backdrop for OBS: the Wren window goes in the console frame (48, 152; up to 1114 x 762)
+  and the camera in the camera frame (1210, 152; 662 x 372). The frames are black inside, so
+  a source scaled to fit leaves no border; every backdrop in the set keeps them in place.
+  In the live slideshow it is a page of its own and stands still.
 
   To render the PNG in Edge or Chrome: F12, then Ctrl+Shift+M; Responsive, 1920 x 1080; from
-  the toolbar's menu "Add device pixel ratio", 2; wait about 3 seconds for the animation, then
-  "Capture screenshot" from the same menu. Save the 3840 x 2160 result over the PNG.
+  the toolbar's menu "Add device pixel ratio", 2; "Capture screenshot" from the same menu.
+  Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - The kernels: firmware/kernel/Kernel.asm assembled for each board: 4,684 bytes for the
-      OLED Thing ($8000-$925C), 2,427 for the LED Thing ($8000-$89CA), which has no OLED driver,
-      graphics or fonts (docs/LedThing.md, "Wren on the LED Thing"). The bars are to scale.
-    - Which pins light which LED: docs/LedThing.md (The LEDs), the anode driven high, the
-      cathode low.
-    - The scan: docs/LedThing.md: the 1 ms tick lights one LED, b0 to b7 in turn, a frame of 8 ms.
-    - The Cylon eye: programs/LedThing/Cylon.bas: the middle LED in every frame, the two beside
-      it in every other one. The LED bar is the emulator's: Cylon.bas on the LED kernel in
-      Wren.Emu, each LED's lit time over 32 ms, b5 in the middle (an eighth), b4 and b6 at
-      half that.
+    - The scene: docs/Videos/Wren_01_Overview.md.
+    - Line 83 and the variables: programs/OledThing/Snake.bas.
+    - The steps were run in Wren.Script's debugging session (ThingSession) on the emulator:
+      the breakpoint on line 83 stopped in Move; F10 went to line 84 (score 1), 84 again
+      (length 4), then 88; F5 ran on to line 83 at the next meal. The real Thing's values
+      differ from game to game.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Wren BASIC 1: The LED Thing</title>
+<title>Wren BASIC 1: Debugging Snake</title>
 <style>
 /*HOUSE*/
   /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
@@ -114,31 +112,23 @@
   .nav { position: fixed; top: 0; bottom: 0; width: 50%; z-index: 100; cursor: default; }
   .nav.prev { left: 0; } .nav.next { right: 0; }
 /*END HOUSE*/
-  .kern { position: absolute; left: 48px; top: 260px; width: 860px; }
-  .kern .r { margin-bottom: 20px; }
-  .kern .t { font-size: 26px; color: #fff; margin-bottom: 8px; }
-  .kern .bar { height: 46px; border-radius: 8px; background: linear-gradient(180deg, #fde68a, #f2c94c); color: #3b2a00; font-size: 26px; font-weight: 700; display: flex; align-items: center; padding-left: 18px; }
-  .mx { position: absolute; left: 48px; top: 520px; }
-  .mx table { border-collapse: separate; border-spacing: 8px; font-size: 28px; }
-  .mx th { color: var(--thing); font-weight: 700; padding: 4px 10px; font-size: 24px; }
-  .mx td { width: 110px; height: 66px; border-radius: 10px; background: #16263f; text-align: center; font-family: "DejaVu Sans Mono", Consolas, monospace; color: var(--muted); }
-  .mx td.l { background: #3b1512; color: #ffd2cc; border: 2px solid #7a2a22; font-weight: 700; }
-  .mx td.x { background: transparent; }
-  .mx .cap { font-size: 22px; color: var(--muted); margin: 0 0 6px 8px; letter-spacing: 0.1em; font-weight: 700; }
-  .scan { position: absolute; left: 1000px; top: 260px; width: 870px; }
-  .fr { display: flex; gap: 6px; margin: 10px 0 24px; }
-  .fr i { flex: 1; height: 64px; border-radius: 8px; background: #16263f; border: 2px solid #23395c; font-style: normal; font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 22px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
-  .fr i.on { background: var(--led); color: #fff; border-color: #ff8a80; box-shadow: 0 0 12px rgba(255, 75, 62, 0.7); font-weight: 700; }
-  .scan .t { font-size: 26px; color: #fff; }
-  .scan .t span { color: var(--muted); font-size: 22px; }
-  .result { position: absolute; left: 1000px; top: 760px; width: 870px; }
-  .result .leds { display: block; width: 870px; height: 130px; }
-  .result .t { font-size: 26px; color: #fff; margin-bottom: 10px; }
+  .see { position: absolute; left: 1210px; top: 556px; width: 662px; height: 358px; }
+  .see h2 { font-size: 24px; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 14px; }
+  .see ol { list-style: none; counter-reset: s; }
+  .see li { counter-increment: s; position: relative; padding-left: 52px; font-size: 24px; line-height: 1.25; margin-bottom: 12px; }
+  .see li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: #0f1b2d; font-weight: 700; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+  kbd { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 21px; font-weight: 700; color: #fff; background: #1f2f4b; border: 2px solid #3c5480; border-bottom-width: 4px; border-radius: 6px; padding: 1px 7px; }
+  code { font-family: "DejaVu Sans Mono", Consolas, monospace; color: var(--basic); font-size: 23px; }
+  .strip { position: absolute; left: 48px; right: 48px; top: 944px; height: 96px; display: flex; align-items: center; gap: 22px; padding: 0 28px; background: rgba(21, 36, 59, 0.92); border-left: 6px solid var(--gold); border-radius: 10px; font-size: 28px; }
+  .strip b { color: var(--gold); }
+  .nocam { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 14px; background: var(--panel); box-shadow: 0 0 0 3px var(--line); }
+  .nocam .oled { width: 384px; height: 192px; }
+  .nocam span { font-size: 24px; color: var(--muted); letter-spacing: 0.1em; font-weight: 700; }
 </style>
 </head>
 <body>
-<div class="chip fade">WREN BASIC · OVERVIEW · 9/10</div>
-<div class="mark fade"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
+<div class="bar-title"><div class="chip">WREN BASIC · OVERVIEW · 5/9</div><div class="t">Debugging Snake <span>on the real chip</span></div></div>
+<div class="mark"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
     <g id="silhouette">
@@ -196,29 +186,15 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<h1 class="rise">The LED Thing: <span>the same kernel</span></h1>
-
-<div class="kern rise d1">
-  <div class="r"><div class="t">For the OLED Thing</div><div class="bar grow d2" style="width: 860px;">4,684 bytes</div></div>
-  <div class="r"><div class="t">For the LED Thing: no screen driver, no fonts</div><div class="bar grow d3" style="width: 446px;">2,427 bytes</div></div>
-</div>
-
-<div class="mx rise d4">
-  <div class="cap">8 LEDS ON 4 PINS · ANODE ROW, CATHODE COLUMN</div>
-  <table><tr><th></th><th>PD3</th><th>PD4</th><th>PD5</th><th>PD6</th></tr><tr><th>PD3</th><td class="x"></td><td class="l">b0</td><td class="l">b1</td><td class="l">b6</td></tr><tr><th>PD4</th><td class="l">b2</td><td class="x"></td><td class="l">b3</td><td></td></tr><tr><th>PD5</th><td class="l">b4</td><td class="l">b5</td><td class="x"></td><td></td></tr><tr><th>PD6</th><td class="l">b7</td><td></td><td></td><td class="x"></td></tr></table>
-</div>
-
-<div class="scan rise d5">
-  <div class="t">Frame 1 <span>· 8 ms: b0 to b7, one LED a millisecond</span></div>
-  <div class="fr"><i class="">b7</i><i class="on">b6</i><i class="on">b5</i><i class="on">b4</i><i class="">b3</i><i class="">b2</i><i class="">b1</i><i class="">b0</i></div>
-  <div class="t">Frame 2</div>
-  <div class="fr"><i class="">b7</i><i class="">b6</i><i class="on">b5</i><i class="">b4</i><i class="">b3</i><i class="">b2</i><i class="">b1</i><i class="">b0</i></div>
-</div>
-
-<div class="result rise d7">
-  <div class="t">Cylon.bas: the eye, as the emulator saw it</div>
-  <div class="pop d8"><!--LEDS:cylon_led--><svg class="leds" viewBox="0 0 400 60"><rect x="6" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="6" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/><rect x="56" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="56" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0.50"/><rect x="106" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="106" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:1.00"/><rect x="156" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="156" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0.50"/><rect x="206" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="206" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/><rect x="256" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="256" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/><rect x="306" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="306" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/><rect x="356" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="356" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/></svg><!--/LEDS--></div>
-</div>
-<!--NAV--><a class="nav prev" href="Wren_01_08b_RotatedHex.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_09b_LedThing.html" aria-label="Next slide"></a><!--/NAV-->
+<div class="frame console"></div>
+<div class="frame camera"></div>
+<div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
+<li>A breakpoint on line 83, <code>score = score + 1</code></li>
+<li>It stops the moment the snake reaches the food</li>
+<li><b>Variables</b>: <code>score</code>, <code>length</code>, the food's <code>fx</code> and <code>fy</code></li>
+<li><kbd>F10</kbd> twice: the score, then the length, go up</li>
+</ol></div>
+<div class="strip"><kbd>F9</kbd> breakpoint <kbd>F10</kbd> step over <kbd>F5</kbd> on to the next meal</div>
+<!--NAV--><a class="nav prev" href="Wren_01_05_Debugger.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_06_Pong.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>

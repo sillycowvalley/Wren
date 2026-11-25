@@ -14,7 +14,7 @@ You write in Wren BASIC, try it on an emulated Thing in the app, install Wren's 
 In this video:
 - the two Things, and what fits in 8 KB
 - the emulator, and the board's own behaviour rewritten in BASIC
-- installing the kernel without wearing out the flash
+- from the emulator to the real board, through a Raspberry Pi Pico
 - Snake that plays itself, and the debugger stopping it every time it eats
 - Pong, and hex digits in a font of their own at any angle
 - the LED Thing: the same kernel, eight LEDs on four pins
@@ -64,27 +64,7 @@ This is the Thing's own behaviour, rewritten in BASIC, running on an emulated Th
 
 Not a picture of one. The emulator runs the real kernel's machine code, instruction by instruction, and the display chip is modelled too.
 
-I can wire it up, roll the dice and flip the mode pins as often as I like, and nothing wears out. That matters, as you'll see next.
-
-## A hundred writes, and that's it
-
-Here's the thing nobody tells you about this chip. Its flash is only rated for about a hundred writes.
-
-Develop the usual way, reflashing every time you change a line, and you could wear a board out in a weekend.
-
-So Wren keeps the board's flash for last. You try things in the emulator first, the kernel goes on once, and an upload only writes the blocks it needs, spread across the ones used least.
-
-And if you change your mind, the factory firmware goes straight back on.
-
-## Installing the kernel
-
-*Tools → Firmware…, Connect, Install kernel. Then Target → Thing on the programmer, Ctrl+F5.*
-
-The programmer is a Raspberry Pi Pico, a few dollars, talking to the chip over its one-wire programming pin.
-
-Install kernel looks at what's on the board, works out which Thing it is, and writes that Thing's kernel. Once.
-
-And there it is: the same program, on the real board, doing exactly what it did on screen a minute ago.
+I can wire it up, roll the dice and flip the mode pins as often as I like, and nothing wears out. That matters: this chip's flash is only good for about a hundred writes, so I try everything here first.
 
 ## Snake that plays itself
 
@@ -94,9 +74,9 @@ The trick for a small chip is the grid. Every cell is one bit, so checking a mov
 
 ## Snake on the Thing
 
-*Open Snake.bas, Ctrl+F5.*
+*Open Snake.bas. Target → Thing on the programmer, Ctrl+F5.*
 
-Here it is on the board. Every seventy milliseconds it looks around, picks a way, and moves.
+Here it is on the board, uploaded through a Raspberry Pi Pico. Every seventy milliseconds it looks around, picks a way, and moves.
 
 When it finally traps itself, it shows its score and starts again.
 
@@ -154,9 +134,7 @@ Ninety is the program's own setting, so that's the one that goes on the board.
 
 The LED Thing has the same chip, so it gets the same kernel, built for its board. Everything to do with the screen simply drops out.
 
-Its eight LEDs hang off just four pins. Only one is ever lit at a time; the kernel scans them faster than your eye can follow.
-
-That gives a trick for brightness. Light an LED every other scan, and it glows at half strength.
+Its LEDs can only be on or off, yet that eye has a soft glow either side. How it does that is a video of its own.
 
 ## The LED Thing, live
 
@@ -166,7 +144,7 @@ This is the LED Thing's own behaviour, rewritten in BASIC like the other one. Ch
 
 *Open Cylon.bas, Ctrl+F5.*
 
-And this is the half-brightness trick: a Cylon eye, with a soft glow either side.
+And this is that Cylon eye, glowing on the real board.
 
 ## What Wren brings
 

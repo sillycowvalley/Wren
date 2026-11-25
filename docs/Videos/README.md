@@ -25,8 +25,7 @@ dives after, for those who stay. Each headline leads with a name or a claim, nev
 | 7 | Analog inputs | `ANALOG` on PD2 and PD3: a knob or a light sensor, shown as a number, a bar and a history graph. |
 | 8 | BASIC in 1 KB of RAM | The kernel's virtual machine: the bytecode, the event handlers, its speed, and why an interpreter suits a chip this small. |
 | 9 | The debugger, under the hood | Line breakpoints as data-read breakpoints on bytecode, stepping on `vm_next`, variables read with the CPU stalled, two breakpoints, the timers frozen. |
-| 10 | Reverse-engineering the factory firmware | Digicool's compiled C, disassembled and annotated, rebuilt in 502 bytes of BASIC, and both run side by side in the emulator's tests. |
-| 11 | Building the emulator and the assembler | The CPU checked against ucsim, the display modelled, every instruction form checked against sdasstm8. One video or two. |
+| 10 | Building the emulator and the assembler | The CPU checked against ucsim, the display modelled, every instruction form checked against sdasstm8. One video or two. |
 
 Open: whether to make a video on how the project was built with Claude.
 

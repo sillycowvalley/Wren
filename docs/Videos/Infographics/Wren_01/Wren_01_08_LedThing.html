@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 1, slide 5/10: Snake. The source of Wren_01_05_Snake.png beside it.
+  Wren BASIC 1, slide 8/9: The LED Thing. The source of Wren_01_08_LedThing.png beside it.
 
   Shown live from Wren_01_00_Thumbnail.html (Chrome, F11): the right half of the page is the
   next slide, the left half the one before; F5 plays the slide again.
@@ -10,17 +10,19 @@
   "Capture screenshot" from the same menu. Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - The OLED screen: the emulator's panel, programs/OledThing/Snake.bas as it is, run on Wren's
-      kernel in Wren.Emu until the snake was 42 cells long.
-    - The board of 31 x 15 cells of 2 x 2 pixels, the grid of one bit a cell (465 cells in
-      grid(60)), the ring of 64 for the body, the 70 ms step and the listing: Snake.bas itself
-      (its opening comment, its DIMs and lines 23-31).
-    - 834 bytes: Wren's compiler on Snake.bas.
+    - The kernels: firmware/kernel/Kernel.asm assembled for each board: 4,684 bytes for the
+      OLED Thing ($8000-$925C), 2,427 for the LED Thing ($8000-$89CA), which has no OLED driver,
+      graphics or fonts (docs/LedThing.md, "Wren on the LED Thing"). The bars are to scale,
+      1,500 px for 4,684 bytes.
+    - The Cylon eye: programs/LedThing/Cylon.bas: the middle LED in every frame, the two beside
+      it in every other one. The LED bar is the emulator's: Cylon.bas on the LED kernel in
+      Wren.Emu, each LED's lit time over 32 ms, b5 in the middle (an eighth), b4 and b6 at
+      half that.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Wren BASIC 1: Snake</title>
+<title>Wren BASIC 1: The LED Thing</title>
 <style>
 /*HOUSE*/
   /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
@@ -110,24 +112,17 @@
   .nav { position: fixed; top: 0; bottom: 0; width: 50%; z-index: 100; cursor: default; }
   .nav.prev { left: 0; } .nav.next { right: 0; }
 /*END HOUSE*/
-  .screen { position: absolute; left: 60px; top: 270px; width: 960px; height: 480px; }
-  .cellnote { position: absolute; left: 60px; top: 790px; width: 960px; display: flex; gap: 40px; }
-  .fact { flex: 1; }
-  .fact .n { font-size: 54px; font-weight: 700; color: #fff; }
-  .fact .u { font-size: 24px; color: var(--muted); margin-top: 6px; line-height: 1.3; }
-  .code { position: absolute; left: 1090px; top: 270px; width: 770px; height: 400px; padding: 26px 30px; background: #0b1424; border: 2px solid #23395c; border-radius: 16px; font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 26px; line-height: 1.5; color: #cbd5e1; white-space: pre; }
-  .code .kw { color: var(--basic); font-weight: 700; } .code .cm { color: #64748b; } .code .ln { color: #475569; display: inline-block; width: 46px; }
-  .bits { position: absolute; left: 1090px; top: 700px; width: 770px; height: 300px; }
-  .bits .label { margin-bottom: 18px; }
-  .row8 { display: flex; gap: 8px; }
-  .row8 i { width: 70px; height: 70px; border-radius: 6px; background: #1b2c47; border: 2px solid #2b4063; display: flex; align-items: center; justify-content: center; font-style: normal; font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 28px; color: var(--muted); }
-  .row8 i.on { background: var(--pixel); color: #0f1b2d; border-color: #fff; font-weight: 700; }
-  .eq { font-size: 28px; margin-top: 18px; color: #fff; }
-  .eq b { color: var(--gold); }
+  .kern { position: absolute; left: 48px; top: 290px; width: 1824px; }
+  .kern .r { margin-bottom: 36px; }
+  .kern .t { font-size: 30px; color: #fff; margin-bottom: 8px; }
+  .kern .bar { height: 70px; border-radius: 8px; background: linear-gradient(180deg, #fde68a, #f2c94c); color: #3b2a00; font-size: 32px; font-weight: 700; display: flex; align-items: center; padding-left: 18px; }
+  .result { position: absolute; left: 48px; top: 690px; width: 1824px; }
+  .result .leds { display: block; width: 1200px; height: 180px; }
+  .result .t { font-size: 26px; color: #fff; margin-bottom: 10px; }
 </style>
 </head>
 <body>
-<div class="chip fade">WREN BASIC · OVERVIEW · 5/10</div>
+<div class="chip fade">WREN BASIC · OVERVIEW · 8/9</div>
 <div class="mark fade"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
@@ -186,30 +181,19 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<h1 class="rise">Snake <span>that plays itself</span></h1>
+<h1 class="rise">The LED Thing: <span>the same kernel</span></h1>
 
-<div class="oled screen pop d1"><!--OLED:snake_len42--><svg class="px" viewBox="0 0 64 32" shape-rendering="crispEdges"><g><rect x="0" y="0" width="64" height="1"/><rect x="0" y="1" width="1" height="1"/><rect x="19" y="1" width="6" height="1"/><rect x="63" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="19" y="2" width="6" height="1"/><rect x="63" y="2" width="1" height="1"/><rect x="0" y="3" width="1" height="1"/><rect x="19" y="3" width="2" height="1"/><rect x="23" y="3" width="2" height="1"/><rect x="63" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="19" y="4" width="2" height="1"/><rect x="23" y="4" width="2" height="1"/><rect x="63" y="4" width="1" height="1"/><rect x="0" y="5" width="1" height="1"/><rect x="19" y="5" width="2" height="1"/><rect x="23" y="5" width="2" height="1"/><rect x="63" y="5" width="1" height="1"/><rect x="0" y="6" width="1" height="1"/><rect x="19" y="6" width="2" height="1"/><rect x="23" y="6" width="2" height="1"/><rect x="63" y="6" width="1" height="1"/><rect x="0" y="7" width="1" height="1"/><rect x="19" y="7" width="2" height="1"/><rect x="23" y="7" width="30" height="1"/><rect x="63" y="7" width="1" height="1"/><rect x="0" y="8" width="1" height="1"/><rect x="19" y="8" width="2" height="1"/><rect x="23" y="8" width="30" height="1"/><rect x="63" y="8" width="1" height="1"/><rect x="0" y="9" width="1" height="1"/><rect x="19" y="9" width="2" height="1"/><rect x="51" y="9" width="2" height="1"/><rect x="63" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="19" y="10" width="2" height="1"/><rect x="51" y="10" width="2" height="1"/><rect x="63" y="10" width="1" height="1"/><rect x="0" y="11" width="1" height="1"/><rect x="19" y="11" width="2" height="1"/><rect x="51" y="11" width="2" height="1"/><rect x="63" y="11" width="1" height="1"/><rect x="0" y="12" width="1" height="1"/><rect x="19" y="12" width="2" height="1"/><rect x="51" y="12" width="2" height="1"/><rect x="63" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="19" y="13" width="2" height="1"/><rect x="51" y="13" width="2" height="1"/><rect x="63" y="13" width="1" height="1"/><rect x="0" y="14" width="1" height="1"/><rect x="19" y="14" width="2" height="1"/><rect x="51" y="14" width="2" height="1"/><rect x="63" y="14" width="1" height="1"/><rect x="0" y="15" width="1" height="1"/><rect x="17" y="15" width="4" height="1"/><rect x="51" y="15" width="2" height="1"/><rect x="63" y="15" width="1" height="1"/><rect x="0" y="16" width="1" height="1"/><rect x="17" y="16" width="4" height="1"/><rect x="51" y="16" width="2" height="1"/><rect x="63" y="16" width="1" height="1"/><rect x="0" y="17" width="1" height="1"/><rect x="19" y="17" width="2" height="1"/><rect x="51" y="17" width="2" height="1"/><rect x="63" y="17" width="1" height="1"/><rect x="0" y="18" width="1" height="1"/><rect x="19" y="18" width="2" height="1"/><rect x="51" y="18" width="2" height="1"/><rect x="63" y="18" width="1" height="1"/><rect x="0" y="19" width="1" height="1"/><rect x="19" y="19" width="2" height="1"/><rect x="51" y="19" width="2" height="1"/><rect x="63" y="19" width="1" height="1"/><rect x="0" y="20" width="1" height="1"/><rect x="19" y="20" width="2" height="1"/><rect x="51" y="20" width="2" height="1"/><rect x="63" y="20" width="1" height="1"/><rect x="0" y="21" width="1" height="1"/><rect x="19" y="21" width="10" height="1"/><rect x="51" y="21" width="2" height="1"/><rect x="63" y="21" width="1" height="1"/><rect x="0" y="22" width="1" height="1"/><rect x="19" y="22" width="10" height="1"/><rect x="51" y="22" width="2" height="1"/><rect x="63" y="22" width="1" height="1"/><rect x="0" y="23" width="1" height="1"/><rect x="51" y="23" width="2" height="1"/><rect x="63" y="23" width="1" height="1"/><rect x="0" y="24" width="1" height="1"/><rect x="51" y="24" width="2" height="1"/><rect x="63" y="24" width="1" height="1"/><rect x="0" y="25" width="1" height="1"/><rect x="63" y="25" width="1" height="1"/><rect x="0" y="26" width="1" height="1"/><rect x="63" y="26" width="1" height="1"/><rect x="0" y="27" width="1" height="1"/><rect x="63" y="27" width="1" height="1"/><rect x="0" y="28" width="1" height="1"/><rect x="63" y="28" width="1" height="1"/><rect x="0" y="29" width="1" height="1"/><rect x="63" y="29" width="1" height="1"/><rect x="0" y="30" width="1" height="1"/><rect x="63" y="30" width="1" height="1"/><rect x="0" y="31" width="64" height="1"/></g><g></g></svg><!--/OLED--></div>
-<div class="cellnote">
-  <div class="fact rise d3"><div class="n">31 × 15</div><div class="u">cells of 2 × 2 pixels</div></div>
-  <div class="fact rise d4"><div class="n">60 bytes</div><div class="u">one bit a cell: which are taken</div></div>
-  <div class="fact rise d5"><div class="n">834 bytes</div><div class="u">the whole game, compiled</div></div>
+<div class="kern rise d1">
+  <div class="r"><div class="t">For the OLED Thing</div><div class="bar grow d2" style="width: 1500px;">4,684 bytes</div></div>
+  <div class="r"><div class="t">For the LED Thing: no screen driver, no fonts</div><div class="bar grow d3" style="width: 777px;">2,427 bytes</div></div>
 </div>
 
-<div class="code rise d2"><span class="ln">23</span><span class="kw">ON EVERY</span> 70 <span class="kw">MS</span>
-<span class="ln">24</span>  <span class="kw">IF</span> over &gt; 0 <span class="kw">THEN</span>
-<span class="ln">25</span>    over = over - 1
-<span class="ln">26</span>    <span class="kw">IF</span> over = 0 <span class="kw">THEN</span> NewGame
-<span class="ln">27</span>    <span class="kw">EXIT ON</span>
-<span class="ln">28</span>  <span class="kw">END IF</span>
-<span class="ln">29</span>  Move
-<span class="ln">30</span>  <span class="kw">SHOW</span>
-<span class="ln">31</span><span class="kw">END ON</span></div>
 
-<div class="bits rise d6">
-  <div class="label">EIGHT CELLS OF THE GRID</div>
-  <div class="row8"><i>0</i><i class="on">1</i><i class="on">1</i><i class="on">1</i><i>0</i><i>0</i><i class="on">1</i><i>0</i></div>
-  <div class="eq">= <b>one byte</b> of <span class="mono basic">grid(60)</span></div>
+
+<div class="result rise d5">
+  <div class="t">Cylon.bas: the eye, as the emulator saw it</div>
+  <div class="pop d6"><!--LEDS:cylon_led--><svg class="leds" viewBox="0 0 400 60"><rect x="6" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="6" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/><rect x="56" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="56" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0.50"/><rect x="106" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="106" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:1.00"/><rect x="156" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="156" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0.50"/><rect x="206" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="206" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/><rect x="256" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="256" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/><rect x="306" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="306" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/><rect x="356" y="8" width="38" height="44" rx="6" class="led-off"/><rect x="356" y="8" width="38" height="44" rx="6" class="led-on" style="opacity:0"/></svg><!--/LEDS--></div>
 </div>
-<!--NAV--><a class="nav prev" href="Wren_01_04b_Install.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_05b_Snake.html" aria-label="Next slide"></a><!--/NAV-->
+<!--NAV--><a class="nav prev" href="Wren_01_07b_RotatedHex.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_08b_LedThing.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>

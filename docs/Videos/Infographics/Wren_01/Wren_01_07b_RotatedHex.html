@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 1, the cut-away after slide 7/10: Pong on the Thing. The source of Wren_01_07b_Pong.png beside it.
+  Wren BASIC 1, the cut-away after slide 7/9: RotatedHex. The source of Wren_01_07b_RotatedHex.png beside it.
 
   A backdrop for OBS: the Wren window goes in the console frame (48, 152; up to 1114 x 762)
   and the camera in the camera frame (1210, 152; 662 x 372). The frames are black inside, so
@@ -12,14 +12,16 @@
   Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - The scene: docs/Videos/Wren_01_Overview.md, part 7b.
-    - 513 bytes: Wren's compiler on programs/OledThing/Pong.bas.
-    - The behaviour: the program's opening comment.
+    - The scene: docs/Videos/Wren_01_Overview.md.
+    - CONST ANGLE and the angles: programs/OledThing/RotatedHex.bas; 986 bytes from Wren's
+      compiler on it.
+    - Inputs left open read 1: the kernel turns on pull-ups on b0-b7 (docs/ProjectPlan.md,
+      step 3), so a wire to GND makes a bit 0.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Wren BASIC 1: Pong on the Thing</title>
+<title>Wren BASIC 1: RotatedHex</title>
 <style>
 /*HOUSE*/
   /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
@@ -124,7 +126,7 @@
 </style>
 </head>
 <body>
-<div class="bar-title"><div class="chip">WREN BASIC · OVERVIEW · 7/10</div><div class="t">Pong <span>on the Thing</span></div></div>
+<div class="bar-title"><div class="chip">WREN BASIC · OVERVIEW · 7/9</div><div class="t">RotatedHex: <span>any of four angles</span></div></div>
 <div class="mark"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
@@ -186,12 +188,12 @@
 <div class="frame console"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
-<li><code>Pong.bas</code>: 513 bytes</li>
-<li>Each paddle aims a little off, and can't move fast</li>
-<li>Every hit is a little faster</li>
-<li>First to 9 wins; then a new game</li>
+<li>On the emulator: <code>CONST ANGLE = 90</code>, then <code>0</code></li>
+<li>The same digits, turned: no second font</li>
+<li>Back to 90, and onto the board</li>
+<li>A wire from a b input to GND changes a digit</li>
 </ol></div>
-<div class="strip"><kbd>Ctrl+F5</kbd> · the ball's position is kept in quarter pixels</div>
-<!--NAV--><a class="nav prev" href="Wren_01_07_Pong.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_08_RotatedHex.html" aria-label="Next slide"></a><!--/NAV-->
+<div class="strip"><kbd>F5</kbd> on the emulator · <kbd>Ctrl+F5</kbd> on the Thing · <b>986 bytes</b></div>
+<!--NAV--><a class="nav prev" href="Wren_01_07_RotatedHex.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_01_08_LedThing.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>
