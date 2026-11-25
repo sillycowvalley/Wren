@@ -122,4 +122,28 @@ public class DemoTests
         var now = Pixels(run);
         Assert.Contains(Enumerable.Range(0, 64 * 32), i => now[i % 64, i / 64] != at0[i % 64, i / 64]);
     }
+
+    [Fact]
+    public void RotatedHexTurnsAndFollowsTheInputs()
+    {
+        Run At(int angle, byte inputs) => Run.Start(Program("OledThing", "RotatedHex.bas").Replace("CONST ANGLE = 90 ", $"CONST ANGLE = {angle} "),
+            t => t.SetInputs(inputs), seconds: 0.6);
+        var at0 = Pixels(At(0, 0x5A));
+        var at180 = Pixels(At(180, 0x5A));
+        var at90 = Pixels(At(90, 0x5A));
+        var at270 = Pixels(At(270, 0x5A));
+        for (int x = 0; x < 64; x++)
+            for (int y = 0; y < 32; y++)
+            {
+                Assert.Equal(at0[x, y], at180[63 - x, 31 - y]);
+                Assert.Equal(at90[x, y], at270[63 - x, 31 - y]);
+            }
+        Assert.Contains(Enumerable.Range(0, 64 * 32), i => at0[i % 64, i / 64]);
+        var run = At(0, 0x5A);
+        run.Thing.SetInputs(0xC3);
+        run.For(0.3);
+        Assert.Equal(0, run.VmFault);
+        var now = Pixels(run);
+        Assert.Contains(Enumerable.Range(0, 64 * 32), i => now[i % 64, i / 64] != at0[i % 64, i / 64]);
+    }
 }
