@@ -82,4 +82,4 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > The kernel once, the program as data, only the blocks that changed, and the least-written block every time. A hundred writes turns into years of tinkering.
 
-> Next time: the LED Thing, and a certain car with a scanning red light. Thanks for watching.
+> Next time: a knob, one pin, and a voltmeter in BASIC. Thanks for watching.
