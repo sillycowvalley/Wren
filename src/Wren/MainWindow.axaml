@@ -137,7 +137,7 @@
 
             <HeaderedContentControl Name="OledGroup" Classes="group" Header="OLED">
               <Border Background="#1B2A4A" Padding="8" HorizontalAlignment="Left" BorderBrush="#0E1626" BorderThickness="1">
-                <local:OledView Name="Oled" Width="448" Height="224" />
+                <local:OledView Name="Oled" Width="320" Height="160" />
               </Border>
             </HeaderedContentControl>
 
