@@ -235,4 +235,33 @@ public class DemoTests
         run.For(3.5);                                          // the clock stops
         Assert.Equal(0, run.Global("running"));
     }
+
+    [Fact]
+    public void TheLatchTestStopsAtTheFirstByteMissed()
+    {
+        var run = Run.Start(Program("OledThing", "LatchTest.bas"), t => t.Pd3Low = true, seconds: 0.1);
+        void Strobe(int value)
+        {
+            run.Thing.SetInputs((byte)value);
+            run.For(0.0001);
+            run.Thing.Pd3Low = false;                           // the rising edge
+            run.For(0.0001);
+            run.Thing.Pd3Low = true;
+            run.Thing.SetInputs((byte)~value);                  // noise between strobes
+            run.For(0.0048);                                    // 200 strobes a second
+        }
+        for (int v = 250; v < 250 + 40; v++) Strobe(v & 255);  // round past FF
+        Assert.Equal(0, run.Global("failed"));
+        Strobe((250 + 41) & 255);                                // one missed
+        Assert.Equal(-1, run.Global("failed"));
+        Assert.Equal((250 + 41) & 255, run.Global("got"));
+        Assert.Equal((250 + 40) & 255, run.Global("want"));
+
+        run.Thing.Pd2Low = true;                                 // PD2 starts it again
+        run.For(0.05);
+        run.Thing.Pd2Low = false;
+        run.For(0.05);
+        Assert.Equal(0, run.Global("failed"));
+        Assert.Equal(0, run.VmFault);
+    }
 }

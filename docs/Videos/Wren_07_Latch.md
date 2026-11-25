@@ -15,9 +15,10 @@ In this video:
 - the program, line by line
 - a Mega as the bus: noise, then a byte, setup and hold, and the strobe
 - a straight 8-wire ribbon, and the Thing powered from the Mega
+- how fast can it go? A counting sweep, and where it breaks
 - rising, falling, both, and a second pin as a gate
 
-The Thing's program is programs/OledThing/Latch.bas; the Mega's sketch is firmware/LatchFeeder.
+The Thing's programs are programs/OledThing/Latch.bas and LatchTest.bas; the Mega's sketch is firmware/LatchFeeder.
 
 Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
@@ -73,6 +74,30 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 > The Mega's own log agrees, byte for byte. And the count goes up by exactly one each time: no bounces here, just one clean edge.
 
 > In between, those eight wires are a blur of noise. The Thing never shows any of it.
+
+## How fast can it latch?
+
+> One byte a second is easy. So how fast can it go before it misses one?
+
+> For that, the Mega counts: nought, one, two, all the way to two hundred and fifty-five and round again. The Thing knows exactly which byte should come next, so the first one that's wrong, or missing, stops it cold.
+
+> It shows what came, what it wanted, and how fast the bytes were coming when it failed.
+
+## The sweep, live
+
+*Swap the Thing back onto the Pico, upload LatchTest.bas, then back onto the Mega's 5 V. In the Serial Monitor type w and press Enter: the Mega starts at 100 strobes a second and adds 50 every 3 seconds. Wait for FAILED; cut the wait in the edit. Press the PD2 button to start the check again.*
+
+> Every strobe checked, and the rate climbing. All good.
+
+> And there it is: it's stopped. What came, what it wanted, and the rate when it happened.
+
+## Where it breaks
+
+> The latch itself never misses. The interrupt catches every edge, and puts the byte in a queue with its event.
+
+> But the queue has room for seven, and once a second the program stops to draw the screen. If more than seven bytes arrive while it's drawing, the next ones have nowhere to go. LOST counts them.
+
+> So the limit isn't the latch. It's seven bytes, in the time it takes to draw one screen.
 
 ## Rising, falling, both
 

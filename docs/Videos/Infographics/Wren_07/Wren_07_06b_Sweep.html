@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 7, slide 7/7: the closing backdrop. The source of Wren_07_07_Closing.png beside it.
+  Wren BASIC 7, the cut-away after slide 6/9: The sweep, live. The source of Wren_07_06b_Sweep.png beside it.
 
   Shown live from Wren_07_00_Thumbnail.html (Chrome, F11): the right half of the page is the
   next slide, the left half the one before; F5 plays the slide again.
@@ -10,13 +10,22 @@
   "Capture screenshot" from the same menu. Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - The video's own points (docs/Videos/Wren_07_Latch.md). The left 60% only (to x = 1152): the
-      right 40% is left for YouTube's end-screen elements.
+    - LatchTest.bas: programs/OledThing/LatchTest.bas: locks onto the Mega's count and stops at the
+      first byte wrong or missing, showing what came, what was due, the rate a second before, and
+      LOST; PD2 starts it again.
+    - The Mega's sketch: firmware/LatchFeeder/LatchFeeder.ino: port F (A0-A7) drives b0-b7, D2 the
+      strobe; the message "WREN BASIC " one byte a second; noise (random bytes) between strobes.
+    - The sweep, in the emulator: LatchTest.bas on Wren's kernel in Wren.Emu, the Mega played by the
+      test harness as the sketch's w command does: 100 strobes a second, 50 more every 3 s, setup
+      and hold 100 us, noise between: every byte right up to 550 strobes a second; at 600, 30.7 s in, it
+      stopped: got $C4, wanted $C3, at 585 a second (the second before), LOST 1. PD2 cleared it.
+  A backdrop for OBS: the console frame (48, 152; up to 1114 x 762) and the camera frame
+  (1210, 152; 662 x 372) are black inside; every backdrop keeps them in place.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Wren BASIC 7: What LATCH brings</title>
+<title>Wren BASIC 7: The sweep, live</title>
 <style>
 /*HOUSE*/
   /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
@@ -110,26 +119,83 @@
   .code div { padding-left: 76px; position: relative; white-space: pre; padding-right: 20px; }
   .code .ln { position: absolute; left: 18px; width: 44px; text-align: right; color: #475569; font-size: 19px; }
   .code .kw { color: var(--basic); font-weight: 700; } .code .cm { color: #64748b; } .code .st { color: #fbbf77; }
-  .pts { position: absolute; left: 48px; top: 270px; width: 1080px; list-style: none; }
-  .pts li { position: relative; padding-left: 74px; font-size: 38px; line-height: 1.25; margin-bottom: 34px; color: #fff; }
-  .pts li::before { content: "✓"; position: absolute; left: 0; top: -2px; width: 50px; height: 50px; border-radius: 50%; background: var(--gold); color: #0f1b2d; font-weight: 700; font-size: 32px; display: flex; align-items: center; justify-content: center; }
-  .thanks { position: absolute; left: 48px; top: 860px; font-size: 64px; font-weight: 700; color: var(--gold); }
-  .repo { position: absolute; left: 48px; top: 950px; font-size: 32px; color: var(--muted); }
-  .repo b { color: var(--basic); font-family: "DejaVu Sans Mono", Consolas, monospace; font-weight: 400; }
+  .see { position: absolute; left: 1210px; top: 556px; width: 662px; height: 358px; }
+  .see h2 { font-size: 24px; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 14px; }
+  .see ol { list-style: none; counter-reset: s; }
+  .see li { counter-increment: s; position: relative; padding-left: 52px; font-size: 24px; line-height: 1.25; margin-bottom: 12px; }
+  .see li::before { content: counter(s); position: absolute; left: 0; top: -2px; width: 36px; height: 36px; border-radius: 50%; background: var(--gold); color: #0f1b2d; font-weight: 700; font-size: 22px; display: flex; align-items: center; justify-content: center; }
+  kbd { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 21px; font-weight: 700; color: #fff; background: #1f2f4b; border: 2px solid #3c5480; border-bottom-width: 4px; border-radius: 6px; padding: 1px 7px; }
+  code { font-family: "DejaVu Sans Mono", Consolas, monospace; color: var(--basic); font-size: 22px; }
+  .strip { position: absolute; left: 48px; right: 48px; top: 944px; height: 96px; display: flex; align-items: center; gap: 22px; padding: 0 28px; background: rgba(21, 36, 59, 0.92); border-left: 6px solid var(--gold); border-radius: 10px; font-size: 28px; }
+  .strip b { color: var(--gold); }
 </style>
 </head>
 <body>
-<div class="chip fade">WREN BASIC · LATCH · 7/7</div>
-<h1 class="rise">What LATCH <span>brings</span></h1>
-<ul class="pts">
-  <li class="rise d1">The inputs at the instant of an edge</li>
-  <li class="rise d2">Read in the interrupt, held until the next</li>
-  <li class="rise d3">Rising, falling or both, with a gate pin</li>
-  <li class="rise d4">Every edge counted, bounces and all</li>
-  <li class="rise d5">A whole program in 34 bytes</li>
-</ul>
-<div class="thanks rise d6">Thanks for watching</div>
-<div class="repo fade d7">Next: a frequency counter · <b>github.com/sillycowvalley/Wren</b></div>
-<!--NAV--><a class="nav prev" href="Wren_07_06_Edges.html" aria-label="Previous slide"></a><!--/NAV-->
+<div class="bar-title"><div class="chip">WREN BASIC · LATCH · 6/9</div><div class="t">The sweep, <span>live</span></div></div>
+<div class="mark"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
+ <g transform="translate(-6 -16)">
+  <defs>
+    <g id="silhouette">
+      <rect x="-17" y="-66" width="34" height="96" rx="16" transform="translate(76 124) rotate(-28)" />
+      <ellipse cx="120" cy="150" rx="76" ry="60" />
+      <circle cx="170" cy="110" r="46" />
+    </g>
+    <clipPath id="bodyClip">
+      <ellipse cx="120" cy="150" rx="76" ry="60" />
+      <circle cx="170" cy="110" r="46" />
+    </clipPath>
+    <clipPath id="tailClip">
+      <rect x="-17" y="-66" width="34" height="96" rx="16" transform="translate(76 124) rotate(-28)" />
+    </clipPath>
+  </defs>
+  <g stroke="#7A4E2C" stroke-width="6" stroke-linecap="round" fill="none">
+    <path d="M110 200 L104 236 M92 238 L104 236 L114 240" />
+    <path d="M138 202 L140 236 M128 239 L140 236 L152 239" />
+  </g>
+  <path d="M196 100 Q228 102 250 116 Q228 122 196 120 Z" fill="#3A2414" stroke="#3A2414" stroke-width="2" stroke-linejoin="round" />
+  <use href="#silhouette" fill="#4A2C14" stroke="#4A2C14" stroke-width="10" stroke-linejoin="round" />
+  <use href="#silhouette" fill="#A0663A" />
+  <g clip-path="url(#tailClip)" stroke="#5A3618" stroke-width="5" stroke-linecap="round">
+    <g transform="translate(76 124) rotate(-28)">
+      <line x1="-20" y1="-50" x2="20" y2="-50" />
+      <line x1="-20" y1="-34" x2="20" y2="-34" />
+      <line x1="-20" y1="-18" x2="20" y2="-18" />
+    </g>
+  </g>
+  <g clip-path="url(#bodyClip)">
+    <ellipse cx="150" cy="176" rx="58" ry="38" fill="#EBC99B" />
+    <ellipse cx="186" cy="138" rx="30" ry="22" fill="#EBC99B" />
+    <g stroke="#C79A68" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M128 196 q8 4 16 0" />
+      <path d="M152 200 q8 4 16 0" />
+      <path d="M140 184 q8 4 16 0" />
+    </g>
+    <ellipse cx="104" cy="146" rx="50" ry="30" transform="rotate(-14 104 146)" fill="#83502A" />
+    <g stroke="#4A2C14" stroke-width="4" stroke-linecap="round">
+      <line x1="72" y1="132" x2="80" y2="152" />
+      <line x1="86" y1="128" x2="94" y2="150" />
+      <line x1="100" y1="124" x2="108" y2="147" />
+      <line x1="114" y1="121" x2="122" y2="144" />
+      <line x1="128" y1="119" x2="136" y2="140" />
+    </g>
+    <g fill="#6E431F">
+      <circle cx="150" cy="82" r="3" />
+      <circle cx="164" cy="74" r="3" />
+      <circle cx="140" cy="96" r="3" />
+    </g>
+  </g>
+  <path d="M146 96 Q172 80 204 92" stroke="#F4E3C3" stroke-width="7" stroke-linecap="round" fill="none" />
+  <circle cx="176" cy="126" r="9" fill="#E8907A" opacity="0.45" />
+  <circle cx="186" cy="106" r="9" fill="#1E120A" />
+  <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
+ </g>
+</svg><!--/WREN--></div>
+<div class="frame console"></div>
+<div class="frame camera"></div>
+<div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
+<li>Pico on: upload <code>LatchTest.bas</code>; back on the Mega</li><li>Serial Monitor: <code>w</code>, Enter</li><li>100 strobes a second, 50 more every 3 s</li><li>FAILED: got, wanted, the rate · PD2 to start again</li>
+</ol></div>
+<div class="strip">The Mega counts 00 to FF and round · <b>the Thing checks every one</b></div>
+<!--NAV--><a class="nav prev" href="Wren_07_06_HowFast.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_07_07_Breaks.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>

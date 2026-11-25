@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 7, slide 4/7: A bus that never sits still. The source of Wren_07_04_Bus.png beside it.
+  Wren BASIC 7, slide 4/9: A bus that never sits still. The source of Wren_07_04_Bus.png beside it.
 
   Shown live from Wren_07_00_Thumbnail.html (Chrome, F11): the right half of the page is the
   next slide, the left half the one before; F5 plays the slide again.
@@ -125,7 +125,7 @@
 </style>
 </head>
 <body>
-<div class="chip fade">WREN BASIC · LATCH · 4/7</div>
+<div class="chip fade">WREN BASIC · LATCH · 4/9</div>
 <div class="mark fade"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
@@ -199,7 +199,7 @@
   <line class="fade d4" x1="1040" y1="40" x2="1040" y2="360" stroke="#fde68a" stroke-width="3" stroke-dasharray="10 8"/>
   <text class="fade d5" x="480" y="190" fill="#94a3b8" font-size="24" text-anchor="middle">noise: a new byte every few µs</text>
 </svg>
-<div class="code feed rise d5"><div><span class="ln">58</span>    // The byte, steady before and after the rising edge.</div><div><span class="ln">59</span>    Put(b);</div><div><span class="ln">60</span>    delayMicroseconds(SetupUs);</div><div><span class="ln">61</span>    digitalWrite(StrobePin, HIGH);      // the Thing latches b0-b7 now</div><div><span class="ln">62</span>    delayMicroseconds(HoldUs);</div><div><span class="ln">63</span>    digitalWrite(StrobePin, LOW);</div></div>
+<div class="code feed rise d5"><div><span class="ln">66</span>void Strobe(uint8_t b) {</div><div><span class="ln">67</span>  Put(b);</div><div><span class="ln">68</span>  delayMicroseconds(setupUs);</div><div><span class="ln">69</span>  digitalWrite(StrobePin, HIGH);        // the Thing latches b0-b7 now</div><div><span class="ln">70</span>  delayMicroseconds(holdUs);</div><div><span class="ln">71</span>  digitalWrite(StrobePin, LOW);</div></div>
 <div class="side">
   <div class="f rise d6"><b>One write</b>: A0–A7 are the Mega's port F, so all eight change at once</div>
   <div class="f rise d7"><b>Setup and hold</b>: steady before and after the edge</div>
