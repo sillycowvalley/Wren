@@ -1,25 +1,15 @@
-' The inputs as two hex digits in the style of a seven-segment display, at any of four
-' angles. No font is used: each digit is seven bars, and every bar is a rectangle drawn
-' through Seg, which turns the upright picture to the angle. Turned 90 or 270 degrees the
-' picture is 32 wide and 64 tall, and the digits stand one above the other.
-'
-' ANGLE sets the angle: 0, 90, 180 or 270 (clockwise). Set it to -1 to choose the angle
-' with the mode pins instead:
-'
-'   PA1 (HEX)  PA2 (BAR)   angle
-'     open       open        90
-'     low        open       180
-'     open       low        270
-'     low        low          0
-'
-' PA3 (INV) low inverts the display.
+' The inputs as two hex digits in the style of a seven-segment display, side by side, at
+' any of four angles. No font is used: each digit is seven bars, and every bar is a
+' rectangle drawn through Seg, which turns the upright picture to the angle. Turned 90 or
+' 270 degrees the picture is 32 wide and 64 tall, so the digits are smaller there.
 
-CONST ANGLE = 90
+CONST ANGLE = 90                ' 0, 90, 180 or 270 degrees, clockwise
 
-DIM turn                ' quarter turns clockwise: 0 to 3
-DIM shown               ' the byte on screen
+DIM turn                        ' quarter turns clockwise: 0 to 3
+DIM shown                       ' the byte on screen
 
 ON START
+  turn = (ANGLE / 90) AND 3
   shown = INPUTS
   Draw
 END ON
@@ -29,40 +19,31 @@ ON CHANGE
   Draw
 END ON
 
-ON PINS
-  Draw
-END ON
-
 SUB Draw
-  IF ANGLE < 0 THEN
-    turn = (1 + (1 - PIN(PA1)) + 2 * (1 - PIN(PA2))) AND 3
-  ELSE
-    turn = (ANGLE / 90) AND 3
-  END IF
   CLS
   IF turn = 0 OR turn = 2 THEN
-    Digit shown SHR 4, 9, 1                  ' 64 x 32: side by side
-    Digit shown AND 15, 37, 1
+    Digit shown SHR 4, 9, 1, 18, 30, 4       ' 64 x 32: digits 18 x 30, bars 4 thick
+    Digit shown AND 15, 37, 1, 18, 30, 4
   ELSE
-    Digit shown SHR 4, 7, 1                  ' 32 x 64: one above the other
-    Digit shown AND 15, 7, 33
+    Digit shown SHR 4, 1, 19, 13, 25, 3      ' 32 x 64: digits 13 x 25, bars 3 thick
+    Digit shown AND 15, 17, 19, 13, 25, 3
   END IF
-  INVERSE NOT PIN(PA3)
   SHOW
 END SUB
 
-' Hex digit n, 18 wide and 30 tall with bars 4 thick, its top-left at (x, y) on the
-' upright picture. The bars stop short of each other, as on a real display.
-SUB Digit(n, x, y)
-  DIM bars
+' Hex digit n, w wide and h tall with bars t thick, its top-left at (x, y) on the upright
+' picture. The bars stop short of each other, as on a real display.
+SUB Digit(n, x, y, w, h, t)
+  DIM bars, mid
   bars = Bars(n)
-  IF bars AND 1 THEN Seg x + 4, y, 10, 4                ' a: top
-  IF bars AND 2 THEN Seg x + 14, y + 4, 4, 9            ' b: top right
-  IF bars AND 4 THEN Seg x + 14, y + 17, 4, 9           ' c: bottom right
-  IF bars AND 8 THEN Seg x + 4, y + 26, 10, 4           ' d: bottom
-  IF bars AND 16 THEN Seg x, y + 17, 4, 9               ' e: bottom left
-  IF bars AND 32 THEN Seg x, y + 4, 4, 9                ' f: top left
-  IF bars AND 64 THEN Seg x + 4, y + 13, 10, 4          ' g: middle
+  mid = (h - t) / 2                           ' the middle bar's top
+  IF bars AND 1 THEN Seg x + t, y, w - 2 * t, t                         ' a: top
+  IF bars AND 2 THEN Seg x + w - t, y + t, t, mid - t                   ' b: top right
+  IF bars AND 4 THEN Seg x + w - t, y + mid + t, t, h - mid - 2 * t     ' c: bottom right
+  IF bars AND 8 THEN Seg x + t, y + h - t, w - 2 * t, t                 ' d: bottom
+  IF bars AND 16 THEN Seg x, y + mid + t, t, h - mid - 2 * t            ' e: bottom left
+  IF bars AND 32 THEN Seg x, y + t, t, mid - t                          ' f: top left
+  IF bars AND 64 THEN Seg x + t, y + mid, w - 2 * t, t                  ' g: middle
 END SUB
 
 ' The bars lit for hex digit n: bit 0 is a, the top, round to bit 6, g, the middle.

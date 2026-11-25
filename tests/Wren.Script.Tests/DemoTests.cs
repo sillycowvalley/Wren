@@ -89,14 +89,10 @@ public class DemoTests
         Assert.True(balls.Min() < 16 && balls.Max() > 48, "the ball did not cross the court");
     }
 
-    /// <summary>The seven-segment readout with ANGLE set to angle (-1: chosen by PA1 and PA2).</summary>
-    private static Run SevenSegment(byte inputs, int angle, bool pa1Low = false, bool pa2Low = false) =>
-        Run.Start(Program("OledThing", "SevenSegment.bas").Replace("CONST ANGLE = 90", $"CONST ANGLE = {angle}"), t =>
-        {
-            t.SetInputs(inputs);
-            t.HexLow = pa1Low;
-            t.BarLow = pa2Low;
-        }, seconds: 0.15);
+    /// <summary>The seven-segment readout with ANGLE set to angle.</summary>
+    private static Run SevenSegment(byte inputs, int angle) =>
+        Run.Start(Program("OledThing", "SevenSegment.bas").Replace("CONST ANGLE = 90 ", $"CONST ANGLE = {angle} "),
+            t => t.SetInputs(inputs), seconds: 0.15);
 
     private static bool[,] Pixels(Run run)
     {
@@ -119,9 +115,6 @@ public class DemoTests
                 Assert.Equal(at0[x, y], at180[63 - x, 31 - y]);         // half a turn apart
                 Assert.Equal(at90[x, y], at270[63 - x, 31 - y]);
             }
-        // With ANGLE -1 the mode pins choose: both low is 0 degrees, PA1 low 180.
-        Assert.Equal(at0.Cast<bool>(), Pixels(SevenSegment(0x5A, -1, true, true)).Cast<bool>());
-        Assert.Equal(at180.Cast<bool>(), Pixels(SevenSegment(0x5A, -1, true, false)).Cast<bool>());
         var run = SevenSegment(0x5A, 0);
         run.Thing.SetInputs(0xC3);
         run.For(0.05);
