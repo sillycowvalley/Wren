@@ -5,11 +5,11 @@
   To render the PNG in Edge or Chrome:
     1. Open this file in the browser.
     2. Press F12 for DevTools, then Ctrl+Shift+M for the device toolbar.
-    3. Choose Responsive and set the size to 1920 x 1358.
+    3. Choose Responsive and set the size to 1920 x 1460.
     4. In the toolbar's menu (the three dots) add "device pixel ratio" if it is hidden,
        and set it to 2.
     5. In the same menu choose "Capture screenshot".
-    6. The result is 3840 x 2716. Save it over Wren_BASIC_Quick_Reference.png.
+    6. The result is 3840 x 2920. Save it over Wren_BASIC_Quick_Reference.png.
 
   Fonts: "Liberation Sans" and "DejaVu Sans Mono". If they are not installed the browser
   falls back to Arial and Consolas, which are close but may move a line or two.
@@ -34,7 +34,7 @@
     --kw: #a23b00;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { width: 1920px; height: 1358px; overflow: hidden; }
+  html, body { width: 1920px; height: 1460px; overflow: hidden; }
   body {
     background: var(--page);
     color: var(--ink);
@@ -143,6 +143,22 @@
     font-size: 12.5px;
   }
 
+  /* Which Thing a word or panel belongs to; everything unmarked works on both */
+  .only {
+    display: inline-block;
+    border-radius: 3px;
+    padding: 0 5px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    color: #fff;
+    vertical-align: 1px;
+    text-transform: none;
+  }
+  .oled { background: #2f6db5; }
+  .led { background: #c2412d; }
+  .panel h2 .only { margin-left: 8px; letter-spacing: 0.5px; }
+
   footer {
     background: var(--navy);
     color: #c9d3e8;
@@ -158,11 +174,13 @@
 <header>
   <div>
     <h1>Wren <span>BASIC</span> Quick Reference</h1>
-    <div class="sub">The language of the 8-bit OLED Thing: event handlers, 16-bit integers and a 64 x 32 screen</div>
+    <div class="sub">The language of the 8-bit OLED Thing and LED Thing: event handlers, 16-bit integers, a 64 x 32 screen or eight LEDs</div>
+    <div class="sub">Marked <span class="only oled">OLED</span> or <span class="only led">LED</span>: that Thing only; everything else works on both. <b>Board</b> chooses which a program is built for.</div>
   </div>
   <div class="chips">
     <span class="chip"><b>16-bit</b> signed integers</span>
     <span class="chip"><b>64 x 32</b> OLED, 4 fonts</span>
+    <span class="chip"><b>8</b> LEDs</span>
     <span class="chip"><b>3,456 B</b> program store</span>
     <span class="chip">keywords in any case</span>
   </div>
@@ -190,7 +208,7 @@
         <tr><th>Handler</th><th>Runs</th><th>VALUE</th></tr>
         <tr><td class="k"><code>ON START</code></td><td>Once, after reset</td><td>0</td></tr>
         <tr><td class="k"><code>ON CHANGE</code></td><td>b0-b7 differ from last time (checked every ms); once after START</td><td>b0-b7</td></tr>
-        <tr><td class="k"><code>ON PINS</code></td><td>Any of PA1-PA3, PD2, PD3 changes (debounced 20 ms); once after START</td><td>b0-b7</td></tr>
+        <tr><td class="k"><code>ON PINS</code></td><td>A mode pin changes (debounced 20 ms); once after START</td><td>b0-b7</td></tr>
         <tr><td class="k"><code>ON LATCH pin</code></td><td>An edge on the pin; b0-b7 read in the interrupt</td><td>b0-b7 at the edge</td></tr>
         <tr><td class="k"><code>ON PRESS pin</code></td><td>The pin goes low (debounced 20 ms)</td><td>b0-b7</td></tr>
         <tr><td class="k"><code>ON RELEASE pin</code></td><td>The pin goes high (debounced 20 ms)</td><td>b0-b7</td></tr>
@@ -198,7 +216,7 @@
       </table>
 <pre style="margin-top:6px"><span class="k">ON LATCH</span> pin [<span class="k">FALLING</span>|<span class="k">RISING</span>|<span class="k">BOTH</span>] [<span class="k">WHILE</span> pin <span class="k">LOW</span>|<span class="k">HIGH</span>]
 <span class="k">ON LATCH</span> PD3 <span class="k">RISING WHILE</span> PD2 <span class="k">LOW</span>   <span class="c">' clock and /WE</span></pre>
-      <p class="note">LATCH is falling-edge unless stated; the WHILE pin must be a different pin. Pins: PA1, PA2, PA3, PD2, PD3. Handlers run one at a time, to completion; events wait in a queue, and <code>LOST</code> counts any dropped.</p>
+      <p class="note">LATCH is falling-edge unless stated; the WHILE pin must be a different pin. Pins: <span class="only oled">OLED</span> PA1, PA2, PA3, PD2, PD3; <span class="only led">LED</span> M0, M1, M2. Handlers run one at a time, to completion; events wait in a queue, and <code>LOST</code> counts any dropped.</p>
     </div>
 
     <div class="panel">
@@ -269,7 +287,7 @@
     </div>
 
     <div class="panel">
-      <h2>Display statements</h2>
+      <h2>Display statements<span class="only oled">OLED</span></h2>
       <table>
         <tr><th>Statement</th><th>Does</th></tr>
         <tr><td class="k"><code>CLS</code></td><td>Clear the frame buffer</td></tr>
@@ -287,7 +305,7 @@
     </div>
 
     <div class="panel">
-      <h2>Text and numbers</h2>
+      <h2>Text and numbers<span class="only oled">OLED</span></h2>
       <table>
         <tr><th>Statement</th><th>Draws</th></tr>
         <tr><td class="k"><code>TEXT x, y, "text" [, font]</code></td><td>A string literal</td></tr>
@@ -300,10 +318,19 @@
       <p class="note" style="margin-top:4px">The font defaults to <code>NORMAL</code>; (x, y) is the top-left corner of the text.</p>
     </div>
 
-    <div class="panel" style="flex:1">
+    <div class="panel">
       <h2>On a real Thing</h2>
-      <p><b>Tools &rarr; Firmware&hellip;</b>, <b>Connect</b>, <b>Install kernel</b> once: it installs the board's kernel. Then <b>Debug &rarr; Target &rarr; Thing on the programmer</b>: <b>F5</b> debugs there (two breakpoints), <b>Ctrl+F5</b> runs; uploads only when changed.</p>
-      <p><b>LED Thing</b> (<b>Board &rarr; LED Thing</b>): <code>LEDS v</code> lights bn's LED for each bit n; mode pins <code>M0</code> PA3, <code>M1</code> PA2, <code>M2</code> PA1; no display, fonts or <code>ANALOG</code>. A fault lights b7, n in b0-b6.</p>
+      <p><b>Tools &rarr; Firmware&hellip;</b>, <b>Install kernel</b> once. Then <b>Debug &rarr; Target &rarr; Thing on the programmer</b>: <b>F5</b> debugs there (two breakpoints), <b>Ctrl+F5</b> runs.</p>
+    </div>
+
+    <div class="panel" style="flex:1">
+      <h2>Limits</h2>
+      <table>
+        <tr><td class="k">Program</td><td>54 blocks of 64 B = 3,456 B (the store in flash)</td></tr>
+        <tr><td class="k">Variables</td><td>256 B, shared with the block map (1 B per program block)</td></tr>
+        <tr><td class="k">Settings</td><td>12 EEPROM bytes, or 512 on a Thing with 640 B; <code>EEREAD</code> / <code>EEWRITE</code></td></tr>
+        <tr><td class="k">Timers</td><td>At most 4 <code>ON EVERY</code> handlers</td></tr>
+      </table>
     </div>
     </div>
 
@@ -317,21 +344,22 @@
         <tr><td class="k"><code>VALUE</code></td><td>The running event's value (see Events)</td></tr>
         <tr><td class="k"><code>INPUTS</code></td><td>b0-b7 now, as a byte</td></tr>
         <tr><td class="k"><code>PIN(p)</code></td><td>Pin p's level: 1 high, 0 low</td></tr>
-        <tr><td class="k"><code>ANALOG(p)</code></td><td><code>ANALOG(PD2)</code> or <code>ANALOG(PD3)</code>: 0-1023. Turns that pin's pull-up off: it is then an analog input, not a button</td></tr>
+        <tr><td class="k"><code>ANALOG(p)</code> <span class="only oled">OLED</span></td><td><code>ANALOG(PD2)</code> or <code>ANALOG(PD3)</code>: 0-1023. Turns that pin's pull-up off: it is then an analog input, not a button</td></tr>
         <tr><td class="k"><code>MILLIS</code></td><td>Milliseconds since reset; wraps every 65.5 s</td></tr>
         <tr><td class="k"><code>WAIT ms</code></td><td>Pause; events wait meanwhile</td></tr>
-        <tr><td class="k"><code>PULLUPS mask</code></td><td>Bit n pulls bn up (1) or lets it float (0); all up at start</td></tr>
+        <tr><td class="k"><code>LEDS v</code> <span class="only led">LED</span></td><td>Bit n of v lights bn's LED</td></tr>
+        <tr><td class="k"><code>PULLUPS mask</code></td><td>Bit n pulls bn up (1) or lets it float (0); all up at start. The LED Thing's b6 and b7 have none</td></tr>
         <tr><td class="k"><code>EEREAD(n)</code></td><td>Setting byte n, 0-11 (0-511 with 640 B of EEPROM)</td></tr>
         <tr><td class="k"><code>EEWRITE n, v</code></td><td>Store setting byte n; writes only when it changes</td></tr>
         <tr><td class="k"><code>RND(n)</code></td><td>Random number, 0 to n-1</td></tr>
         <tr><td class="k"><code>ABS(v)</code>, <code>MIN(a, b)</code>, <code>MAX(a, b)</code></td><td>The usual</td></tr>
         <tr><td class="k"><code>LOST</code></td><td>Events lost because the queue was full</td></tr>
       </table>
-      <p class="note" style="margin-top:4px">Constants: <code>TRUE</code> -1, <code>FALSE</code> 0, <code>ON</code> 1, <code>OFF</code> 0; pins <code>PA1 PA2 PA3 PD2 PD3</code>; fonts <code>SMALL NORMAL LARGE BIG</code>.</p>
+      <p class="note" style="margin-top:4px">Constants: <code>TRUE</code> -1, <code>FALSE</code> 0, <code>ON</code> 1, <code>OFF</code> 0; pins <span class="only oled">OLED</span> <code>PA1 PA2 PA3 PD2 PD3</code>, <span class="only led">LED</span> <code>M0 M1 M2</code>; fonts <span class="only oled">OLED</span> <code>SMALL NORMAL LARGE BIG</code>.</p>
     </div>
 
     <div class="panel">
-      <h2>The screen</h2>
+      <h2>The screen<span class="only oled">OLED</span></h2>
       <div class="two">
         <div>
           <p><b>64 x 32</b> pixels. x runs 0-63 left to right, y 0-31 top to bottom; (0, 0) is the top left. Drawing off the edge is clipped.</p>
@@ -350,7 +378,7 @@
     </div>
 
     <div class="panel">
-      <h2>OLED Thing pins</h2>
+      <h2>OLED Thing pins<span class="only oled">OLED</span></h2>
       <table>
         <tr><th>Signal</th><th>Pin</th><th>Notes</th></tr>
         <tr><td class="k">b0 b1 b2 b3 b4</td><td class="mono k">PC7 PC6 PC5 PC4 PC3</td><td rowspan="2">The input byte: <code>VALUE</code>, <code>INPUTS</code>. Pulled up at start: see <code>PULLUPS</code></td></tr>
@@ -364,15 +392,16 @@
     </div>
 
     <div class="panel">
-      <h2>Limits</h2>
+      <h2>LED Thing pins<span class="only led">LED</span></h2>
       <table>
-        <tr><td class="k">Program</td><td>54 blocks of 64 B = 3,456 B (the store in flash)</td></tr>
-        <tr><td class="k">Variables</td><td>256 B, shared with the block map (1 B per program block)</td></tr>
-        <tr><td class="k">Settings</td><td>12 EEPROM bytes, or 512 on a Thing with 640 B; <code>EEREAD</code> / <code>EEWRITE</code></td></tr>
-        <tr><td class="k">Timers</td><td>At most 4 <code>ON EVERY</code> handlers</td></tr>
+        <tr><th>Signal</th><th>Pin</th><th>Notes</th></tr>
+        <tr><td class="k">b0</td><td class="mono k">PD2</td><td rowspan="3">The input byte. b0-b5 pulled up at start; b6 and b7 have no pull-up</td></tr>
+        <tr><td class="k">b1 b2 b3 b4 b5</td><td class="mono k">PC7 PC6 PC5 PC4 PC3</td></tr>
+        <tr><td class="k">b6 b7</td><td class="mono k">PB4 PB5</td></tr>
+        <tr><td class="k"><code>M0</code> <code>M1</code> <code>M2</code></td><td class="mono k">PA3 PA2 PA1</td><td>Mode pins, pulled up: as the OLED Thing's</td></tr>
+        <tr><td class="k">LEDs</td><td class="mono k">PD3-PD6</td><td>Charlieplexed, scanned by the kernel: <code>LEDS</code> sets them</td></tr>
       </table>
     </div>
-
     <div class="panel" style="flex:1">
       <h2>Faults: ERR n</h2>
       <table>
@@ -381,13 +410,13 @@
         <tr><td>3</td><td>Call stack full</td><td>7</td><td>Jump outside the program</td></tr>
         <tr><td>4</td><td>Array index out of range</td><td></td><td></td></tr>
       </table>
-      <p class="note" style="margin-top:4px">A fault stops the program and shows <code>ERR n</code> and the program address on the OLED. The kernel keeps running, so a new program can always be uploaded.</p>
+      <p class="note" style="margin-top:4px">A fault stops the program and shows <code>ERR n</code> and the program address on the OLED; on the LED Thing it lights b7 with n in b0-b6. The kernel keeps running, so a new program can always be uploaded.</p>
     </div>
   </div>
 </main>
 
 <footer>
-  <span>Wren: a C# / .NET 8 development environment for the 8-bit OLED Thing and LED Thing</span>
+  <span>Wren: a C# / .NET 8 development environment for the 8-bit OLED Thing and the 8-bit LED Thing</span>
   <span>Details: docs/Design.md, docs/Bytecode.md, docs/OledThing.md, docs/LedThing.md</span>
 </footer>
 
