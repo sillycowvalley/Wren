@@ -1,5 +1,5 @@
 # Builds a Windows release of Wren: runs the tests, publishes Wren self-contained for 64-bit
-# Windows, zips it with the firmware, the programs and the reference sheets, and creates a
+# Windows, checks the built Wren.exe starts, zips it with the firmware, the programs and the reference sheets, and creates a
 # GitHub release with the zip. A version with a suffix (v0.1.0-beta.1) makes a pre-release.
 #
 # A release is made when new release notes, docs/Releases/<tag>.md, reach main: the release
@@ -79,6 +79,14 @@ jobs:
           Copy-Item docs/Infographics/*.png publish/docs/Infographics/
           Copy-Item README.md, LICENSE publish/
           Get-ChildItem publish -Filter *.pdb | Remove-Item
+
+      - name: Wren starts
+        if: steps.which.outputs.tag != ''
+        run: |
+          $p = Start-Process publish/Wren.exe -PassThru
+          Start-Sleep -Seconds 20
+          if ($p.HasExited) { Write-Error "Wren.exe exited with $($p.ExitCode)"; exit 1 }
+          Stop-Process -Id $p.Id -Force
 
       - name: Zip
         if: steps.which.outputs.tag != ''
