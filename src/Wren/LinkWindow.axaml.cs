@@ -371,6 +371,8 @@ public partial class LinkWindow : Window
         else Process.Start(new ProcessStartInfo(found) { UseShellExecute = true });
     }
 
+    private void OnClose(object? sender, RoutedEventArgs e) => Close();
+
     private void OnClearLog(object? sender, RoutedEventArgs e) => LogBox.Text = "";
 
     private async void OnCopyLog(object? sender, RoutedEventArgs e)

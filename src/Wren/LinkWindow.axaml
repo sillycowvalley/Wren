@@ -40,6 +40,8 @@
       </HeaderedContentControl>
       <TextBlock Name="StatusText" TextWrapping="Wrap" />
     </StackPanel>
+    <Button DockPanel.Dock="Bottom" HorizontalAlignment="Right" Content="Close" Click="OnClose" IsCancel="True"
+            MinWidth="75" Margin="0,8,0,0" ToolTip.Tip="Closes this window; a connected Thing is let go and runs" />
     <HeaderedContentControl Classes="group" Header="Log" Margin="0,8,0,0">
       <DockPanel>
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Margin="0,6,0,0">
