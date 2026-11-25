@@ -90,7 +90,9 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## The stopwatch, on the Thing
 
-*Debug → Target → Thing on the programmer, Ctrl+F5. Touch a wire from PD3 (J5 pin 4) to GND (J5 pin 1) to start, again to stop; PD2 (J5 pin 3) to zero it.*
+*In Wren: Debug → Target → Thing on the programmer, then Ctrl+F5 to upload and run.*
+
+*On the board, a jumper wire is the button: touch J5 pin 4 (PD3) to J5 pin 1 (GND) and take it away to start; again to stop. J5 pin 3 (PD2) to GND sets it back to 0.*
 
 > On the real board, a wire to ground is the button. And it's the same three hundred and forty-eight bytes, doing exactly what it did on screen.
 
