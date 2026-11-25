@@ -4,18 +4,18 @@ Wren is a public (MIT) C# / .NET 8 development environment for STM8S003F3-class
 microcontrollers, driven through an ST-LINK V2 or a Pico over SWIM. Its targets are the
 Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.md`.
 
-## About Michael
-- He has written C++ and C# for decades. Everything that lands on his machine is C#,
-  plus STM8 assembly for firmware, and one Arduino sketch for the Pico programmer
-  (`firmware/PicoLink`, using pico-swimlib's BSD SWIM code; also shipped as a .uf2).
-  pico-swimlib's own firmware is `firmware/pico-swimlib`, a prebuilt .uf2.
-  No Python, no JavaScript, no leading underscore in names.
-- He works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps written for
-  him are GUI steps, never command lines.
+## Working with the maintainer
+- Everything that lands in the repository is C#, plus STM8 assembly for firmware, and one
+  Arduino sketch for the Pico programmer (`firmware/PicoLink`, using pico-swimlib's BSD
+  SWIM code; also shipped as a .uf2). pico-swimlib's own firmware is
+  `firmware/pico-swimlib`, a prebuilt .uf2. No Python, no JavaScript, no leading
+  underscore in names.
+- The maintainer works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps
+  written for him are GUI steps, never command lines.
 - He reviews and merges everything into main. Never push to main.
 - Decisions of substance are his: ask with AskUserQuestion, recommendation first.
 - Documents state current truth and open issues, never a change log.
-- He is in Nelson, New Zealand (NZ time). "rt" means "Roger that".
+- "rt" means "Roger that".
 - Keep answers simple and direct.
 
 ## Public-repo rules
@@ -51,7 +51,7 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
   writing a video's script, slides or thumbnail.
 - Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
   rendered from, and the render steps are in that file's opening comment.
-- Michael works in Wren BASIC; the app never shows assembly or CPU registers.
+- The maintainer works in Wren BASIC; the app never shows assembly or CPU registers.
 
 ## Reference data in the tests
 - `tests/Wren.Asm.Tests/Data/Encodings.txt`: bytes from sdasstm8 (SDCC 4.2.0) for every
@@ -60,7 +60,7 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
 - `tests/Wren.Emu.Tests/Data/Flags.txt` and `Programs/CpuMix.expected`: results from
   ucsim 0.6.4 (`sstm8 -t STM8S103`). ucsim's Z flag after DIV/DIVW is inverted against
   PM0044; the tests skip that bit and Wren follows PM0044.
-- Regenerating needs `sdcc` and `sdcc-ucsim` in a Linux container; Michael never needs them.
+- Regenerating needs `sdcc` and `sdcc-ucsim` in a Linux container; the maintainer never needs them.
 
 ## Code rules
 - Avalonia UI for the app, in a Windows 7 look: the Simple theme with `src/Wren/Styles/Win7.axaml`
@@ -76,7 +76,7 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
   `IF expr` / `ELSE` / `ENDIF` (expr may be `a = b` or `a <> b`), predefined symbols
   (`Assembler.Defines`), and overlapping output is an error. Kernel opcodes $30 up are one contiguous table:
   add new opcodes at the end and keep `Op.cs`, `Vm.inc` and `docs/Bytecode.md` in step.
-- A cloud session cannot reach USB. Michael tests Wren.Link on Windows.
+- A cloud session cannot reach USB. The maintainer tests Wren.Link on Windows.
 - The Pico sketch is compile-checked in a session with the Pico SDK and
   `firmware/PicoLink/sdk` (which also builds its .uf2); the SDK and the ARM toolchain are
-  installed outside the clone. SWIM itself can only be tested on Michael's hardware.
+  installed outside the clone. SWIM itself can only be tested on the maintainer's hardware.
