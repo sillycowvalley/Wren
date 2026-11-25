@@ -85,6 +85,27 @@ public class AssemblerTests
     }
 
     [Fact]
+    public void IfElseEndifAssembleOneSideAndNest()
+    {
+        const string source = "    org $8000\nIF BOARD = 2\n    nop\n    IF 0\nskipped: ret\n    ELSE\n    rim\n    ENDIF\nELSE\n    sim\nled: ret\nENDIF\n    halt\n";
+        var led = Assemble("BOARD equ 2\n" + source);
+        Assert.Equal("9D 9A 8E", Hex(led));
+        Assert.False(led.Symbols.ContainsKey("skipped"));
+        Assert.False(led.Symbols.ContainsKey("led"));
+        var oled = Assemble("BOARD equ 1\n" + source);
+        Assert.Equal("9B 81 8E", Hex(oled));
+        Assert.True(oled.Symbols.ContainsKey("led"));
+    }
+
+    [Fact]
+    public void IfNeedsAKnownValueAndAnEndif()
+    {
+        Assert.False(new Assembler().Assemble("    if LATER\n    nop\n    endif\nLATER equ 1\n").Success);
+        Assert.False(new Assembler().Assemble("    if 1\n    nop\n").Success);
+        Assert.False(new Assembler().Assemble("    nop\n    endif\n").Success);
+    }
+
+    [Fact]
     public void RelaxOffKeepsLongForms()
     {
         var r = Assemble("    org $8000\nstart: nop\n    jp start\n");

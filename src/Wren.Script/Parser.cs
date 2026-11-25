@@ -11,7 +11,10 @@ public sealed class Parser
 
     private Parser(List<Token> tokens) => this.tokens = tokens;
 
-    public static ProgramSyntax Parse(string source) => new Parser(Lexer.Read(source)).ParseProgram();
+    public static ProgramSyntax Parse(string source, Board board = Board.OledThing) =>
+        new Parser(Lexer.Read(source)) { board = board }.ParseProgram();
+
+    private Board board = Board.OledThing;
 
     private Token Current => tokens[pos];
     private Token Next => tokens[Math.Min(pos + 1, tokens.Count - 1)];
@@ -186,12 +189,15 @@ public sealed class Parser
 
     private int ParsePin()
     {
-        if (Current.Kind == TokenKind.Name && Names.Pins.TryGetValue(Current.Text.ToUpperInvariant(), out int pin))
+        if (Current.Kind == TokenKind.Name && Names.PinsFor(board).TryGetValue(Current.Text.ToUpperInvariant(), out int pin))
         {
             pos++;
             return pin;
         }
-        throw Error($"Expected a pin (PA1, PA2, PA3, PD2 or PD3), found {Current}");
+        if (Current.Kind == TokenKind.Name && Names.NotOn(Current.Text, board) is string why) throw Error(why);
+        throw Error(board == Board.LedThing
+            ? $"Expected a pin (M0, M1 or M2), found {Current}"
+            : $"Expected a pin (PA1, PA2, PA3, PD2 or PD3), found {Current}");
     }
 
     // ---- Statements ----

@@ -30,6 +30,9 @@ public sealed class GpioPort : Peripheral
     /// <summary>Raised with (pin, newLevel) whenever a pin's level changes, from either side.</summary>
     public event Action<int, bool>? PinChanged;
 
+    /// <summary>Raised after every write to one of the port's registers (a board that watches how its pins are driven).</summary>
+    public event Action? Written;
+
     public byte Odr => odr;
     public byte Ddr => ddr;
     public byte Cr1 => cr1;
@@ -110,6 +113,7 @@ public sealed class GpioPort : Peripheral
             default: cr2 = value; break;
         }
         Update();
+        Written?.Invoke();
     }
 
     public override void Reset()

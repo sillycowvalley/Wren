@@ -40,6 +40,10 @@ public sealed class AssemblyResult
 ///             INCLUDE "file"                 insert another source file
 ///             RELAX [ON|OFF]                 from here on, JP and CALL to an address become
 ///                                            JRA and CALLR (2 bytes) where it is in reach
+///             IF expr / ELSE / ENDIF         assemble the lines up to ELSE (or ENDIF) only when
+///                                            expr is not 0, those after ELSE only when it is 0;
+///                                            expr may be a = b or a &lt;&gt; b, and must be defined
+///                                            above the IF. They nest.
 ///             END                            stop reading
 /// Addresses 0-$FF use the short form where one exists, unless a forward reference is involved.
 /// </summary>
@@ -47,6 +51,9 @@ public sealed class Assembler
 {
     /// <summary>Returns the text of an included file, or null when it cannot be found.</summary>
     public Func<string, string?>? IncludeResolver { get; set; }
+
+    /// <summary>Symbols defined before the first line, as if by EQU (such as the board a kernel is built for).</summary>
+    public Dictionary<string, long> Defines { get; } = new(StringComparer.Ordinal);
 
     private const int MaxPasses = 20;
 
@@ -120,9 +127,12 @@ public sealed class Assembler
     private Dictionary<string, long> RunPass(List<SourceLine> lines, Dictionary<string, long> previous, AssemblyResult? result)
     {
         bool final = result != null;
-        var symbols = new Dictionary<string, long>();
+        var symbols = new Dictionary<string, long>(Defines);
         long address = 0;
         bool relax = false;
+        // Conditional assembly: one entry per open IF, true while its lines are assembled.
+        var conditions = new Stack<(bool Active, bool Taken, bool SeenElse)>();
+        bool Active() => conditions.Count == 0 || conditions.Peek().Active;
 
         long? Lookup(string name)
         {
@@ -149,6 +159,41 @@ public sealed class Assembler
             {
                 var parsed = ParseLine(line.Text);
                 string? op = parsed.Op?.ToUpperInvariant().TrimStart('.');
+
+                if (op is "IF" or "ELSE" or "ENDIF")
+                {
+                    if (parsed.Label != null) throw new AsmException($"{op} cannot have a label");
+                    if (op == "IF")
+                    {
+                        bool outer = Active();
+                        long? value = null;
+                        string? error = null;
+                        if (outer)
+                        {
+                            try { value = Condition(parsed.Operands, name => symbols.TryGetValue(name, out long s) ? s : null); }
+                            catch (AsmException ex) { error = ex.Message; }
+                            error ??= value == null ? "IF needs a value known at this point" : null;
+                        }
+                        bool taken = outer && value is long v && v != 0;
+                        conditions.Push((taken, taken || !outer, false));   // pushed even on an error, so ENDIF still matches
+                        if (error != null) throw new AsmException(error);
+                    }
+                    else if (conditions.Count == 0) throw new AsmException($"{op} without IF");
+                    else if (op == "ELSE")
+                    {
+                        var c = conditions.Pop();
+                        if (c.SeenElse) throw new AsmException("A second ELSE for one IF");
+                        conditions.Push((!c.Taken, true, true));
+                    }
+                    else conditions.Pop();
+                    result?.Listing.Add(new ListingLine(line.File, line.Line, (int)lineAddress, produced, line.Text));
+                    continue;
+                }
+                if (!Active())
+                {
+                    result?.Listing.Add(new ListingLine(line.File, line.Line, (int)lineAddress, produced, "  ; (not assembled) " + line.Text.TrimStart()));
+                    continue;
+                }
 
                 if (op is "EQU" or "=")
                 {
@@ -238,11 +283,25 @@ public sealed class Assembler
             result?.Listing.Add(new ListingLine(line.File, line.Line, (int)lineAddress, produced, line.Text));
         }
 
+        if (conditions.Count > 0) result?.Errors.Add(new Diagnostic(lines.Count > 0 ? lines[^1].File : "", lines.Count > 0 ? lines[^1].Line : 0, "IF without ENDIF"));
         if (result != null)
         {
             foreach (var kv in symbols) result.Symbols[kv.Key] = kv.Value;
         }
         return symbols;
+    }
+
+    /// <summary>An IF's condition: expr, or a = b, or a &lt;&gt; b (1 when true, 0 when not); null when not known.</summary>
+    private static long? Condition(string text, Func<string, long?> lookup)
+    {
+        int ne = text.IndexOf("<>", StringComparison.Ordinal);
+        int eq = ne < 0 ? text.IndexOf('=') : -1;
+        if (ne < 0 && eq < 0) return Expression.Evaluate(text, lookup);
+        int at = ne >= 0 ? ne : eq;
+        long? left = Expression.Evaluate(text[..at], lookup);
+        long? right = Expression.Evaluate(text[(at + (ne >= 0 ? 2 : 1))..], lookup);
+        if (left == null || right == null) return null;
+        return (left == right) == (ne < 0) ? 1 : 0;
     }
 
     /// <summary>
@@ -309,7 +368,9 @@ public sealed class Assembler
             label = firstWord;
             pos = lead + wordEnd + 1;
         }
-        else if (startsInColumnOne && firstWord.Length > 0 && Expression.IsIdentifierStart(firstWord[0]))
+        else if (startsInColumnOne && firstWord.Length > 0 && Expression.IsIdentifierStart(firstWord[0])
+            && !firstWord.ToUpperInvariant().TrimStart('.').Equals("IF") && !firstWord.ToUpperInvariant().TrimStart('.').Equals("ELSE")
+            && !firstWord.ToUpperInvariant().TrimStart('.').Equals("ENDIF"))
         {
             label = firstWord;
             pos = lead + wordEnd;

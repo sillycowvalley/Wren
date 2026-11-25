@@ -8,6 +8,7 @@ public enum BoardChoice
 {
     Thing,
     DevelopmentBoard,
+    LedThing,
 }
 
 /// <summary>Where Start runs the program (Debug → Target).</summary>

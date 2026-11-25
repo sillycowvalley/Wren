@@ -28,7 +28,7 @@ public static class Op
         Invert = 0x5F, Contrast = 0x60, Inverse = 0x61, Text = 0x62, Hex = 0x63, Dec = 0x64, Bin = 0x65,
         Bits = 0x66, Bar = 0x67, Wait = 0x68, EeWrite = 0x69, Inputs = 0x6A, Pin = 0x6B, Analog = 0x6C,
         Millis = 0x6D, EeRead = 0x6E, Rnd = 0x6F, Abs = 0x70, Min = 0x71, Max = 0x72, Lost = 0x73, Flip = 0x74,
-        Pullups = 0x75;
+        Pullups = 0x75, Leds = 0x76;
 
     /// <summary>Event numbers in the handler table.</summary>
     public const int EventStart = 0, EventChange = 1, EventPins = 2, EventLatch = 3, EventPress = 8,

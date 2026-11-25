@@ -102,7 +102,7 @@ public class SessionTests
         Assert.Equal(4, s.CurrentLine);
         Assert.Equal(SessionStop.HandlerEnded, s.StepOver(0.5, s.CallDepth));
         Assert.Equal(SessionStop.TimeUp, s.Run(0.01));              // the caller runs on
-        s.Board.SetInputs(0x0F);                                    // the next CHANGE: no stop
+        s.SetInputs(0x0F);                                    // the next CHANGE: no stop
         Assert.Equal(SessionStop.TimeUp, s.Run(0.05));
         Assert.Equal("4", s.Globals().Single().Value);
 

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Wren.Emu;
@@ -23,7 +24,17 @@ public partial class MainWindow : Window
     private readonly Stopwatch clock = new();
     private readonly List<string> messages = new();
     private ToggleButton[] bits = Array.Empty<ToggleButton>();
-    private Kernel? kernel;
+    private Kernel? oledKernel, ledKernel;
+    private BoardChoice boardChoice = BoardChoice.Thing;
+
+    /// <summary>The kernel for the board chosen in the Board menu.</summary>
+    private Kernel? kernel => boardChoice == BoardChoice.LedThing ? ledKernel : oledKernel;
+
+    /// <summary>The board programs are built for.</summary>
+    private Board BuildBoard => boardChoice == BoardChoice.LedThing ? Board.LedThing : Board.OledThing;
+
+    /// <summary>LED brightness from the emulator's last run, b0 first.</summary>
+    private double[] ledLevels = new double[8];
     private ThingSession? session;
     private DeviceInfo chip = DeviceInfo.Stm8s003f3;
     private string? path;
@@ -140,22 +151,21 @@ public partial class MainWindow : Window
         Splitter.DragCompleted += (_, _) => sideWidth = SidePanel.ActualWidth;
         ThingTargetMenu.IsChecked = settings.Target == RunTarget.Thing;
         EmulatorTargetMenu.IsChecked = settings.Target == RunTarget.Emulator;
-        if (settings.Board == BoardChoice.DevelopmentBoard)
-        {
-            chip = DeviceInfo.Stm8s103f3;
-            DevBoardMenu.IsChecked = true;
-            ThingMenu.IsChecked = false;
-        }
+        boardChoice = settings.Board;
+        chip = boardChoice == BoardChoice.DevelopmentBoard ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
+        ThingMenu.IsChecked = boardChoice == BoardChoice.Thing;
+        DevBoardMenu.IsChecked = boardChoice == BoardChoice.DevelopmentBoard;
+        LedThingMenu.IsChecked = boardChoice == BoardChoice.LedThing;
 
         Pd2Button.PropertyChanged += (_, e) =>
         {
             if (e.Property == Button.IsPressedProperty && session != null)
-                session.Board.Pd2Low = Pd2Button.IsPressed || Pd2Pin.IsChecked == true;
+                if (session.Oled != null) session.Oled.Pd2Low = Pd2Button.IsPressed || Pd2Pin.IsChecked == true;
         };
         Pd3Button.PropertyChanged += (_, e) =>
         {
             if (e.Property == Button.IsPressedProperty && session != null)
-                session.Board.Pd3Low = Pd3Button.IsPressed || Pd3Pin.IsChecked == true;
+                if (session.Oled != null) session.Oled.Pd3Low = Pd3Button.IsPressed || Pd3Pin.IsChecked == true;
         };
 
         timer = new DispatcherTimer(TimeSpan.FromMilliseconds(15), DispatcherPriority.Background, OnTick);
@@ -165,7 +175,8 @@ public partial class MainWindow : Window
         {
             string? firmware = Kernel.FindFirmwareFolder(AppContext.BaseDirectory)
                 ?? throw new InvalidOperationException("The firmware folder was not found next to Wren.");
-            kernel = Kernel.Assemble(firmware);
+            oledKernel = Kernel.Assemble(firmware, Board.OledThing);
+            ledKernel = Kernel.Assemble(firmware, Board.LedThing);
             NewSession();
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException)
@@ -199,11 +210,18 @@ public partial class MainWindow : Window
     private void NewSession()
     {
         if (kernel == null) return;
-        byte inputs = session?.Board.Inputs ?? 0;
+        byte inputs = session?.Inputs ?? 0;
         session = new ThingSession(kernel, chip);
-        session.Board.SetInputs(inputs);
+        session.SetInputs(inputs);
         ApplyPins();
-        Oled.Oled = session.Board.Oled;
+        if (session.Oled != null) Oled.Oled = session.Oled.Oled;
+        ledLevels = new double[8];
+        bool led = session.Leds != null;
+        OledGroup.IsVisible = SpareGroup.IsVisible = AnalogGroup.IsVisible = !led;
+        LedGroup.IsVisible = led;
+        HexPin.Content = led ? "M2 (PA1)" : "HEX (PA1)";
+        BarPin.Content = led ? "M1 (PA2)" : "BAR (PA2)";
+        InvPin.Content = led ? "M0 (PA3)" : "INV (PA3)";
     }
 
     // ---- The program ----
@@ -411,7 +429,7 @@ public partial class MainWindow : Window
                 string.Join("\n", text.Replace("\r\n", "\n").Split('\n').Select((l, i) => $"  {i + 1,3}| {l}")));
         errorLine = 0;
         sourceLines = text.Replace("\r\n", "\n").Split('\n');
-        var program = Compiler.Compile(text);
+        var program = Compiler.Compile(text, BuildBoard);
         builtText = text;
         if (!program.Success)
         {
@@ -712,14 +730,14 @@ public partial class MainWindow : Window
     private void OnReset(object? sender, RoutedEventArgs e)
     {
         if (OnThingTarget || session?.Program == null || mode == Mode.Design) return;
-        session.Board.Reset();
+        session.Mcu.Reset();
         if (mode != Mode.RunningFree) SetMode(Mode.Debugging);
     }
 
     private void OnPowerCycle(object? sender, RoutedEventArgs e)
     {
         if (OnThingTarget || session?.Program == null || mode == Mode.Design) return;
-        session.Board.PowerOn();
+        session.PowerOn();
         ApplyPins();
         if (mode != Mode.RunningFree) SetMode(Mode.Debugging);
     }
@@ -779,6 +797,7 @@ public partial class MainWindow : Window
         }
 
         if (session.Fault != 0 && (running || stepping)) SetMode(Mode.Paused);
+        if (session.Leds != null && mode is Mode.Debugging or Mode.RunningFree or Mode.Stepping) ledLevels = session.Leds.TakeBrightness();
         UpdateView();
     }
 
@@ -786,13 +805,16 @@ public partial class MainWindow : Window
 
     private void OnBoardChanged(object? sender, RoutedEventArgs e)
     {
-        var chosen = DevBoardMenu.IsChecked ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
-        if (chosen == chip) return;
-        chip = chosen;
-        SavedSettings.Current.Board = chip == DeviceInfo.Stm8s103f3 ? BoardChoice.DevelopmentBoard : BoardChoice.Thing;
+        var chosen = LedThingMenu.IsChecked ? BoardChoice.LedThing : DevBoardMenu.IsChecked ? BoardChoice.DevelopmentBoard : BoardChoice.Thing;
+        if (chosen == boardChoice) return;
+        if (thing != null) ThingStop();
+        boardChoice = chosen;
+        chip = chosen == BoardChoice.DevelopmentBoard ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
+        SavedSettings.Current.Board = chosen;
         NewSession();
         SetMode(Mode.Design);
-        messages.Add($"Board: {(chip == DeviceInfo.Stm8s103f3 ? "the development board" : "the OLED Thing")}. Press F5 to run the program on it.");
+        built = null;                                  // build again, for this board
+        messages.Add($"Board: {chosen switch { BoardChoice.DevelopmentBoard => "the development board", BoardChoice.LedThing => "the LED Thing", _ => "the OLED Thing" }}. Press F5 to run the program on it.");
         UpdateView();
     }
 
@@ -803,7 +825,7 @@ public partial class MainWindow : Window
         {
             if (bits[i].IsChecked == true) value |= 1 << i;
         }
-        session?.Board.SetInputs((byte)value);
+        session?.SetInputs((byte)value);
         UpdateView();
     }
 
@@ -813,7 +835,7 @@ public partial class MainWindow : Window
         string text = (HexBox.Text ?? "").Trim().TrimStart('$');
         if (byte.TryParse(text, System.Globalization.NumberStyles.HexNumber, null, out byte value))
         {
-            session?.Board.SetInputs(value);
+            session?.SetInputs(value);
             UpdateView();
         }
     }
@@ -825,7 +847,14 @@ public partial class MainWindow : Window
     private void ApplyPins()
     {
         if (session == null) return;
-        var board = session.Board;
+        if (session.Leds is { } leds)
+        {
+            leds.M2Low = HexPin.IsChecked == true;
+            leds.M1Low = BarPin.IsChecked == true;
+            leds.M0Low = InvPin.IsChecked == true;
+            return;
+        }
+        var board = session.Oled!;
         board.HexLow = HexPin.IsChecked == true;
         board.BarLow = BarPin.IsChecked == true;
         board.InvLow = InvPin.IsChecked == true;
@@ -860,11 +889,12 @@ public partial class MainWindow : Window
     {
         if (messagesLogged > messages.Count) messagesLogged = 0;       // the list was cleared
         for (; messagesLogged < messages.Count; messagesLogged++) DiagnosticLog.Write($"Message: {messages[messagesLogged]}");
-        var board = session?.Board;
+        var board = session;
         if (board != null)
         {
             for (int i = 0; i < 8; i++) bits[i].IsChecked = (board.Inputs & (1 << i)) != 0;
             if (!HexBox.IsFocused) HexBox.Text = board.Inputs.ToString("X2");
+            if (board.Leds != null) ShowLeds();
         }
 
         int current = mode is not (Mode.Paused or Mode.Stepping) ? 0
@@ -889,7 +919,7 @@ public partial class MainWindow : Window
         string target = Target == RunTarget.Thing ? (thingBusy ? "Target: Thing (busy)" : "Target: Thing") : "Target: emulator";
         StatusText.Text = board == null ? "" :
             $"{state}   {target}" + (OutOfDate && (Editor.Text ?? "").Length > 0 ? "   Edited since the last build" : "") +
-            (mode == Mode.Design || OnThingTarget ? "" : $"   {board.Mcu.Seconds:F2} s since reset   OLED {(board.Oled.Lit ? "on" : "off")}");
+            (mode == Mode.Design || OnThingTarget ? "" : $"   {board.Mcu.Seconds:F2} s since reset" + (board.Oled is { } o ? $"   OLED {(o.Oled.Lit ? "on" : "off")}" : ""));
         if (BoardColumn.IsVisible == OnThingTarget)
         {
             BoardColumn.IsVisible = !OnThingTarget;           // the Thing's own OLED and pins show what it does
@@ -906,6 +936,18 @@ public partial class MainWindow : Window
         StepIntoMenu.IsEnabled = StepOverMenu.IsEnabled = StepOutMenu.IsEnabled = RunToCursorMenu.IsEnabled = !thingBusy && mode == Mode.Paused;
         ResetMenu.IsEnabled = PowerMenu.IsEnabled = emulator && mode != Mode.Design;
         Oled.Refresh();
+    }
+
+    /// <summary>The emulated LED Thing's LEDs: a scan lights each LED an eighth of the time, which is full brightness.</summary>
+    private void ShowLeds()
+    {
+        var shapes = new[] { Led0, Led1, Led2, Led3, Led4, Led5, Led6, Led7 };
+        bool running = mode is Mode.Debugging or Mode.RunningFree or Mode.Stepping or Mode.Paused;
+        for (int i = 0; i < 8; i++)
+        {
+            double level = running ? Math.Clamp(ledLevels[i] * 8, 0, 1) : 0;
+            shapes[i].Fill = new SolidColorBrush(Color.FromRgb((byte)(70 + 185 * level), (byte)(20 + 30 * level), (byte)(20 + 30 * level)));
+        }
     }
 
     private void UpdateSource(int current)

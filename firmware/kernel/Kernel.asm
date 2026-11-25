@@ -1,4 +1,6 @@
-; Wren kernel for the OLED Thing (STM8S003F3) and the STM8S103F3 development board.
+; Wren kernel for the OLED Thing (STM8S003F3), the STM8S103F3 development board wired the
+; same way, and the LED Thing. BOARD (1 the OLED Thing, 2 the LED Thing) is set by Wren as
+; it assembles the kernel; IF BOARD = BOARD_OLED ... ELSE ... ENDIF keep each board's parts.
 ;
 ; Start-up, loading the program (FAT in EEPROM), the event queue and its interrupts,
 ; and the dispatcher that runs event handlers on the VM. See docs/Design.md and
@@ -12,7 +14,8 @@
         relax                       ; JP and CALL become JRA and CALLR where the target is near
 
 KERNEL_VERSION  equ 2
-BOARD_OLED      equ 1           ; the board this kernel drives (the info block's board byte)
+BOARD_OLED      equ 1           ; the boards (the info block's board byte); BOARD is one of them
+BOARD_LED       equ 2
 
 ; ---- Memory ----
 
@@ -108,6 +111,7 @@ lsy         equ $72         ; 1
 lerr        equ $73         ; 2
 le2         equ $75         ; 2
 buf         equ $77         ; 7  number text
+leds        equ $7E         ; 1  LED Thing: the LEDs to light, b0-b7 (LEDS)
 QUEUE       equ $0340       ; 16 event queue: 8 entries of event, value (below the CPU stack)
 QUEUE_SIZE  equ 8
 latch_cfg   equ $0350       ; 5  LATCH settings per pin (0 = no handler), see docs/Bytecode.md
@@ -138,13 +142,18 @@ DEBOUNCE_MS equ 20
         int exti_a                  ; 3 port A
         int unused_irq              ; 4 port B
         int unused_irq              ; 5 port C
+        IF BOARD = BOARD_OLED
         int exti_d                  ; 6 port D (at the end)
+        ELSE
+        int unused_irq              ; 6 port D: b0 and the LEDs, no LATCH pins
+        ENDIF
 
 ; IRQs 7 to 22 are never enabled, and the CPU only reads the vector of an interrupt it
 ; takes, so their 64 bytes of vector space hold constant tables instead.
         org $8024
 bit_masks:  dc.b $01,$02,$04,$08,$10,$20,$40,$80
 
+        IF BOARD = BOARD_OLED
 oled_init_table:
         dc.b $AE                    ; display off
         dc.b $D5,$80                ; clock
@@ -168,12 +177,15 @@ oled_init_table:
 msg_err:    dc.b 0,0,1, 4,"ERR "
 msg_at:     dc.b 0,10,1, 3,"AT "
 msg_wren:   dc.b 20,4,2, 4,"Wren"
+        ENDIF
 
         org $8064
         int tim4_irq                ; 23 TIM4
 
 ; IRQs 24 to 29 are never enabled either: 24 more bytes.
+        IF BOARD = BOARD_OLED
 msg_noprog: dc.b 2,22,1, 10,"No program"
+        ENDIF
 
 ; ---- Option bytes ----
 ; UBC (OPT1) write-protects the kernel's 81 blocks, $8000-$943F, against firmware
@@ -204,6 +216,7 @@ clear_ram:
         ; left open read 1; on the mode and spare pins (PA1-PA3, PD2, PD3); and on PD1 (SWIM,
         ; its reset state). Padded to the 16 bytes this code always took, so that the code
         ; after it does not move and a kernel update rewrites only this flash block.
+        IF BOARD = BOARD_OLED
         mov PA_CR1,#$0E
         mov PC_CR1,#$F8
         mov PD_CR1,#$7E
@@ -211,6 +224,14 @@ clear_ram:
         nop
         nop
         nop
+        ELSE
+        ; LED Thing: pull-ups on b0 (PD2), b1-b5 (PC7-PC3), the mode pins (PA1-PA3) and PD1;
+        ; b6 and b7 (PB4, PB5) are true open-drain pins with no pull-up. The LEDs' pins,
+        ; PD3-PD6, float until the scan drives them.
+        mov PA_CR1,#$0E
+        mov PC_CR1,#$F8
+        mov PD_CR1,#$06
+        ENDIF
 
         ldw x,#$ACE1
         ldw rnd,x
@@ -219,9 +240,11 @@ clear_ram:
         ldw x,#CSTACK_TOP
         ldw csp,x
 
+        IF BOARD = BOARD_OLED
         call i2c_init
         call oled_init
         call gfx_cls
+        ENDIF
 
         call load_program
         jrc no_program
@@ -283,6 +306,7 @@ idle:
         jra idle
 
 no_program:
+        IF BOARD = BOARD_OLED
         call gfx_cls
         ldw x,#msg_wren
         call draw_message
@@ -290,7 +314,14 @@ no_program:
         call draw_message
         call oled_show
         jra idle
+        ELSE
+        mov leds,#$81               ; no program: the two end LEDs
+        call tim4_init              ; the tick scans the LEDs
+        rim
+        jra idle
+        ENDIF
 
+        IF BOARD = BOARD_OLED
 ; Draws the message record at X: x, y, font, then the counted text.
 draw_message:
         clr tx
@@ -303,6 +334,7 @@ draw_message:
         addw x,#3
         ldw tmp2,x
         jp kernel_text
+        ENDIF
 
 ; ---- Loading the program ----
 
@@ -632,6 +664,7 @@ queue_full:
 
 ; ---- Inputs ----
 
+        IF BOARD = BOARD_OLED
 ; A = b7..b0. b0-b4 are PC7-PC3, b5-b7 are PD6-PD4. Bits are rotated into a byte on
 ; the CPU stack, so interrupts can use this too.
 read_inputs:
@@ -670,6 +703,45 @@ read_pins:
         or a,(1,sp)
         addw sp,#1
         ret
+        ELSE
+; LED Thing: A = b7..b0. b0 is PD2, b1-b5 are PC7-PC3, b6 and b7 are PB4 and PB5. Bits
+; are rotated into a byte on the CPU stack, b0 first, so interrupts can use this too.
+read_inputs:
+        push a
+        ld a,PD_IDR
+        srl a
+        srl a
+        srl a                       ; PD2 = b0
+        rrc (1,sp)
+        ld a,PC_IDR
+        sll a                       ; PC7 = b1
+        rrc (1,sp)
+        sll a                       ; PC6 = b2
+        rrc (1,sp)
+        sll a                       ; PC5 = b3
+        rrc (1,sp)
+        sll a                       ; PC4 = b4
+        rrc (1,sp)
+        sll a                       ; PC3 = b5
+        rrc (1,sp)
+        ld a,PB_IDR
+        swap a
+        srl a                       ; PB4 = b6
+        rrc (1,sp)
+        srl a                       ; PB5 = b7
+        rrc (1,sp)
+        pop a
+        ret
+
+; A = PA1,PA2,PA3 as bits 0-2 (M2, M1, M0 on the LED Thing's silk). Bits 3 and 4, PD2 and
+; PD3 on the OLED Thing, are b0 and an LED here: they read as 1 and never change.
+read_pins:
+        ld a,PA_IDR
+        srl a
+        and a,#$07
+        or a,#$18
+        ret
+        ENDIF
 
 ; ---- Interrupts ----
 
@@ -684,6 +756,9 @@ tim4_init:
 tim4_irq:
         bres TIM4_SR,#0
         call isr_save
+        IF BOARD = BOARD_LED
+        call led_scan
+        ENDIF
         ldw x,millis
         incw x
         ldw millis,x
@@ -875,6 +950,11 @@ vm_error:
         ldw x,#CPU_STACK
         ldw sp,x
         rim
+        IF BOARD = BOARD_LED
+        or a,#$80                   ; b7 and the fault number in b0-b6
+        ld leds,a
+        jp idle
+        ELSE
         call gfx_cls
         ldw x,#msg_err
         call draw_message
@@ -891,12 +971,17 @@ vm_error:
         call text_hex
         call oled_show
         jp idle
+        ENDIF
 
 
         include "Vm.inc"
+        IF BOARD = BOARD_OLED
         include "Graphics.inc"
         include "Oled.inc"
         include "Fonts.inc"
+        ELSE
+        include "Leds.inc"
+        ENDIF
 
 ; ---- Kept at the end, so that the code before them did not move ----
 
@@ -907,6 +992,10 @@ vm_error:
 ; interrupts' level 3, so a LATCH never waits for it.
 setup_exti:
         mov ITC_SPR1+5,#$7F         ; TIM4 (IRQ 23: ITC_SPR6 bits 7:6) at level 1
+        IF BOARD = BOARD_LED
+        mov EXTI_CR1,#$03           ; both edges on port A; port D holds no LATCH pins
+        ret
+        ELSE
         mov EXTI_CR1,#$C3           ; both edges on ports A and D
         ldw x,#latch_cfg+3          ; PD2
         call solo_pin
@@ -942,6 +1031,7 @@ exti_d:
 exti_solo:
         call queue_event
         jp isr_restore
+        ENDIF
 
 ; queue_event's first call: turns interrupts off until queue_event returns (the tick,
 ; which the port interrupts can now interrupt, and they both add to the queue), and
@@ -970,7 +1060,7 @@ kernel_end:
         dc.b "WREN"                 ; +0
         dc.b 1                      ; +4  the info block's format
         dc.b KERNEL_VERSION         ; +5
-        dc.b BOARD_OLED             ; +6
+        dc.b BOARD                  ; +6
         dc.b FAT_FORMAT             ; +7
         dc.w STORE                  ; +8
         dc.b STORE_BLOCKS           ; +10
