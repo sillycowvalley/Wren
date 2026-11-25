@@ -2,45 +2,132 @@
   Wren's Windows 7 (Aero) look, on top of Avalonia's Simple theme: Segoe UI 9 pt, pale blue
   window and group boxes, blue-tinted glossy buttons that deepen under the mouse, a blue
   gradient menu bar and status bar, captioned group boxes, white views with a blue-grey border.
+  Every colour is a resource with a Light and a Dark value (View → Dark Mode switches the
+  application's theme variant), so the dark look is the same shapes in night colours.
 -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <Styles.Resources>
-    <LinearGradientBrush x:Key="Win7ButtonNormal" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#F6FAFE" />
-      <GradientStop Offset="0.5" Color="#E9F1FA" />
-      <GradientStop Offset="0.5" Color="#D9E6F5" />
-      <GradientStop Offset="1" Color="#C9DBF0" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="Win7ButtonHover" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#EAF6FD" />
-      <GradientStop Offset="0.5" Color="#D9F0FC" />
-      <GradientStop Offset="0.5" Color="#BEE6FD" />
-      <GradientStop Offset="1" Color="#A7D9F5" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="Win7ButtonPressed" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#E5F4FC" />
-      <GradientStop Offset="0.5" Color="#C4E5F6" />
-      <GradientStop Offset="0.5" Color="#98D1EF" />
-      <GradientStop Offset="1" Color="#68B3DB" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="Win7MenuBar" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#F7FAFE" />
-      <GradientStop Offset="1" Color="#D5E3F4" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="Win7MenuHover" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#F2F8FE" />
-      <GradientStop Offset="1" Color="#D6E8FC" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="Win7StatusBar" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#E8F0FA" />
-      <GradientStop Offset="1" Color="#CCDCF0" />
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="Win7Window" StartPoint="0%,0%" EndPoint="0%,100%">
-      <GradientStop Offset="0" Color="#EEF4FB" />
-      <GradientStop Offset="1" Color="#DCE8F6" />
-    </LinearGradientBrush>
+    <ResourceDictionary>
+    <ResourceDictionary.ThemeDictionaries>
+      <ResourceDictionary x:Key="Light">
+        <LinearGradientBrush x:Key="Win7ButtonNormal" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#F6FAFE" />
+          <GradientStop Offset="0.5" Color="#E9F1FA" />
+          <GradientStop Offset="0.5" Color="#D9E6F5" />
+          <GradientStop Offset="1" Color="#C9DBF0" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7ButtonHover" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#EAF6FD" />
+          <GradientStop Offset="0.5" Color="#D9F0FC" />
+          <GradientStop Offset="0.5" Color="#BEE6FD" />
+          <GradientStop Offset="1" Color="#A7D9F5" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7ButtonPressed" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#E5F4FC" />
+          <GradientStop Offset="0.5" Color="#C4E5F6" />
+          <GradientStop Offset="0.5" Color="#98D1EF" />
+          <GradientStop Offset="1" Color="#68B3DB" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7MenuBar" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#F7FAFE" />
+          <GradientStop Offset="1" Color="#D5E3F4" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7MenuHover" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#F2F8FE" />
+          <GradientStop Offset="1" Color="#D6E8FC" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7StatusBar" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#E8F0FA" />
+          <GradientStop Offset="1" Color="#CCDCF0" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7Window" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#EEF4FB" />
+          <GradientStop Offset="1" Color="#DCE8F6" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="Win7Text" Color="#000000" />
+        <SolidColorBrush x:Key="Win7Border" Color="#7A96BC" />
+        <SolidColorBrush x:Key="Win7BorderHover" Color="#3C7FB1" />
+        <SolidColorBrush x:Key="Win7BorderPressed" Color="#2C628B" />
+        <SolidColorBrush x:Key="Win7DisabledBack" Color="#EEF3F9" />
+        <SolidColorBrush x:Key="Win7DisabledBorder" Color="#B5C3D6" />
+        <SolidColorBrush x:Key="Win7DisabledText" Color="#8494A8" />
+        <SolidColorBrush x:Key="Win7Link" Color="#0066CC" />
+        <SolidColorBrush x:Key="Win7LinkHover" Color="#3399FF" />
+        <SolidColorBrush x:Key="Win7ViewBack" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="Win7ViewBorder" Color="#8EA5C5" />
+        <SolidColorBrush x:Key="Win7Focus" Color="#3399FF" />
+        <SolidColorBrush x:Key="Win7Line" Color="#A3BDE3" />
+        <SolidColorBrush x:Key="Win7MenuHoverBorder" Color="#A8D8EB" />
+        <SolidColorBrush x:Key="Win7PopupBack" Color="#F3F7FC" />
+        <SolidColorBrush x:Key="Win7GroupBack" Color="#E6EFF9" />
+        <SolidColorBrush x:Key="Win7GroupPanel" Color="#F2F7FD" />
+        <SolidColorBrush x:Key="Win7Caption" Color="#1E3287" />
+        <SolidColorBrush x:Key="Win7Track" Color="#E3ECF7" />
+        <SolidColorBrush x:Key="Win7Note" Color="#5A5A5A" />
+        <SolidColorBrush x:Key="Win7Warning" Color="#A0522D" />
+        <SolidColorBrush x:Key="Win7Margin" Color="#F3F7FC" />
+      </ResourceDictionary>
+      <ResourceDictionary x:Key="Dark">
+        <LinearGradientBrush x:Key="Win7ButtonNormal" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#46536A" />
+          <GradientStop Offset="0.5" Color="#3B475C" />
+          <GradientStop Offset="0.5" Color="#323D50" />
+          <GradientStop Offset="1" Color="#2B3546" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7ButtonHover" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#4E6688" />
+          <GradientStop Offset="0.5" Color="#435A7B" />
+          <GradientStop Offset="0.5" Color="#384E6E" />
+          <GradientStop Offset="1" Color="#314563" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7ButtonPressed" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#2A3E5C" />
+          <GradientStop Offset="0.5" Color="#28405F" />
+          <GradientStop Offset="0.5" Color="#223854" />
+          <GradientStop Offset="1" Color="#1C3049" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7MenuBar" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#2E3747" />
+          <GradientStop Offset="1" Color="#232B38" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7MenuHover" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#3D5476" />
+          <GradientStop Offset="1" Color="#334868" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7StatusBar" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#262E3B" />
+          <GradientStop Offset="1" Color="#1F2631" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Win7Window" StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0" Color="#1E242E" />
+          <GradientStop Offset="1" Color="#181D25" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="Win7Text" Color="#E4E8EF" />
+        <SolidColorBrush x:Key="Win7Border" Color="#5E7392" />
+        <SolidColorBrush x:Key="Win7BorderHover" Color="#7FA7D8" />
+        <SolidColorBrush x:Key="Win7BorderPressed" Color="#9BBCE6" />
+        <SolidColorBrush x:Key="Win7DisabledBack" Color="#262D38" />
+        <SolidColorBrush x:Key="Win7DisabledBorder" Color="#3B4555" />
+        <SolidColorBrush x:Key="Win7DisabledText" Color="#6E7A8C" />
+        <SolidColorBrush x:Key="Win7Link" Color="#6CB4FF" />
+        <SolidColorBrush x:Key="Win7LinkHover" Color="#9CCBFF" />
+        <SolidColorBrush x:Key="Win7ViewBack" Color="#14181F" />
+        <SolidColorBrush x:Key="Win7ViewBorder" Color="#46546A" />
+        <SolidColorBrush x:Key="Win7Focus" Color="#5AA8FF" />
+        <SolidColorBrush x:Key="Win7Line" Color="#3A475B" />
+        <SolidColorBrush x:Key="Win7MenuHoverBorder" Color="#5A7FB0" />
+        <SolidColorBrush x:Key="Win7PopupBack" Color="#232A35" />
+        <SolidColorBrush x:Key="Win7GroupBack" Color="#1C222B" />
+        <SolidColorBrush x:Key="Win7GroupPanel" Color="#1F2630" />
+        <SolidColorBrush x:Key="Win7Caption" Color="#8FB4FF" />
+        <SolidColorBrush x:Key="Win7Track" Color="#2A3340" />
+        <SolidColorBrush x:Key="Win7Note" Color="#9AA4B2" />
+        <SolidColorBrush x:Key="Win7Warning" Color="#E8A070" />
+        <SolidColorBrush x:Key="Win7Margin" Color="#1A1F27" />
+      </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
 
     <!-- Sliders: a grey gradient thumb on a thin grooved track (horizontal only) -->
     <ControlTheme x:Key="{x:Type Slider}" TargetType="Slider">
@@ -49,7 +136,7 @@
         <ControlTemplate>
           <Grid Name="grid">
             <Border Name="TrackBackground" Height="4" Margin="5,0" VerticalAlignment="Center"
-                    Background="#E3ECF7" BorderBrush="#A3BDE3" BorderThickness="1" />
+                    Background="{DynamicResource Win7Track}" BorderBrush="{DynamicResource Win7Line}" BorderThickness="1" />
             <Track Name="PART_Track" Orientation="Horizontal"
                    IsDirectionReversed="{TemplateBinding IsDirectionReversed}"
                    Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
@@ -71,7 +158,7 @@
               <Thumb Name="thumb" Width="11" Height="20">
                 <Thumb.Template>
                   <ControlTemplate>
-                    <Border Background="{StaticResource Win7ButtonNormal}" BorderBrush="#7A96BC"
+                    <Border Background="{DynamicResource Win7ButtonNormal}" BorderBrush="{DynamicResource Win7Border}"
                             BorderThickness="1" CornerRadius="2" />
                   </ControlTemplate>
                 </Thumb.Template>
@@ -81,40 +168,41 @@
         </ControlTemplate>
       </Setter>
     </ControlTheme>
+    </ResourceDictionary>
   </Styles.Resources>
 
   <!-- Windows and text -->
   <Style Selector="Window">
-    <Setter Property="Background" Value="{StaticResource Win7Window}" />
+    <Setter Property="Background" Value="{DynamicResource Win7Window}" />
     <Setter Property="FontFamily" Value="Segoe UI, Inter" />
     <Setter Property="FontSize" Value="12" />
-    <Setter Property="Foreground" Value="#000000" />
+    <Setter Property="Foreground" Value="{DynamicResource Win7Text}" />
   </Style>
 
   <!-- Buttons and toggle buttons -->
   <Style Selector="Button, ToggleButton">
-    <Setter Property="Background" Value="{StaticResource Win7ButtonNormal}" />
-    <Setter Property="BorderBrush" Value="#7A96BC" />
+    <Setter Property="Background" Value="{DynamicResource Win7ButtonNormal}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7Border}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="3" />
     <Setter Property="Padding" Value="10,3" />
     <Setter Property="MinHeight" Value="23" />
-    <Setter Property="Foreground" Value="#000000" />
+    <Setter Property="Foreground" Value="{DynamicResource Win7Text}" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
   <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource Win7ButtonHover}" />
-    <Setter Property="BorderBrush" Value="#3C7FB1" />
+    <Setter Property="Background" Value="{DynamicResource Win7ButtonHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7BorderHover}" />
   </Style>
   <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:checked /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource Win7ButtonPressed}" />
-    <Setter Property="BorderBrush" Value="#2C628B" />
+    <Setter Property="Background" Value="{DynamicResource Win7ButtonPressed}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7BorderPressed}" />
   </Style>
   <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
-    <Setter Property="Background" Value="#EEF3F9" />
-    <Setter Property="BorderBrush" Value="#B5C3D6" />
-    <Setter Property="Foreground" Value="#8494A8" />
+    <Setter Property="Background" Value="{DynamicResource Win7DisabledBack}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7DisabledBorder}" />
+    <Setter Property="Foreground" Value="{DynamicResource Win7DisabledText}" />
   </Style>
 
   <!-- A link: blue underlined text that opens something, as in a Windows 7 dialog -->
@@ -123,7 +211,7 @@
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="MinHeight" Value="0" />
-    <Setter Property="Foreground" Value="#0066CC" />
+    <Setter Property="Foreground" Value="{DynamicResource Win7Link}" />
     <Setter Property="Cursor" Value="Hand" />
   </Style>
   <Style Selector="Button.link /template/ ContentPresenter#PART_ContentPresenter, Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
@@ -134,36 +222,36 @@
     <Setter Property="TextDecorations" Value="Underline" />
   </Style>
   <Style Selector="Button.link:pointerover TextBlock">
-    <Setter Property="Foreground" Value="#3399FF" />
+    <Setter Property="Foreground" Value="{DynamicResource Win7LinkHover}" />
   </Style>
 
   <!-- Text boxes, lists and combo boxes: white with the sunken grey border -->
   <Style Selector="TextBox">
-    <Setter Property="Background" Value="#FFFFFF" />
-    <Setter Property="BorderBrush" Value="#8EA5C5" />
+    <Setter Property="Background" Value="{DynamicResource Win7ViewBack}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7ViewBorder}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="0" />
     <Setter Property="Padding" Value="3,2" />
   </Style>
   <Style Selector="TextBox:focus /template/ Border#border">
-    <Setter Property="BorderBrush" Value="#3399FF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7Focus}" />
   </Style>
   <Style Selector="ListBox">
-    <Setter Property="Background" Value="#FFFFFF" />
-    <Setter Property="BorderBrush" Value="#8EA5C5" />
+    <Setter Property="Background" Value="{DynamicResource Win7ViewBack}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7ViewBorder}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="ComboBox">
-    <Setter Property="Background" Value="{StaticResource Win7ButtonNormal}" />
-    <Setter Property="BorderBrush" Value="#7A96BC" />
+    <Setter Property="Background" Value="{DynamicResource Win7ButtonNormal}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7Border}" />
     <Setter Property="CornerRadius" Value="3" />
     <Setter Property="MinHeight" Value="23" />
   </Style>
 
   <!-- The menu bar and its menus -->
   <Style Selector="Menu">
-    <Setter Property="Background" Value="{StaticResource Win7MenuBar}" />
-    <Setter Property="BorderBrush" Value="#A3BDE3" />
+    <Setter Property="Background" Value="{DynamicResource Win7MenuBar}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7Line}" />
     <Setter Property="BorderThickness" Value="0,0,0,1" />
     <Setter Property="Padding" Value="2,1" />
   </Style>
@@ -171,29 +259,29 @@
     <Setter Property="Padding" Value="7,3" />
   </Style>
   <Style Selector="MenuItem:selected /template/ Border#root">
-    <Setter Property="Background" Value="{StaticResource Win7MenuHover}" />
-    <Setter Property="BorderBrush" Value="#A8D8EB" />
+    <Setter Property="Background" Value="{DynamicResource Win7MenuHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7MenuHoverBorder}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="2" />
   </Style>
   <Style Selector="MenuItem /template/ Popup > Border">
-    <Setter Property="Background" Value="#F3F7FC" />
-    <Setter Property="BorderBrush" Value="#8EA5C5" />
+    <Setter Property="Background" Value="{DynamicResource Win7PopupBack}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7ViewBorder}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <!-- A group box: a thin rounded border with its caption on the top edge -->
   <Style Selector="HeaderedContentControl.group">
-    <Setter Property="Background" Value="#E6EFF9" />
+    <Setter Property="Background" Value="{DynamicResource Win7GroupBack}" />
     <Setter Property="Margin" Value="0,0,0,6" />
     <Setter Property="Template">
       <ControlTemplate>
         <Grid RowDefinitions="Auto,*">
-          <Border Grid.Row="0" Grid.RowSpan="2" Margin="0,8,0,0" Background="#F2F7FD"
-                  BorderBrush="#A3BDE3" BorderThickness="1" CornerRadius="4" />
+          <Border Grid.Row="0" Grid.RowSpan="2" Margin="0,8,0,0" Background="{DynamicResource Win7GroupPanel}"
+                  BorderBrush="{DynamicResource Win7Line}" BorderThickness="1" CornerRadius="4" />
           <Border Grid.Row="0" Margin="7,0,0,0" Padding="3,0" HorizontalAlignment="Left"
                   Background="{TemplateBinding Background}">
-            <ContentPresenter Content="{TemplateBinding Header}" Foreground="#1E3287" />
+            <ContentPresenter Content="{TemplateBinding Header}" Foreground="{DynamicResource Win7Caption}" />
           </Border>
           <ContentPresenter Grid.Row="1" Margin="9,4,9,9" Content="{TemplateBinding Content}" />
         </Grid>
@@ -203,15 +291,15 @@
 
   <!-- A white view with the sunken border of a list or edit box -->
   <Style Selector="Border.view">
-    <Setter Property="Background" Value="#FFFFFF" />
-    <Setter Property="BorderBrush" Value="#8EA5C5" />
+    <Setter Property="Background" Value="{DynamicResource Win7ViewBack}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7ViewBorder}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
 
   <!-- The status bar -->
   <Style Selector="Border.statusbar">
-    <Setter Property="Background" Value="{StaticResource Win7StatusBar}" />
-    <Setter Property="BorderBrush" Value="#A3BDE3" />
+    <Setter Property="Background" Value="{DynamicResource Win7StatusBar}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Win7Line}" />
     <Setter Property="BorderThickness" Value="0,1,0,0" />
     <Setter Property="Padding" Value="6,3" />
   </Style>

@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Styling;
 using Avalonia.Threading;
 
 namespace Wren;
@@ -16,6 +17,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        RequestedThemeVariant = SavedSettings.Current.DarkMode ? ThemeVariant.Dark : ThemeVariant.Light;
         // A last line of defence for the programmer's port: a failure talking to it that a
         // handler missed is reported in the Messages pane (and the diagnostic log) rather than
         // ending the app.

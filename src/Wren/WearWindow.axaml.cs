@@ -65,9 +65,9 @@ public partial class WearWindow : Window
                     HorizontalAlignment = HorizontalAlignment.Center,
                     Children =
                     {
-                        new TextBlock { Text = $"Block {block}", FontSize = 10, HorizontalAlignment = HorizontalAlignment.Center },
-                        new TextBlock { Text = writes.ToString(), FontSize = 18, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center },
-                        new TextBlock { Text = $"${address:X4}", FontSize = 10, Opacity = 0.7, HorizontalAlignment = HorizontalAlignment.Center },
+                        new TextBlock { Text = $"Block {block}", FontSize = 10, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Center },
+                        new TextBlock { Text = writes.ToString(), FontSize = 18, Foreground = Brushes.Black, FontWeight = FontWeight.Bold, HorizontalAlignment = HorizontalAlignment.Center },
+                        new TextBlock { Text = $"${address:X4}", FontSize = 10, Foreground = Brushes.Black, Opacity = 0.7, HorizontalAlignment = HorizontalAlignment.Center },
                     },
                 },
             };
