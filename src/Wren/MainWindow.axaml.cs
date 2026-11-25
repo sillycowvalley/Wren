@@ -83,7 +83,7 @@ public partial class MainWindow : Window
     private readonly WindowLayout layout;
 
     /// <summary>The right-hand column, sized with the splitter.</summary>
-    private ColumnDefinition SidePanel => RightGrid.ColumnDefinitions[3];
+    private ColumnDefinition SidePanel => RightGrid.ColumnDefinitions[2];
 
     /// <summary>The right-hand column's width as last chosen with the splitter (or the default).</summary>
     private double sideWidth = 320;
@@ -94,8 +94,10 @@ public partial class MainWindow : Window
     /// </summary>
     private void FitSidePanel()
     {
-        double room = RightGrid.Bounds.Width - RightGrid.ColumnDefinitions[0].MinWidth
-            - RightGrid.ColumnDefinitions[1].ActualWidth - RightGrid.ColumnDefinitions[2].ActualWidth;
+        // The left column keeps room for the program (260) and, when it shows, the board.
+        var left = RightGrid.ColumnDefinitions[0];
+        left.MinWidth = 260 + (BoardColumn.IsVisible ? BoardColumn.DesiredSize.Width : 0);
+        double room = RightGrid.Bounds.Width - left.MinWidth - RightGrid.ColumnDefinitions[1].ActualWidth;
         double width = Math.Max(Math.Min(sideWidth, room), SidePanel.MinWidth);
         if (SidePanel.Width.Value != width) SidePanel.Width = new GridLength(width);
     }

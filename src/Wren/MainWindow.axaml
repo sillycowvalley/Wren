@@ -107,21 +107,13 @@
     <Grid Name="RightGrid" Margin="10,8,10,8">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*" MinWidth="260" />
-        <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="8" />
         <ColumnDefinition Width="320" MinWidth="220" MaxWidth="700" />
       </Grid.ColumnDefinitions>
-      <HeaderedContentControl Grid.Column="0" Classes="group" Header="Program (F9, or click left of a line number, for a breakpoint)">
-        <Border Classes="view">
-          <edit:TextEditor Name="Editor" ShowLineNumbers="True"
-                           FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="13"
-                           HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                           LineNumbersForeground="#2B91AF" Background="White" />
-        </Border>
-      </HeaderedContentControl>
-
+      <!-- Left: the program and, when the emulator is the target, its board beside it -->
+      <DockPanel Grid.Column="0">
       <!-- Middle: the emulator's board, shown only when the emulator is the target -->
-      <Border Name="BoardColumn" Grid.Column="1" Padding="10,0">
+      <Border Name="BoardColumn" DockPanel.Dock="Right" Padding="10,0,0,0">
         <ScrollViewer>
           <StackPanel Spacing="2">
             <HeaderedContentControl Name="LedGroup" Classes="group" Header="LEDs b7 – b0" IsVisible="False">
@@ -202,10 +194,20 @@
         </ScrollViewer>
       </Border>
 
-      <GridSplitter Name="Splitter" Grid.Column="2" ResizeDirection="Columns" Background="Transparent"
+      <HeaderedContentControl Classes="group" Header="Program (F9, or click left of a line number, for a breakpoint)">
+        <Border Classes="view">
+          <edit:TextEditor Name="Editor" ShowLineNumbers="True"
+                           FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="13"
+                           HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                           LineNumbersForeground="#2B91AF" Background="White" />
+        </Border>
+      </HeaderedContentControl>
+      </DockPanel>
+
+      <GridSplitter Name="Splitter" Grid.Column="1" ResizeDirection="Columns" Background="Transparent"
                     ToolTip.Tip="Drag to resize" />
 
-      <DockPanel Grid.Column="3">
+      <DockPanel Grid.Column="2">
         <StackPanel DockPanel.Dock="Top">
           <HeaderedContentControl Classes="group" Header="Now">
             <TextBlock Name="NowText" TextWrapping="Wrap" />
