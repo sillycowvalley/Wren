@@ -2,8 +2,13 @@
 ' any of four angles. No font is used: each digit is seven bars, and every bar is a
 ' rectangle drawn through Seg, which turns the upright picture to the angle. Turned 90 or
 ' 270 degrees the picture is 32 wide and 64 tall, so the digits are smaller there.
+'
+' Where the bars meet, a digit with a loop (0, 6, 8, 9, A, b, d) keeps the empty corners of
+' a real display; the others fill each corner where two or more of their bars meet, so 7
+' and F get square corners and 1 one unbroken bar.
 
 CONST ANGLE = 90                ' 0, 90, 180 or 270 degrees, clockwise
+CONST LOOPS = $2F41             ' bit n set: digit n has a loop (0, 6, 8, 9, A, b, d)
 
 DIM turn                        ' quarter turns clockwise: 0 to 3
 DIM shown                       ' the byte on screen
@@ -44,6 +49,21 @@ SUB Digit(n, x, y, w, h, t)
   IF bars AND 16 THEN Seg x, y + mid + t, t, h - mid - 2 * t            ' e: bottom left
   IF bars AND 32 THEN Seg x, y + t, t, mid - t                          ' f: top left
   IF bars AND 64 THEN Seg x + t, y + mid, w - 2 * t, t                  ' g: middle
+  IF ((LOOPS SHR n) AND 1) = 0 THEN
+    Corner bars, 33, x, y, t                  ' top left: a, f
+    Corner bars, 3, x + w - t, y, t           ' top right: a, b
+    Corner bars, 112, x, y + mid, t           ' middle left: f, e, g
+    Corner bars, 70, x + w - t, y + mid, t    ' middle right: b, c, g
+    Corner bars, 24, x, y + h - t, t          ' bottom left: e, d
+    Corner bars, 12, x + w - t, y + h - t, t  ' bottom right: c, d
+  END IF
+END SUB
+
+' Fills the t x t corner at (x, y) when two or more of the bars that meet there (mask) are lit.
+SUB Corner(bars, mask, x, y, t)
+  DIM lit
+  lit = bars AND mask
+  IF (lit AND (lit - 1)) <> 0 THEN Seg x, y, t, t
 END SUB
 
 ' The bars lit for hex digit n: bit 0 is a, the top, round to bit 6, g, the middle.
