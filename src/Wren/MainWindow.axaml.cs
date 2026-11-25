@@ -441,7 +441,7 @@ public partial class MainWindow : Window
     private void OnExit(object? sender, RoutedEventArgs e) => Close();
 
     /// <summary>
-    /// The menu shortcuts, Visual Studio's where it has them: Ctrl+Shift+B build; F5 start
+    /// The menu shortcuts, Visual Studio's where it has them: F7 build; F5 start
     /// debugging or continue, Ctrl+F5 start without debugging, Shift+F5 stop, Ctrl+Shift+F5
     /// restart, Ctrl+Alt+Break break all; F11 step into, F10 step over, Shift+F11 step out,
     /// Ctrl+F10 run to cursor, F9 toggle breakpoint; and the File menu's. Caught before the
@@ -453,7 +453,7 @@ public partial class MainWindow : Window
         const KeyModifiers None = KeyModifiers.None, Ctrl = KeyModifiers.Control, Shift = KeyModifiers.Shift;
         switch (e.Key)
         {
-            case Key.B when m == (Ctrl | Shift): OnBuild(sender, e); break;
+            case Key.F7 when m == None: OnBuild(sender, e); break;
             case Key.F5 when m == None: OnStartDebugging(sender, e); break;
             case Key.F5 when m == Ctrl: OnStartWithoutDebugging(sender, e); break;
             case Key.F5 when m == Shift: OnStop(sender, e); break;
@@ -516,6 +516,7 @@ public partial class MainWindow : Window
         linkWindow = new LinkWindow(kernel);
         linkWindow.Closed += (_, _) => linkWindow = null;
         linkWindow.Show(this);
+        TellProgrammerWindow();
     }
 
     private void OnDebugChecks(object? sender, RoutedEventArgs e)
@@ -636,17 +637,12 @@ public partial class MainWindow : Window
         BeginStep(StepKind.ToCursor);
     }
 
-    /// <summary>
-    /// A step from a pause; from Design (not started) it starts the program and stops at its
-    /// first statement, as F10 and F11 do in Visual Studio (Run To Cursor runs to the line).
-    /// </summary>
+    /// <summary>A step (or Run To Cursor) from a pause: the stepping commands work only while the program is paused.</summary>
     private void BeginStep(StepKind kind)
     {
+        if (mode != Mode.Paused || thingBusy) return;
         if (OnThingTarget)
         {
-            if (mode == Mode.Design && kind != StepKind.Out)
-                ThingStart(debug: true, stopAtFirst: kind != StepKind.ToCursor, runTo: kind == StepKind.ToCursor ? stepLine : 0);
-            else if (mode == Mode.Paused)
             {
                 SetMode(Mode.Stepping);
                 int line = stepLine;
@@ -662,18 +658,8 @@ public partial class MainWindow : Window
             return;
         }
         if (session == null) return;
-        if (mode == Mode.Design)
-        {
-            if (kind == StepKind.Out || !StartEmulator()) { UpdateView(); return; }
-            stepKind = kind == StepKind.ToCursor ? StepKind.ToCursor : StepKind.Into;
-            stepDepth = 0;
-        }
-        else if (mode == Mode.Paused)
-        {
-            stepKind = kind;
-            stepDepth = session.CallDepth;
-        }
-        else return;
+        stepKind = kind;
+        stepDepth = session.CallDepth;
         SetMode(Mode.Stepping);
         UpdateView();
     }
@@ -865,8 +851,7 @@ public partial class MainWindow : Window
         StopMenu.IsEnabled = mode != Mode.Design;
         RestartMenu.IsEnabled = mode != Mode.Design;
         BreakMenu.IsEnabled = mode is Mode.Debugging or Mode.Stepping;
-        StepIntoMenu.IsEnabled = StepOverMenu.IsEnabled = RunToCursorMenu.IsEnabled = !thingBusy && mode is Mode.Design or Mode.Paused;
-        StepOutMenu.IsEnabled = !thingBusy && mode == Mode.Paused;
+        StepIntoMenu.IsEnabled = StepOverMenu.IsEnabled = StepOutMenu.IsEnabled = RunToCursorMenu.IsEnabled = !thingBusy && mode == Mode.Paused;
         ResetMenu.IsEnabled = PowerMenu.IsEnabled = emulator && mode != Mode.Design;
         Oled.Refresh();
     }
@@ -889,8 +874,8 @@ public partial class MainWindow : Window
         if (session == null) return "";
         if (mode == Mode.Design)
             return errorLine > 0 ? "The program has errors: see Messages." :
-                OnThingTarget ? (thingBusy ? "Talking to the Thing…" : "Not running on the Thing. F5 runs it there with the debugger, F10 or F11 stops at the first statement, Ctrl+F5 runs it without.") :
-                "Not running. F5 starts debugging, F10 or F11 starts and stops at the first statement, Ctrl+F5 runs without debugging.";
+                OnThingTarget ? (thingBusy ? "Talking to the Thing…" : "Not running on the Thing. F5 runs it there with the debugger (set breakpoints with F9), Ctrl+F5 runs it without.") :
+                "Not running. F5 starts debugging (set breakpoints with F9), Ctrl+F5 runs without debugging.";
         if (OnThingTarget) return ThingNow(current);
         if (session.Program == null) return "No program.";
         int fault = session.Fault;

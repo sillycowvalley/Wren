@@ -99,6 +99,7 @@ public partial class MainWindow
         var d = thing;
         thing = null;
         thingView = null;
+        TellProgrammerWindow();
         if (d != null) Task.Run(() =>
         {
             try { d.Dispose(); }
@@ -106,6 +107,13 @@ public partial class MainWindow
         });
         SetMode(Mode.Design);
     }
+
+    /// <summary>Tells the Programmer window whether this window holds the Thing.</summary>
+    private void TellProgrammerWindow() => linkWindow?.HeldByMainWindow(thing != null, () =>
+    {
+        ThingStop();
+        UpdateView();
+    });
 
     /// <summary>The window's mode follows the debugger's state after each call.</summary>
     private void FollowThing()
@@ -117,11 +125,11 @@ public partial class MainWindow
     }
 
     /// <summary>
-    /// F5, Ctrl+F5, F10, F11 or Ctrl+F10 from a stopped program: builds if needed, takes the
+    /// F5 or Ctrl+F5 from a stopped program: builds if needed, takes the
     /// programmer (from the Programmer window too), uploads the program only if the Thing holds
     /// something else, and starts it, under the debugger or on its own.
     /// </summary>
-    private void ThingStart(bool debug, bool stopAtFirst = false, int runTo = 0)
+    private void ThingStart(bool debug)
     {
         if (kernel == null || thing != null) return;
         if (!BuildIfNeeded()) return;
@@ -131,7 +139,7 @@ public partial class MainWindow
         var lines = session?.Breakpoints.ToList() ?? new List<int>();
         linkWindow?.ReleaseThing();
         messages.Add(debug ? "Starting the program on the Thing, with the debugger…" : "Starting the program on the Thing…");
-        SetMode(debug ? (stopAtFirst ? Mode.Stepping : Mode.Debugging) : Mode.Design);
+        SetMode(debug ? Mode.Debugging : Mode.Design);
         thingView = null;
         ThingQueue(() =>
         {
@@ -140,7 +148,7 @@ public partial class MainWindow
             {
                 d.Progress += Say;
                 d.Breakpoints.UnionWith(lines);
-                d.Start(program, debug, stopAtFirst, runTo);
+                d.Start(program, debug);
             }
             catch
             {
@@ -153,6 +161,7 @@ public partial class MainWindow
         }, d =>
         {
             thing = d;
+            TellProgrammerWindow();
             if (!debug) messages.Add("The Thing is running the program.");
             else WarnIfTooManyBreakpoints();
         });
@@ -178,6 +187,7 @@ public partial class MainWindow
         {
             messages.Add("Debugging stopped: the Thing runs the program on its own.");
             thingView = null;
+            TellProgrammerWindow();
             SetMode(Mode.Design);
             then?.Invoke();
         });

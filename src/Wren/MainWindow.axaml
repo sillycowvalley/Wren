@@ -49,7 +49,7 @@
         <MenuItem Header="Select _All" InputGesture="Ctrl+A" Click="OnSelectAll" />
       </MenuItem>
       <MenuItem Header="_Build">
-        <MenuItem Header="_Build" InputGesture="Ctrl+Shift+B" Click="OnBuild"
+        <MenuItem Header="_Build" InputGesture="F7" Click="OnBuild"
                   ToolTip.Tip="Compiles the program and lists any errors in Messages; runs nothing" />
       </MenuItem>
       <MenuItem Header="_Debug">

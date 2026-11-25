@@ -66,8 +66,8 @@ public partial class LinkWindow : Window
     {
         bool connected = link != null;
         bool open = connected && !link!.Target.NoAccess;
-        ConnectButton.IsEnabled = !connected && devices.Count > 0;
-        DisconnectButton.IsEnabled = connected;
+        ConnectButton.IsEnabled = !connected && !heldByMainWindow && devices.Count > 0;
+        DisconnectButton.IsEnabled = connected || heldByMainWindow;
         KernelButton.IsEnabled = open && kernel != null;
         FactoryButton.IsEnabled = connected;
         ImageButton.IsEnabled = open;
@@ -91,7 +91,8 @@ public partial class LinkWindow : Window
         {
             await Task.Run(action);
         }
-        catch (Exception ex) when (ex is LinkException or InvalidOperationException or ArgumentException or IOException)
+        catch (Exception ex) when (ex is LinkException or InvalidOperationException or ArgumentException or IOException
+            or UnauthorizedAccessException or TimeoutException)
         {
             Log($"Failed: {ex.Message}");
         }
@@ -190,7 +191,33 @@ public partial class LinkWindow : Window
         Dispatcher.UIThread.Post(() => StatusText.Text = text);
     }
 
-    private void OnDisconnect(object? sender, RoutedEventArgs e) => ReleaseThing();
+    private void OnDisconnect(object? sender, RoutedEventArgs e)
+    {
+        if (heldByMainWindow) releaseMainWindow?.Invoke();
+        else ReleaseThing();
+    }
+
+    private bool heldByMainWindow;
+
+    /// <summary>Asks the main window to stop debugging on the Thing, so this window can connect.</summary>
+    private Action? releaseMainWindow;
+
+    /// <summary>
+    /// The main window holds the programmer while it runs a program on the Thing with the
+    /// debugger: this window shows it connected there, and Disconnect stops that session.
+    /// </summary>
+    public void HeldByMainWindow(bool held, Action release)
+    {
+        releaseMainWindow = release;
+        if (held == heldByMainWindow) return;
+        heldByMainWindow = held;
+        string text = held
+            ? "Connected: the main window is running the program on the Thing with the debugger. Disconnect stops it there (the Thing runs on), so this window can connect."
+            : "The main window has let go of the Thing: Connect to set it up here.";
+        Log(text);
+        StatusText.Text = text;
+        UpdateButtons();
+    }
 
     /// <summary>
     /// Lets go of the Thing, leaving it running (connected, its CPU is stalled): Disconnect,

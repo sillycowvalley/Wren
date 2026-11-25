@@ -11,10 +11,10 @@ SWIM are ST's names, used here to describe compatibility.
 ## What is in it
 
 - **Wren**: the app. You edit a Wren BASIC program in it (File and Edit menus, Notepad
-  style) and build, run and debug it with Visual Studio's keys: Ctrl+Shift+B builds, F5
+  style) and build, run and debug it with Visual Studio's keys: F7 builds, F5
   starts debugging (building first if the program changed), Ctrl+F5 runs without
-  debugging, Shift+F5 stops, F9 toggles a breakpoint, F11, F10 and Shift+F11 step into,
-  over and out, Ctrl+F10 runs to the cursor. **Debug → Target** chooses where: the
+  debugging, Shift+F5 stops, F9 toggles a breakpoint, and while it is paused F11, F10
+  and Shift+F11 step into, over and out and Ctrl+F10 runs to the cursor. **Debug → Target** chooses where: the
   emulated OLED Thing (the OLED, the inputs and pins, the current line, variables and the
   flash write counts), or a real Thing on the programmer, where the same keys upload the
   program only if it changed, run it and debug it on the chip (two breakpoints at a time).
