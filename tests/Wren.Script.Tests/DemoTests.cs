@@ -180,4 +180,16 @@ public class DemoTests
         Press(low => run.Thing.Pd2Low = low);                // back to 0
         Assert.Equal(0, Time());
     }
+
+    [Fact]
+    public void TheVoltmeterShowsTheVoltageOnPd2()
+    {
+        foreach (var (level, mv) in new[] { (0, 0), (512, 1652), (767, 2474), (1023, 3300) })
+        {
+            var run = Run.Start(Program("OledThing", "Voltmeter.bas"), t => t.AnalogPd2 = level, seconds: 0.3);
+            Assert.Equal(0, run.VmFault);
+            Assert.Equal(level, run.Global("raw"));
+            Assert.Equal(mv, run.Global("mv"));
+        }
+    }
 }
