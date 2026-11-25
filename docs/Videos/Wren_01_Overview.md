@@ -150,4 +150,4 @@ And this is that Cylon eye, glowing on the real board.
 
 The link is in the description. If you have a Thing, give it a try. If you don't, the emulator runs every program you've seen.
 
-Next time, I'll write one from scratch. Thanks for watching.
+Next time: turning a Raspberry Pi Pico into the programmer, and wiring it to each Thing. Thanks for watching.
