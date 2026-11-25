@@ -68,6 +68,9 @@ public sealed class AppSettings
     /// <summary>The programmer last connected to, as the Firmware window names it.</summary>
     public string? LastProgrammer { get; set; }
 
+    /// <summary>View → Dark Mode: the dark version of the Windows 7 look.</summary>
+    public bool DarkMode { get; set; }
+
     /// <summary>Tools → Diagnostic log: each run writes its session to a file in DiagnosticLog.DefaultFolder.</summary>
     public bool DiagnosticLog { get; set; }
 

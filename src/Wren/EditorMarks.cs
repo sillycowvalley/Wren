@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using AvaloniaEdit.Editing;
@@ -13,7 +14,6 @@ namespace Wren;
 public sealed class BreakpointMargin : AbstractMargin
 {
     private static readonly IBrush Dot = new SolidColorBrush(Color.FromRgb(0xD0, 0x30, 0x30));
-    private static readonly IBrush Back = new SolidColorBrush(Color.FromRgb(0xF3, 0xF7, 0xFC));
 
     /// <summary>Whether a line (from 1) has a breakpoint.</summary>
     public Func<int, bool> HasBreakpoint { get; set; } = _ => false;
@@ -37,7 +37,10 @@ public sealed class BreakpointMargin : AbstractMargin
 
     public override void Render(DrawingContext context)
     {
-        context.FillRectangle(Back, new Rect(Bounds.Size));
+        // The theme's margin colour (Win7.axaml), so the margin follows View → Dark Mode.
+        var back = this.TryFindResource("Win7Margin", ActualThemeVariant, out var found) && found is IBrush brush
+            ? brush : Brushes.Transparent;
+        context.FillRectangle(back, new Rect(Bounds.Size));
         var view = TextView;
         if (view == null || !view.VisualLinesValid) return;
         foreach (var line in view.VisualLines)
