@@ -48,7 +48,8 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
   (`wren.ico`, `wren.png`, `wren-oled.png`).
 - `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
   `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` and `docs/LedThing.md`
-  (the two Digicool boards' pins).
+  (the two Digicool boards' pins), `docs/Touchstone.md` (the Touchstone-86 chip tester's
+  display code and `Touchstone.bas`).
 - `docs/How_We_Make_Videos.md` is how the project's YouTube videos are made: read it before
   writing a video's script, slides or thumbnail. The Wren BASIC series is in `docs/Videos`:
   its `README.md` sets the series' colours, mark and motif; each video is a script there and
