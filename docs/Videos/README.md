@@ -14,6 +14,7 @@ script and slides are left as they were recorded.
 | 5. A hundred writes (wear levelling) | [Wren_05_Wear.md](Wren_05_Wear.md) | `Infographics/Wren_05` | Script and slides ready; not yet recorded |
 | 6. A voltmeter in BASIC | [Wren_06_Voltmeter.md](Wren_06_Voltmeter.md) | `Infographics/Wren_06` | Script and slides ready, built round `programs/OledThing/Voltmeter.bas`; not yet recorded |
 | 7. Catch a byte on an edge (LATCH) | [Wren_07_Latch.md](Wren_07_Latch.md) | `Infographics/Wren_07` | Script and slides ready, built round `programs/OledThing/Latch.bas`; not yet recorded |
+| 8. A frequency counter in BASIC | [Wren_08_Frequency.md](Wren_08_Frequency.md) | `Infographics/Wren_08` | Script and slides ready, built round `programs/OledThing/Frequency.bas`; not yet recorded |
 
 ## The playlist, planned
 
@@ -30,6 +31,7 @@ dives after, for those who stay. Each headline leads with a name or a claim, nev
 | 5 | Wear levelling | Ready: above. The flash's ~100 writes: why an interpreter helps, an upload reusing the blocks that did not change, the program table (the FAT) in the tiny EEPROM, the Wear report. |
 | 6 | A voltmeter on the OLED Thing | Ready: above. The analog-to-digital converter on PD2: a variable resistor as a voltage divider, `ANALOG` giving 0 to 1023, turned into volts (0 to 3.3 V) with 16-bit integers, both shown; averaging to steady the last digit; a scrolling graph of the last 64 readings. Straight to the real knob, no emulator. |
 | 7 | Catch a byte on an edge | Ready: above. ON LATCH PD3 RISING: b0-b7 caught in the interrupt at the edge and held; ON CHANGE, ON PRESS and ON LATCH compared; a pushbutton's bounce, counted edge by edge; rising, falling, both and WHILE. |
+| 8 | A frequency counter | Ready: above. A slow 555 clock (about 3 to 50 Hz) on PD3, the Thing powered from the clock board's 5 V; a reciprocal counter (timestamped edges over 2 seconds, not a 1-second count); long division in 16-bit integers. |
 
 Open: whether to make a video on how the project was built with Claude.
 

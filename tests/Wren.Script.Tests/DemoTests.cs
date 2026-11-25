@@ -212,4 +212,27 @@ public class DemoTests
         Assert.Equal(0x5A, run.Global("captured"));          // held until the next edge
         Assert.Equal(0, run.VmFault);
     }
+
+    [Theory]
+    [InlineData(3.0, 30, 3333)]
+    [InlineData(4.7, 47, 2128)]
+    [InlineData(27.3, 273, 366)]
+    [InlineData(50.0, 500, 200)]
+    public void TheFrequencyCounterTimesAClockOnPd3(double hertz, int tenths, int periodTenths)
+    {
+        var run = Run.Start(Program("OledThing", "Frequency.bas"), seconds: 0.1);
+        double half = 0.5 / hertz;
+        for (int i = 0; i < (int)(5 * hertz) + 2; i++)
+        {
+            run.Thing.Pd3Low = true;
+            run.For(half);
+            run.Thing.Pd3Low = false;
+            run.For(half);
+        }
+        Assert.Equal(0, run.VmFault);
+        Assert.Equal(tenths, run.Global("tenths"));
+        Assert.InRange(run.Global("ptenths"), periodTenths - 1, periodTenths + 1);
+        run.For(3.5);                                          // the clock stops
+        Assert.Equal(0, run.Global("running"));
+    }
 }

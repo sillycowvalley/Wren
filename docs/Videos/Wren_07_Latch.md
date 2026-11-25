@@ -77,4 +77,4 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > The inputs at the instant of an edge, caught in the interrupt, held until the next one. In thirty-four bytes.
 
-> Thanks for watching.
+> Next time: a 555, and a frequency counter. Thanks for watching.
