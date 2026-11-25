@@ -18,7 +18,7 @@ dives after, for those who stay. Each headline leads with a name or a claim, nev
 |---|---|---|
 | 1 | The overview | Done: above. |
 | 2 | A Pi Pico as the programmer | Flashing the Pico's firmware (PicoLink or pico-swimlib), wiring it to each Thing, installing the kernel, putting the factory firmware back. The ST-LINK V2 is mentioned only once it has been tried on a Thing. |
-| 3 | Prototyping in the emulator | Writing, testing and debugging a program with no board at all: the inputs, mode pins and analog levels, breakpoints, stepping and variables. |
+| 3 | Prototyping in the emulator | Writing, testing and debugging a program with no board at all, with `Snake.bas` as the example: stepping into `Move` as it weighs each way on, watching `grid` and the body's ring fill up, catching it as it boxes itself in. Then the inputs, mode pins and analog levels the emulator can set. The overview only stops Snake at the food; this goes inside it. |
 | 4 | Wear levelling | The flash's ~100 writes: why an interpreter helps, an upload reusing the blocks that did not change, the program table (the FAT) in the tiny EEPROM, the Wear report. |
 | 5 | KNIGHT RIDER on the LED Thing | Eight LEDs charlieplexed on four pins, brightness from scan frames, `KnightRider.bas` and `Cylon.bas`. |
 | 6 | Analog inputs | `ANALOG` on PD2 and PD3: a knob or a light sensor, shown as a number, a bar and a history graph. |
