@@ -24,15 +24,16 @@ public partial class MainWindow
     private bool thingBusy => thingPending > 0;
 
     /// <summary>
-    /// How the window reaches the Thing: through the programmer used last. A headless check of
-    /// the window replaces it with one on the emulated Thing.
+    /// How the window reaches the Thing, all on its own: the programmer that worked last if it
+    /// is there, else the first one found that answers. A headless check of the window
+    /// replaces it with one on the emulated Thing.
     /// </summary>
     internal static Func<Kernel, string?, ThingDebugger> OpenThing = (k, last) =>
     {
-        var found = ThingLink.Find(out _);
-        int index = ThingLink.Preferred(found, last);
-        if (index < 0) throw new LinkException("no programmer found. Plug it in, or look for it in Tools → Programmer….");
-        return ThingDebugger.Open(found[index], k);
+        var d = ThingDebugger.Find(k, last, out var found);
+        string name = found.ToString()!;
+        Dispatcher.UIThread.Post(() => SavedSettings.Current.LastProgrammer = name);
+        return d;
     };
     private bool OnThingTarget => Target == RunTarget.Thing;
 
@@ -162,6 +163,7 @@ public partial class MainWindow
         {
             thing = d;
             TellProgrammerWindow();
+            if (SavedSettings.Current.LastProgrammer is string through) messages.Add($"Through {through}.");
             if (!debug) messages.Add("The Thing is running the program.");
             else WarnIfTooManyBreakpoints();
         });
@@ -180,8 +182,14 @@ public partial class MainWindow
         thing = null;
         ThingQueue(() =>
         {
-            d.Stop();
-            d.Dispose();
+            try
+            {
+                d.Stop();
+            }
+            finally
+            {
+                d.Dispose();                           // the port is closed whatever Stop met
+            }
             return null;
         }, _ =>
         {

@@ -76,9 +76,42 @@ public sealed class ThingDebugger : IDisposable
     /// Opens the programmer, connects to the Thing (its CPU stalled) and checks it runs this
     /// Wren's kernel: one whose info block says the current program store and an OLED Thing.
     /// </summary>
-    public static ThingDebugger Open(ProgrammerInfo programmer, Kernel kernel)
+    public static ThingDebugger Open(ProgrammerInfo programmer, Kernel kernel) => Attach(ThingLink.Open(programmer), kernel);
+
+    /// <summary>
+    /// Finds the programmer on its own: tries the one that worked last, then every other one
+    /// found (Raspberry Pi boards and ST-LINKs first), and uses the first that answers as a
+    /// programmer; ports that are something else are passed over. found says which it was.
+    /// </summary>
+    public static ThingDebugger Find(Kernel kernel, string? last, out ProgrammerInfo found)
     {
-        var link = ThingLink.Open(programmer);
+        var all = ThingLink.Find(out _);
+        int preferred = ThingLink.Preferred(all, last);
+        var order = preferred < 0 ? all.ToList() : all.Skip(preferred).Take(1).Concat(all.Where((_, i) => i != preferred)).ToList();
+        var tried = new List<string>();
+        foreach (var programmer in order)
+        {
+            ThingLink link;
+            try
+            {
+                link = ThingLink.Open(programmer);
+            }
+            catch (LinkException ex) when (!ex.Message.Contains("already open in Wren", StringComparison.Ordinal))
+            {
+                tried.Add(programmer.ToString()!);
+                continue;
+            }
+            found = programmer;
+            return Attach(link, kernel);
+        }
+        throw new LinkException(tried.Count == 0
+            ? "no programmer is plugged in (a Pico shows in Device Manager under Ports, an ST-LINK under Universal Serial Bus devices)."
+            : $"no programmer answered on {string.Join(", ", tried)}.");
+    }
+
+    /// <summary>Connects to the Thing through an open programmer and checks its kernel; closes the programmer if that fails.</summary>
+    private static ThingDebugger Attach(ThingLink link, Kernel kernel)
+    {
         try
         {
             link.Target.Connect();

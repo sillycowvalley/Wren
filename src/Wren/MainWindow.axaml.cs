@@ -114,9 +114,12 @@ public partial class MainWindow : Window
                 try
                 {
                     thing.Stop();
-                    thing.Dispose();
                 }
                 catch (Exception ex) when (Expected(ex)) { }
+                finally
+                {
+                    thing.Dispose();
+                }
                 thing = null;
             }
             settings.MainWindow = layout.Placement;
@@ -930,5 +933,28 @@ public partial class MainWindow : Window
         return program +
             $"Uploads to this emulated Thing: {uploads}. Most writes to one block: {counts.Max()} " +
             $"(rated {chip.FlashEndurance:N0}); fewest: {counts.Min()}.";
+    }
+
+    // ---- Copying the messages ----
+
+    private void OnCopyMessages(object? sender, RoutedEventArgs e) => CopyMessages(selectedOnly: true);
+    private void OnCopyAllMessages(object? sender, RoutedEventArgs e) => CopyMessages(selectedOnly: false);
+
+    private void OnMessagesKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.C && e.KeyModifiers == KeyModifiers.Control)
+        {
+            CopyMessages(selectedOnly: true);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>The selected messages (or, with none selected, all of them) to the clipboard, one a line.</summary>
+    private async void CopyMessages(bool selectedOnly)
+    {
+        var lines = selectedOnly && MessagesList.SelectedItems is { Count: > 0 } selected
+            ? messages.Where(m => selected.Contains(m)).ToList()
+            : messages.ToList();
+        if (Clipboard is { } clipboard) await clipboard.SetTextAsync(string.Join(Environment.NewLine, lines));
     }
 }

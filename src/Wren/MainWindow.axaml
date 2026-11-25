@@ -201,7 +201,13 @@
           </HeaderedContentControl>
         </StackPanel>
         <HeaderedContentControl Classes="group" Header="Messages">
-          <ListBox Name="MessagesList">
+          <ListBox Name="MessagesList" SelectionMode="Multiple" KeyDown="OnMessagesKeyDown">
+            <ListBox.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="_Copy" InputGesture="Ctrl+C" Click="OnCopyMessages" />
+                <MenuItem Header="Copy _All" Click="OnCopyAllMessages" />
+              </ContextMenu>
+            </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="x:String">
                 <TextBlock Text="{Binding}" TextWrapping="Wrap" />

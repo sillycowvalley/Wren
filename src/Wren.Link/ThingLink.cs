@@ -106,25 +106,21 @@ public sealed class ThingLink : IDisposable
                 return new ThingLink(WinUsbPipe.Open(usb));
             case SerialProgrammerInfo serial:
             {
-                // pico-swimlib's firmware answers the esp-stlink version request; anything
-                // else on the port is tried as Wren's own PicoLink sketch.
-                var port = SerialPorts.Open(serial.Port);
-                ITargetLink? opened = null;
+                lock (Held)
+                {
+                    if (Held.Contains(serial.Port))
+                        throw new LinkException($"{serial.Port} is already open in Wren: stop debugging in the main window (Shift+F5), or click Disconnect in the Programmer window.");
+                    Held.Add(serial.Port);
+                }
                 try
                 {
-                    if (EspStLink.TryOpen(port, out EspStLink? esp))
-                    {
-                        opened = esp;
-                        return new ThingLink(esp!, serial.Port);
-                    }
-                    var pico = PicoLink.Open(port, serial.Port);
-                    opened = pico;
-                    return new ThingLink(pico, serial.Port);
+                    var link = OpenSerial(serial);
+                    link.heldPort = serial.Port;
+                    return link;
                 }
                 catch
                 {
-                    if (opened != null) opened.Dispose();
-                    else port.Dispose();
+                    lock (Held) Held.Remove(serial.Port);
                     throw;
                 }
             }
@@ -133,5 +129,50 @@ public sealed class ThingLink : IDisposable
         }
     }
 
-    public void Dispose() => Link.Dispose();
+    /// <summary>The serial ports Wren holds open now, so a second open names Wren as the holder.</summary>
+    private static readonly HashSet<string> Held = new(StringComparer.OrdinalIgnoreCase);
+
+    private string? heldPort;
+
+    private static ThingLink OpenSerial(SerialProgrammerInfo serial)
+    {
+        // pico-swimlib's firmware answers the esp-stlink version request; anything else on the
+        // port is tried as Wren's own PicoLink sketch.
+        var port = SerialPorts.Open(serial.Port);
+        ITargetLink? opened = null;
+        try
+        {
+            if (EspStLink.TryOpen(port, out EspStLink? esp))
+            {
+                opened = esp;
+                return new ThingLink(esp!, serial.Port);
+            }
+            var pico = PicoLink.Open(port, serial.Port);
+            opened = pico;
+            return new ThingLink(pico, serial.Port);
+        }
+        catch
+        {
+            if (opened != null) opened.Dispose();
+            else port.Dispose();
+            throw;
+        }
+    }
+
+    private bool disposed;
+
+    /// <summary>Closes the programmer's port (once; later calls do nothing) and lets Wren open it again.</summary>
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        try
+        {
+            Link.Dispose();
+        }
+        finally
+        {
+            if (heldPort != null) lock (Held) Held.Remove(heldPort);
+        }
+    }
 }

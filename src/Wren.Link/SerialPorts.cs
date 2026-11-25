@@ -7,26 +7,38 @@ namespace Wren.Link;
 /// <summary>Serial ports, with the ones belonging to Raspberry Pi boards (USB vendor 2E8A) marked.</summary>
 public static class SerialPorts
 {
-    /// <summary>Opens a USB serial port the way the Pico boards want it (DTR on), with timeouts.</summary>
+    /// <summary>
+    /// Opens a USB serial port the way the Pico boards want it (DTR on), with timeouts. Windows
+    /// finishes closing a port after Close returns, so a port Wren has just closed can be refused
+    /// for a moment: it is tried again for up to two seconds.
+    /// </summary>
     public static SerialPort Open(string portName)
     {
-        var port = new SerialPort(portName, 115200)
+        for (int attempt = 0; ; attempt++)
         {
-            DtrEnable = true, // a Pico's USB serial sends nothing until the port is opened with DTR
-            RtsEnable = true,
-            ReadTimeout = 2000,
-            WriteTimeout = 2000,
-        };
-        try
-        {
-            port.Open();
-            port.DiscardInBuffer();
-            return port;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            port.Dispose();
-            throw new LinkException($"Cannot open {portName}: {ex.Message} (is the Arduino IDE's Serial Monitor or another program using it?)", ex);
+            var port = new SerialPort(portName, 115200)
+            {
+                DtrEnable = true, // a Pico's USB serial sends nothing until the port is opened with DTR
+                RtsEnable = true,
+                ReadTimeout = 2000,
+                WriteTimeout = 2000,
+            };
+            try
+            {
+                port.Open();
+                port.DiscardInBuffer();
+                return port;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                port.Dispose();
+                if (attempt < 20)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
+                throw new LinkException($"Cannot open {portName}: {ex.Message} (is the Arduino IDE's Serial Monitor or another program using it?)", ex);
+            }
         }
     }
 
