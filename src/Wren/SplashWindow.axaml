@@ -16,7 +16,7 @@
 
       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4" Margin="10,0,0,0">
         <TextBlock Text="Wren" FontSize="46" FontWeight="Bold" Foreground="#3E2410" />
-        <TextBlock Text="BASIC for the 8-bit OLED Thing" FontSize="15" Foreground="#6B4A2E" />
+        <TextBlock Text="BASIC for Digicool's 8-bit Things" FontSize="15" Foreground="#6B4A2E" />
 
         <Border Background="#1B2A4A" CornerRadius="4" Padding="6" Margin="0,16,0,0"
                 HorizontalAlignment="Left">

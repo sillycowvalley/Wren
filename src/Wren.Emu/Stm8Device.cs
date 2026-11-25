@@ -3,7 +3,7 @@ namespace Wren.Emu;
 /// <summary>The sizes that differ between parts of the family.</summary>
 public sealed record DeviceInfo(string Name, int FlashSize, int EepromSize, int RamSize, int FlashEndurance, int EepromEndurance)
 {
-    /// <summary>The OLED Thing's chip: 8 KB flash (100 writes), 128 B EEPROM (100k writes), 1 KB RAM.</summary>
+    /// <summary>The Things' chip: 8 KB flash (100 writes), 128 B EEPROM (100k writes), 1 KB RAM.</summary>
     public static readonly DeviceInfo Stm8s003f3 = new("STM8S003F3", 8192, 128, 1024, 100, 100_000);
 
     /// <summary>The development board's chip: 8 KB flash (10k writes), 640 B EEPROM (300k writes), 1 KB RAM.</summary>

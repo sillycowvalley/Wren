@@ -43,8 +43,8 @@ The breadboard cheatsheet: [Infographics/Pico_Programmer_Wiring.png](Infographic
 | 36 | 3V3(OUT) | the pull-up's other leg, **and** the Thing's VCC (top-right corner) |
 
 **The Thing runs at 3.3 V from the board.** RP2040 pins are not 5 V tolerant, so the Thing
-must not be powered from anything else while the board is connected. The OLED is fine at
-3.3 V.
+must not be powered from anything else while the board is connected. Both Things are fine
+at 3.3 V.
 
 ## Putting the firmware on the board
 

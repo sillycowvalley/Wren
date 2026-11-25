@@ -10,7 +10,7 @@ namespace Wren;
 /// <summary>A grid of the program store's 54 blocks and the writes the Thing has recorded for each.</summary>
 public partial class WearWindow : Window
 {
-    /// <summary>The rated program/erase cycles of an OLED Thing's (STM8S003) flash.</summary>
+    /// <summary>The rated program/erase cycles of a Thing's (STM8S003) flash.</summary>
     public const int RatedWrites = 100;
 
     public WearWindow() : this(new StoreWear(new int[ProgramStore.Blocks], Array.Empty<int>(), 0, 0)) { }

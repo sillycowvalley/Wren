@@ -12,7 +12,8 @@
     6. The result is 3840 x 2160. Save it over StLink_Programmer_Wiring.png.
 
   Fonts: "Liberation Sans" and "DejaVu Sans Mono", falling back to Arial and Consolas.
-  Facts: the Thing's J2 header and VCC from docs/OledThing.md and docs/LedThing.md; the
+  Facts: the OLED Thing's J2 header and VCC from docs/OledThing.md (the LED Thing's header,
+  with VDD, from docs/LedThing.md); the
   ST-LINK's pins are named as printed on the common ST-LINK V2 dongle's label, and on ST's
   own ST-LINK/V2 SWIM connector (UM1075).
 -->
@@ -92,7 +93,7 @@
       <rect x="790" y="330" width="160" height="80" rx="4" fill="#0b0f18" stroke="#555"/>
       <text x="870" y="377" text-anchor="middle" font-size="18" fill="#6aa0ff" letter-spacing="3">OLED</text>
       <text x="660" y="315" class="thing">The Thing</text>
-      <text x="660" y="640" class="thing2">J2 order from docs/OledThing.md, checked on the silk</text>
+      <text x="660" y="640" class="thing2">The OLED Thing's J2, from docs/OledThing.md</text>
       <circle cx="958" cy="305" r="11" fill="#d8b65a" stroke="#7a5d10" stroke-width="2"/>
       <text x="940" y="311" class="thpin" text-anchor="end">VCC</text>
       <rect x="652" y="440" width="34" height="140" fill="#111" rx="3"/>
@@ -132,6 +133,7 @@
         <tr><td><span class="sw" style="background:#2b2b2b"></span></td><td><b class="k">GND</b></td><td>J2 pin 1 <b>GND</b></td></tr>
         <tr><td><span class="sw" style="background:#e23a2e"></span></td><td><b class="k">3.3V</b> or <b class="k">5.0V</b></td><td><b>VCC</b> (top-right corner)</td></tr>
       </table>
+      <p style="margin-top:6px;color:#5a6275;font-size:15px">The drawing is the OLED Thing. The LED Thing's programming header also carries VDD: wire it by the names on its silk.</p>
     </div>
     <div class="card">
       <h2>Power</h2>

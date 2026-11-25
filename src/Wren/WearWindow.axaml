@@ -8,7 +8,7 @@
     <Button DockPanel.Dock="Bottom" HorizontalAlignment="Right" Content="Close" Click="OnClose" IsCancel="True" IsDefault="True"
             MinWidth="75" Margin="0,8,0,0" />
     <TextBlock DockPanel.Dock="Bottom" TextWrapping="Wrap" Opacity="0.8" Margin="0,8,0,0"
-               Text="Read from the Thing's own program table: each of the 54 store blocks ($9280-$9FFF) with the times it has been written. An OLED Thing's flash is rated for about 100 writes a block; uploads go to the least-written free blocks. Blocks with a heavy border hold the current program." />
+               Text="Read from the Thing's own program table: each of the 54 store blocks ($9280-$9FFF) with the times it has been written. A Thing's flash is rated for about 100 writes a block; uploads go to the least-written free blocks. Blocks with a heavy border hold the current program." />
     <HeaderedContentControl Classes="group" Header="Store blocks">
       <ScrollViewer>
         <UniformGrid Name="Cells" Columns="8" Margin="4" />

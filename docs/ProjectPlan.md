@@ -3,19 +3,20 @@
 **Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer, and programs are debugged on it from the main window. The LED Thing's kernel and `LedThing.bas` are built and tested in the emulator.**
 
 Wren is a C# / .NET 8 development environment for STM8S003F3-class microcontrollers.
-It is driven through an ST-LINK V2 over SWIM. The first target is the Digicool
-"8-bit OLED Thing" (STM8S003F3U, 64x32 SSD1315 OLED over I2C on PB4/PB5). Licence: MIT.
-The Thing's pins are in [OledThing.md](OledThing.md).
+It is driven through an ST-LINK V2 over SWIM. Its targets are Digicool's "8-bit OLED
+Thing" (STM8S003F3U, 64x32 SSD1315 OLED over I2C on PB4/PB5) and "8-bit LED Thing" (the
+same chip, eight charlieplexed LEDs). Licence: MIT. Their pins are in
+[OledThing.md](OledThing.md) and [LedThing.md](LedThing.md).
 
 ## Strategy: protect the Things' flash
 
 A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 
-1. **Emulator.** Both the MCU and the OLED are emulated in Wren. Rewrites are unlimited.
+1. **Emulator.** The MCU, the OLED and the LEDs are emulated in Wren. Rewrites are unlimited.
 2. **Development board.** An STM8S103F3 board with a real 0.49" 64x32 OLED module wired
    to it. The firmware keeps to the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM.
-3. **The OLED Thing.** Each Thing is flashed once with the finished firmware. After that,
-   changes go to its EEPROM only.
+3. **The Things.** Each Thing is flashed once with the finished kernel. After that,
+   programs go to its program store, reusing what it already holds.
 
 ## Hardware (ordered)
 
@@ -65,8 +66,9 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    scan, because the Thing's module is mounted rotated 180°. It also turns on pull-ups on
    b0–b7, so inputs left open read 1 (`PULLUPS` changes that). Programs reach a Thing over
    SWIM (Wren.Link). Install kernel first tells the board from its firmware or by asking
-   for the OLED on I2C, and refuses anything but an OLED Thing.
-4. **Wren BASIC (done).** The Thing's own behaviour is 502 bytes of BASIC.
+   for the OLED on I2C, and installs that board's kernel.
+4. **Wren BASIC (done).** The OLED Thing's own behaviour is 502 bytes of BASIC, the LED
+   Thing's 625.
 5. **Debugging on the Thing (built).** On **Debug → Target → Thing on the programmer** the
    main window runs and debugs a program on a real Thing with the same keys as the
    emulator, through the chip's debug module and no kernel code (`ThingDebugger`):

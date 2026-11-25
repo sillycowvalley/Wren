@@ -80,7 +80,7 @@ public sealed class ThingDebugger : IDisposable
 
     /// <summary>
     /// Opens the programmer, connects to the Thing (its CPU stalled) and checks it runs this
-    /// Wren's kernel: one whose info block says the current program store and an OLED Thing.
+    /// Wren's kernel: one whose info block says the current program store, for the kernel's board.
     /// </summary>
     public static ThingDebugger Open(ProgrammerInfo programmer, Kernel kernel) => Attach(ThingLink.Open(programmer), kernel);
 

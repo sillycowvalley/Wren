@@ -325,7 +325,7 @@ public partial class LinkWindow : Window
             imageToWrite = chosen;
             Log(link.Target.NoAccess
                 ? $"Writing {Path.GetFileName(chosen)} first removes read-out protection, which erases all the chip's flash and EEPROM, then writes the image, unprotected. Click again to go ahead."
-                : $"{Path.GetFileName(chosen)} will be written to the Thing's flash: only the blocks that differ, each costing one of an OLED Thing's ~100 flash writes. " +
+                : $"{Path.GetFileName(chosen)} will be written to the Thing's flash: only the blocks that differ, each costing one of a Thing's ~100 flash writes. " +
                   "The EEPROM is cleared (Wren's program table goes with Wren's kernel) and read-out protection stays off. Click again to go ahead.");
             UpdateButtons();
             return;
@@ -404,7 +404,7 @@ public partial class LinkWindow : Window
         {
             kernelConfirmed = true;
             Log("Installing the kernel writes the flash blocks that differ from what the Thing holds. " +
-                "On an OLED Thing each block is rated for about 100 writes. Click again to go ahead.");
+                "A Thing's flash is rated for about 100 writes a block. Click again to go ahead.");
             UpdateButtons();
             return;
         }

@@ -1,8 +1,8 @@
 # Wren: working rules
 
 Wren is a public (MIT) C# / .NET 8 development environment for STM8S003F3-class
-microcontrollers, driven through an ST-LINK V2 over SWIM. Its first target is the
-Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
+microcontrollers, driven through an ST-LINK V2 or a Pico over SWIM. Its targets are the
+Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.md`.
 
 ## About Michael
 - He has written C++ and C# for decades. Everything that lands on his machine is C#,

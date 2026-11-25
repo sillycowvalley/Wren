@@ -8,8 +8,9 @@ Thing holds **one program**; the EEPROM is used as below.
 
 ## The idea in one paragraph
 
-Each Thing gets a **kernel** once, over SWIM: the VM, the OLED driver, graphics, fonts,
-timers and the program loading. The kernel sits in the first part of flash, locked by the
+Each Thing gets a **kernel** once, over SWIM: the VM, timers, the program loading and its
+board's own parts (the OLED Thing's display driver, graphics and fonts; the LED Thing's
+LED scan). The kernel sits in the first part of flash, locked by the
 user boot code (UBC) option byte so nothing can erase it except a SWIM programmer.
 Programs are written in Wren BASIC, compiled by Wren on the PC, and uploaded into the
 rest of flash, the **program store**, as many times as needed. A **file allocation
@@ -112,7 +113,8 @@ address, so the table is rewritten with the program and its write counts in plac
 - Speed: about 100-200 thousand operations a second at 16 MHz, far more than a 64x32
   display needs.
 - Safety: stack depth, array indexes and jump targets are checked. A fault stops the
-  program and shows `ERR code @ address` on the OLED. The kernel itself keeps running,
+  program and shows `ERR code @ address` on the OLED (on the LED Thing, b7 lit with the
+  code in b0-b6). The kernel itself keeps running,
   so a new program can always be uploaded.
 
 Code density. BASIC lets one statement do a lot, and the bytecode is shaped so that it
