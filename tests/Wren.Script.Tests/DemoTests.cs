@@ -146,4 +146,28 @@ public class DemoTests
         var now = Pixels(run);
         Assert.Contains(Enumerable.Range(0, 64 * 32), i => now[i % 64, i / 64] != at0[i % 64, i / 64]);
     }
+
+    [Fact]
+    public void TheStopwatchKeepsTimeAndRemembersTheBest()
+    {
+        var run = Run.Start(Program("OledThing", "Stopwatch.bas"), seconds: 0.1);
+        void Press(Action<OledThing, bool> pin)
+        {
+            pin(run.Thing, true);
+            run.For(0.05);
+            pin(run.Thing, false);
+        }
+        int Time() => run.Global("seconds") * 100 + run.Global("hundredths");
+
+        Press((t, low) => t.HexLow = low);                   // start
+        run.For(3.0);
+        Press((t, low) => t.HexLow = low);                   // stop: 3.05 s since the start
+        Assert.Equal(0, run.VmFault);
+        Assert.InRange(Time(), 303, 307);
+        int best = (run.Mcu.Read(Run.Kernel.Symbol("SETTINGS")) << 8) | run.Mcu.Read(Run.Kernel.Symbol("SETTINGS") + 1);
+        Assert.Equal(Time(), best);
+
+        Press((t, low) => t.BarLow = low);                   // back to 0
+        Assert.Equal(0, Time());
+    }
 }
