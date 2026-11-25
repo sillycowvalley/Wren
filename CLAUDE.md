@@ -7,8 +7,7 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
 ## Working with the maintainer
 - Everything that lands in the repository is C#, plus STM8 assembly for firmware, and one
   Arduino sketch for the Pico programmer (`firmware/PicoLink`, using pico-swimlib's BSD
-  SWIM code; also shipped as a .uf2). pico-swimlib's own firmware is
-  `firmware/pico-swimlib`, a prebuilt .uf2. No Python, no JavaScript, no leading
+  SWIM code; also shipped as a .uf2). No Python, no JavaScript, no leading
   underscore in names.
 - The maintainer works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps
   written for him are GUI steps, never command lines.
@@ -28,15 +27,13 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
 - `src/Wren` (Avalonia app), `src/Wren.Asm`, `src/Wren.Emu`, `src/Wren.Script` (BASIC
   compiler, FAT, debugging session), `src/Wren.Link` (ST-LINK V2 over WinUSB or a Pico
   over serial, SWIM, kernel install and program upload); tests in `tests/`.
-  `tests/Wren.Link.Tests` has a simulated ST-LINK (`FakeStLink`), esp-stlink programmer
-  (`FakeEspStLink`, as pico-swimlib answers) and PicoLink sketch (`FakePico`) that answer
-  from the emulator.
+  `tests/Wren.Link.Tests` has a simulated ST-LINK (`FakeStLink`) and PicoLink sketch
+  (`FakePico`) that answer from the emulator.
 - Wren.Link's protocol comes from the open-source stm8flash and OpenOCD (both GPL): read
   them for the protocol, never copy their code into this MIT repository.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
   `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink` (Wren's Pico
-  programmer sketch and its .uf2) and `firmware/pico-swimlib` (pico-swimlib built
-  unchanged); both use the same wiring, `docs/PicoLink.md`.
+  programmer sketch and its .uf2; its wiring is in `docs/PicoLink.md`).
 - `programs/` holds Wren BASIC programs in a folder for each board (`programs/OledThing`,
   `programs/LedThing`); `OledThing.bas` and `LedThing.bas` in them are the two
   Things' own behaviour. The kernel builds for either board (`BOARD` in `Kernel.asm`; the

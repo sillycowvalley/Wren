@@ -6,8 +6,8 @@ namespace Wren.Link;
 /// <summary>
 /// A Raspberry Pi Pico, or a Pico-pinout RP2040 board such as the Waveshare RP2040 Plus,
 /// running Wren's sketch (<c>firmware/PicoLink</c>) on a USB serial port. The sketch times
-/// SWIM with the RP2040's PIO by pico-swimlib's method: SWIM on GP16, NRST on GP17, the same
-/// wiring as pico-swimlib's own firmware (<see cref="EspStLink"/>).
+/// SWIM with the RP2040's PIO by pico-swimlib's method: SWIM on GP16, NRST on GP17, as
+/// pico-swimlib wires it.
 /// The serial protocol is Wren's own; each request is a command byte and its arguments, and
 /// each reply is the command byte echoed, a status byte, then any data. After an error status
 /// come three zero bytes.
@@ -72,7 +72,7 @@ public sealed class PicoLink : ITargetLink
         catch (Exception ex) when (ex is TimeoutException or IOException or LinkException)
         {
             link.Dispose();
-            throw new LinkException($"{portName} did not answer as a programmer: neither pico-swimlib's firmware (firmware/pico-swimlib) nor Wren's PicoLink sketch. " + ex.Message, ex);
+            throw new LinkException($"{portName} did not answer as Wren's PicoLink sketch (firmware/PicoLink/PicoLink.uf2). " + ex.Message, ex);
         }
     }
 

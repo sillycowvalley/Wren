@@ -52,7 +52,7 @@ a suffix makes a pre-release. Pushing a version tag by hand makes one too.
   the app uses are in `src/Wren/Assets`.
 
 - **Wren.Link**: programming a real Thing through an ST-LINK V2 (Windows, WinUSB) or a
-  Raspberry Pi Pico or RP2040 Plus running pico-swimlib ([docs/PicoLink.md](docs/PicoLink.md)): install
+  Raspberry Pi Pico or RP2040 Plus running Wren's PicoLink sketch ([docs/PicoLink.md](docs/PicoLink.md)): install
   the kernel, upload programs through the FAT, read the wear history. Only blocks that
   change are written. In Wren: **Tools → Firmware…**.
 
@@ -126,6 +126,7 @@ target is in reach), `END`. Placing two things at the same address is an error.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). Two folders are others' work under their own terms:
-- `firmware/pico-swimlib`: Richard Hulme's pico-swimlib, BSD 3-Clause.
+MIT. See [LICENSE](LICENSE). Some files are others' work under their own terms:
+- `firmware/PicoLink`'s `swimlib.c`, `swim.h` and `swim.pio.h`: Richard Hulme's pico-swimlib,
+  BSD 3-Clause (`LICENSE-pico-swimlib.txt`).
 - `firmware/digicool`: Digicool Things' factory firmware, included with Digicool's permission.

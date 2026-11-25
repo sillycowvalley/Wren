@@ -28,16 +28,6 @@ public sealed class ThingLink : IDisposable
         Programmer = new ThingProgrammer(Target);
     }
 
-    /// <summary>Through an esp-stlink programmer, such as a Pico running pico-swimlib.</summary>
-    public ThingLink(EspStLink esp, string port)
-    {
-        esp.ReadVersion();
-        Link = esp;
-        About = new[] { $"esp-stlink programmer on {port} (pico-swimlib firmware {esp.FirmwareVersion}). SWIM at low speed on GP16, NRST on GP17; the Thing must run at 3.3 V." };
-        Target = new SwimTarget(Link);
-        Programmer = new ThingProgrammer(Target);
-    }
-
     /// <summary>Through a Pico running Wren's sketch.</summary>
     public ThingLink(PicoLink pico, string port)
     {
@@ -145,17 +135,11 @@ public sealed class ThingLink : IDisposable
 
     private static ThingLink OpenSerial(SerialProgrammerInfo serial)
     {
-        // pico-swimlib's firmware answers the esp-stlink version request; anything else on the
-        // port is tried as Wren's own PicoLink sketch.
+        // A serial port is tried as Wren's PicoLink sketch.
         var port = SerialPorts.Open(serial.Port);
         ITargetLink? opened = null;
         try
         {
-            if (EspStLink.TryOpen(port, out EspStLink? esp))
-            {
-                opened = esp;
-                return new ThingLink(esp!, serial.Port);
-            }
             var pico = PicoLink.Open(port, serial.Port);
             opened = pico;
             return new ThingLink(pico, serial.Port);

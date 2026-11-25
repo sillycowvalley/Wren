@@ -139,8 +139,6 @@ public partial class LinkWindow : Window
             {
                 foreach (string line in opened.About) Log(line);
                 opened.Target.Connect();
-                if (opened.Link is EspStLink esp)
-                    Log($"Sync pulse: {esp.SyncMicroseconds:F1} µs (16 is right).");
                 if (opened.Link is PicoLink pico)
                     Log($"Sync pulse: {pico.SyncMicroseconds:F1} µs (16 is right).");
                 Log($"SWIM connected; the Thing's program is stopped while it is connected. SWIM_CSR = ${opened.Target.ConnectedCsr:X2}" +
