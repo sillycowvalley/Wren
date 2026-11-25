@@ -68,6 +68,7 @@
         <SolidColorBrush x:Key="Win7Note" Color="#5A5A5A" />
         <SolidColorBrush x:Key="Win7Warning" Color="#A0522D" />
         <SolidColorBrush x:Key="Win7Margin" Color="#F3F7FC" />
+        <SolidColorBrush x:Key="Win7ProgramBlock" Color="#1F4E99" />
       </ResourceDictionary>
       <ResourceDictionary x:Key="Dark">
         <LinearGradientBrush x:Key="Win7ButtonNormal" StartPoint="0%,0%" EndPoint="0%,100%">
@@ -126,6 +127,7 @@
         <SolidColorBrush x:Key="Win7Note" Color="#9AA4B2" />
         <SolidColorBrush x:Key="Win7Warning" Color="#E8A070" />
         <SolidColorBrush x:Key="Win7Margin" Color="#1A1F27" />
+        <SolidColorBrush x:Key="Win7ProgramBlock" Color="#5AB0FF" />
       </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 

@@ -55,7 +55,7 @@ public partial class WearWindow : Window
             var cell = new Border
             {
                 Background = new SolidColorBrush(Shade(writes)),
-                BorderBrush = new SolidColorBrush(holdsProgram ? Color.Parse("#1F4E99") : Color.Parse("#A3BDE3")),
+                BorderBrush = holdsProgram ? ProgramBorder() : new SolidColorBrush(Color.Parse("#A3BDE3")),
                 BorderThickness = new Thickness(holdsProgram ? 3 : 1),
                 CornerRadius = new CornerRadius(3),
                 Margin = new Thickness(2),
@@ -76,6 +76,11 @@ public partial class WearWindow : Window
             Cells.Children.Add(cell);
         }
     }
+
+    /// <summary>The heavy border of the current program's blocks, from the theme: dark blue, or bright blue in dark mode.</summary>
+    private IBrush ProgramBorder() =>
+        this.TryFindResource("Win7ProgramBlock", ActualThemeVariant, out var found) && found is IBrush brush
+            ? brush : new SolidColorBrush(Color.Parse("#1F4E99"));
 
     /// <summary>Pale green when unused, amber at half the rating, red at the rating and beyond.</summary>
     public static Color Shade(int writes)
