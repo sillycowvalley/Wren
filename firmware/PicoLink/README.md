@@ -8,7 +8,7 @@ Waveshare RP2040 Plus, into Wren's SWIM programmer.
   DMA, under its interrupt, chains each frame to the next. `swimlib.c` is pico-swimlib's
   `swim.c` with its interrupt defaults set in the file (its header says which); `swim.pio.h`
   is its `swim.pio` assembled. The sketch adds Wren's serial protocol and NRST.
-- **Wiring:** the same as for pico-swimlib's own firmware: SWIM on GP16 with a 470 Ω
+- **Wiring:** as pico-swimlib wires it: SWIM on GP16 with a 470 Ω
   pull-up, NRST on GP17.
 - **Protocol:** Wren talks to it with its own protocol (`src/Wren.Link/PicoLink.cs`).
 

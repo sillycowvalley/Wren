@@ -38,7 +38,7 @@ A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 | **Wren** | The Avalonia app (Windows, Mac, Linux). | Runs and debugs Wren BASIC on the emulated Thing. |
 | **Wren.Asm** | An STM8 assembler, ST's syntax (PM0044). | Done. Every instruction form checked against sdasstm8. |
 | **Wren.Emu** | An STM8 emulator, the SSD1315 model and the OLED Thing and LED Thing boards. | Done for the Thing's needs. CPU checked against ucsim. |
-| **Wren.Link** | SWIM through an ST-LINK V2 (USB) or a Pico (serial), replacing STVP. | With pico-swimlib's firmware on the Pico it has installed the kernel, uploaded a program and restored Digicool's firmware on a real Thing. Wren's own Pico sketch fails part way through long transfers; the ST-LINK is not yet tried. See [PicoLink.md](PicoLink.md). |
+| **Wren.Link** | SWIM through an ST-LINK V2 (USB) or a Pico (serial), replacing STVP. | With Wren's PicoLink sketch on a Pico it installs both kernels, uploads and debugs programs, and writes Digicool's firmware back, on real OLED Things and LED Things. The ST-LINK is not yet tried. See [PicoLink.md](PicoLink.md). |
 | **Wren.Script** | The Wren BASIC compiler, the FAT planner and the debugging session. | Done. Tested against the kernel on the emulator. |
 
 Each library has its own test project (`Wren.Asm.Tests` and so on) and stays UI-free.
