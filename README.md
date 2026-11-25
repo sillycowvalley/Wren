@@ -8,6 +8,14 @@ Its targets are the Digicool Things "8-bit OLED Thing" and "8-bit LED Thing".
 Wren is not affiliated with STMicroelectronics or Digicool Things. STM8, ST-LINK and
 SWIM are ST's names, used here to describe compatibility.
 
+## Download
+
+Windows builds are on the [Releases](https://github.com/sillycowvalley/wren/releases) page: a
+zip to unzip and run, with nothing to install. Pushing a version tag (`v0.1.0-beta.1`)
+builds one: `.github/workflows/release.yml` runs the tests, publishes Wren self-contained
+for 64-bit Windows and attaches the zip, with the notes in `docs/Releases/<tag>.md`. A tag
+with a suffix makes a pre-release.
+
 ## What is in it
 
 - **Wren**: the app. You edit a Wren BASIC program in it (File and Edit menus, Notepad
