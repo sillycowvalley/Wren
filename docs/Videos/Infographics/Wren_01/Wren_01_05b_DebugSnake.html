@@ -2,10 +2,10 @@
 <!--
   Wren BASIC 1, the cut-away after slide 5/9: Debugging Snake. The source of Wren_01_05b_DebugSnake.png beside it.
 
-  A backdrop for OBS: the Wren window goes in the console frame (48, 152; up to 1114 x 762)
-  and the camera in the camera frame (1210, 152; 662 x 372). The frames are black inside, so
-  a source scaled to fit leaves no border; every backdrop in the set keeps them in place.
-  In the live slideshow it is a page of its own and stands still.
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its console frame (48, 152; up to 1114 x 762) shows the window whose title contains
+  its data-window text; its camera frame (1210, 152; 662 x 372) shows the webcam.
 
   To render the PNG in Edge or Chrome: F12, then Ctrl+Shift+M; Responsive, 1920 x 1080; from
   the toolbar's menu "Add device pixel ratio", 2; "Capture screenshot" from the same menu.
@@ -186,7 +186,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
+<div class="frame console" data-window="Wren"></div>
 <div class="frame camera"></div>
 <div class="card see"><h2>WHAT YOU'LL SEE</h2><ol>
 <li>A breakpoint on line 83, <code>score = score + 1</code></li>

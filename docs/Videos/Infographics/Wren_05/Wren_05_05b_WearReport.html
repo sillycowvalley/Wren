@@ -13,8 +13,11 @@
     - The scene: docs/Videos/Wren_05_Wear.md. The window: src/Wren/WearWindow.axaml ("each of the 54
       store blocks ($9280-$9FFF) with the times it has been written ... Blocks with a heavy border
       hold the current program"); docs/PicoLink.md (Wear report... reads only).
-  A backdrop for OBS, for a scene with nothing worth filming: the console frame (48, 152; up to
-  1114 x 762), black inside, as on every backdrop; no camera frame, so the card takes the right.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its console frame (48, 152; up to 1114 x 762) shows the window whose title contains
+  its data-window text; there is no camera frame.
 -->
 <html lang="en">
 <head>
@@ -186,7 +189,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
+<div class="frame console" data-window="Wren"></div>
 <div class="card see tall"><h2>WHAT YOU'LL SEE</h2><ol>
 <li><b>Tools → Firmware…</b>, <b>Connect</b></li><li><b>Wear report…</b></li><li>Each of the 54 blocks, and its writes</li><li>Heavy borders: the program it holds</li>
 </ol></div>

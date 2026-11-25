@@ -49,7 +49,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## The sniffer, live
 
-*Upload BusSniffer.bas with the Pico, then unplug the Pico. Ribbon from the Mega's A0–A7 to J1, D2 to PD3, D3 to PD2, 5 V and GND. Power the Mega with BusSource on it; open its Serial Monitor beside the camera.*
+*Upload BusSniffer.bas with the Pico, then unplug the Pico. Ribbon from the Mega's A0–A7 to J1, D2 to PD3, D3 to PD2, 5 V and GND. Power the Mega with BusSource on it and open its Serial Monitor; the console moves from Wren to the Arduino IDE (BusSource).*
 
 > The Mega is doing two hundred bus cycles a second. Seven in eight are reads.
 

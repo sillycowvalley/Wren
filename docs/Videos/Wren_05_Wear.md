@@ -70,7 +70,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## The Wear report
 
-*On the Thing: Tools → Firmware…, Connect, Wear report…*
+*On the Thing: in Wren, Tools → Firmware…; the console moves to the Firmware window. Connect, then Wear report…; the console moves to the wear window.*
 
 > And the board keeps its own count. This is it, read straight from the table: every block, and how many times it's been written. The heavy borders are the program it holds now.
 

@@ -51,7 +51,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## The decoder, live
 
-*Upload SerialDecoder.bas with the Pico, then unplug the Pico. Ribbon from the Mega's A0–A7 to J1, D2 to PD3, D3 to PD2, 5 V and GND. Power the Mega with SerialSource on it; open its Serial Monitor beside the camera.*
+*Upload SerialDecoder.bas with the Pico, then unplug the Pico. Ribbon from the Mega's A0–A7 to J1, D2 to PD3, D3 to PD2, 5 V and GND. Power the Mega with SerialSource on it and open its Serial Monitor; the console moves from Wren to the Arduino IDE (SerialSource).*
 
 > The Mega is sending twenty bits a second, slow enough to watch. There they come, one at a time.
 

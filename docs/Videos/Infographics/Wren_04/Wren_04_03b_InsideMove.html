@@ -20,8 +20,11 @@
     - The scene: docs/Videos/Wren_04_Emulator.md. "In Move, 1 call deep": the Now panel's own
       wording (src/Wren/MainWindow.axaml.cs, NowDescription). Stopped on line 64, F11 goes into
       Taken at line 114 (2 calls deep); two F10s later c = 184, cell (29, 5).
-  A backdrop for OBS, for a scene on the emulator alone: one console frame the full width
-  (48, 152; 1824 x 762), black inside; no camera frame. What to do is in the strip.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its wide frame (48, 152; 1824 x 762) shows the window whose title contains
+  its data-window text; there is no camera frame.
 -->
 <html lang="en">
 <head>
@@ -193,7 +196,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame wide"></div>
+<div class="frame wide" data-window="Wren"></div>
 <div class="strip steps"><span>A breakpoint on line 68: <code>IF s &lt; bestScore</code> · <b>Variables</b>: <code>d</code>, <code>nx</code>, <code>ny</code>, <code>s</code>, <code>best</code> · <kbd>F5</kbd>: the next way, the next score · Line 64, <kbd>F11</kbd>: into <code>Taken</code>; <code>c</code>, the cell</span></div>
 <!--NAV--><a class="nav prev" href="Wren_04_03_Choose.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_04_04_OneBit.html" aria-label="Next slide"></a><!--/NAV-->
 </body>

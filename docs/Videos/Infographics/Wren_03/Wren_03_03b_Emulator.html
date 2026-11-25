@@ -13,8 +13,11 @@
     - Stopwatch.bas: programs/OledThing/Stopwatch.bas; 348 bytes in 6 blocks, 10 bytes of
       variables (Wren's compiler); its test is DemoTests.TheStopwatchKeepsTimeAndRemembersTheBest.
     - The scene: docs/Videos/Wren_03_Basic.md.
-  A backdrop for OBS, for a scene on the emulator alone: one console frame the full width
-  (48, 152; 1824 x 762), black inside; no camera frame. What to do is in the strip.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its wide frame (48, 152; 1824 x 762) shows the window whose title contains
+  its data-window text; there is no camera frame.
 -->
 <html lang="en">
 <head>
@@ -186,7 +189,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame wide"></div>
+<div class="frame wide" data-window="Wren"></div>
 <div class="strip steps"><span><code>Stopwatch.bas</code>, <kbd>F5</kbd> · Pull <b>PD3</b> low and let go: start; again: stop · The same with <b>PD2</b>: back to 0 · A best time, in the bottom corner</span></div>
 <!--NAV--><a class="nav prev" href="Wren_03_03_Integers.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_03_04_SubFunction.html" aria-label="Next slide"></a><!--/NAV-->
 </body>

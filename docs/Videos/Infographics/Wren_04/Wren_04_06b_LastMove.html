@@ -12,8 +12,11 @@
   Sources:
     - Snake.bas: programs/OledThing/Snake.bas; 834 bytes in 14 blocks (Wren's compiler).
     - The scene: docs/Videos/Wren_04_Emulator.md.
-  A backdrop for OBS, for a scene on the emulator alone: one console frame the full width
-  (48, 152; 1824 x 762), black inside; no camera frame. What to do is in the strip.
+
+  A backdrop for the Recorder (TTLSim Tools/Recorder), which draws the slides, the camera and
+  the windows itself; OBS records one display and the microphone, with no scenes.
+  Its wide frame (48, 152; 1824 x 762) shows the window whose title contains
+  its data-window text; there is no camera frame.
 -->
 <html lang="en">
 <head>
@@ -185,7 +188,7 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame wide"></div>
+<div class="frame wide" data-window="Wren"></div>
 <div class="strip steps"><span>A breakpoint on line 76: <code>GameOver</code> · <kbd>F5</kbd>, and wait for the trap · The screen: the trap it built · <kbd>F11</kbd>: into <code>GameOver</code></span></div>
 <!--NAV--><a class="nav prev" href="Wren_04_06_CatchEnd.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_04_07_NoBoard.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
