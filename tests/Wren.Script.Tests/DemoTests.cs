@@ -283,4 +283,28 @@ public class DemoTests
             Assert.Equal((earlier + 1) & 255, now);                // one count every two samples
         }
     }
+
+    [Fact]
+    public void TheBusSnifferLogsTheWritesAndNotTheReads()
+    {
+        var run = Run.Start(Program("OledThing", "BusSniffer.bas"), t => t.Pd3Low = true, seconds: 0.1);
+        string message = "WREN";
+        for (int cycle = 0; cycle < 40; cycle++)
+        {
+            bool write = cycle % 8 == 7;
+            run.Thing.Pd2Low = write;                            // the write enable
+            run.Thing.SetInputs(write ? (byte)message[cycle / 8 % 4] : (byte)(cycle * 37));
+            run.For(0.00005);
+            run.Thing.Pd3Low = false;                           // the clock's rising edge
+            run.For(0.0001);
+            run.Thing.Pd3Low = true;
+            run.Thing.Pd2Low = false;
+            run.For(0.005);
+        }
+        Assert.Equal(0, run.VmFault);
+        Assert.Equal(5, run.Global("writes"));                  // 40 cycles, one in eight a write
+        Assert.Equal((byte)'W', run.Element("written", 0));
+        Assert.Equal((byte)'R', run.Element("written", 1));
+        Assert.Equal((byte)'W', run.Element("written", 4));
+    }
 }
