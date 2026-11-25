@@ -33,7 +33,8 @@ SWIM are ST's names, used here to describe compatibility.
 - **Wren.Emu**: an STM8 emulator with the SSD1315 OLED, the OLED Thing and the LED Thing.
 - **programs/**: Wren BASIC programs, a folder for each Thing. `OledThing/OledThing.bas` and
   `LedThing/LedThing.bas` are the two Things' own behaviour; each folder also has two
-  scanner demos, `KnightRider.bas` and `Cylon.bas`. **Board → LED Thing** builds for the
+  scanner demos, `KnightRider.bas` and `Cylon.bas`; the OLED Thing's has `Snake.bas` and
+  `Pong.bas`, which play themselves. **Board → LED Thing** builds for the
   LED Thing (`LEDS`, the mode pins `M0`-`M2`).
 - **art/**: the wren, as hand-written SVG sources: `wren.svg` (the full drawing),
   `wren-icon.svg` (simplified for small icons), `wren-16.svg` (hand-placed 16 x 16 pixels)

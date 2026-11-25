@@ -3,8 +3,8 @@ using Xunit;
 
 namespace Wren.Script.Tests;
 
-/// <summary>The scanner demos in programs/OledThing and programs/LedThing: they run, and sweep from end to end.</summary>
-public class ScannerDemoTests
+/// <summary>The demos in programs/OledThing and programs/LedThing: each runs on its board and does what it says.</summary>
+public class DemoTests
 {
     private static readonly Lazy<Kernel> LedKernel = new(() =>
         Kernel.Assemble(Path.Combine(AppContext.BaseDirectory, "firmware"), Board.LedThing));
@@ -58,5 +58,34 @@ public class ScannerDemoTests
         }
         Assert.True(panels.Count >= 10, $"only {panels.Count} different pictures");
         Assert.True(atLeft && atRight, $"left {atLeft}, right {atRight}");
+    }
+
+    [Fact]
+    public void TheSnakePlaysAndEats()
+    {
+        var run = Run.Start(Program("OledThing", "Snake.bas"));
+        var panels = new HashSet<string>();
+        for (int i = 0; i < 40; i++)
+        {
+            run.For(0.1);
+            Assert.Equal(0, run.VmFault);
+            panels.Add(run.Panel);
+        }
+        Assert.True(panels.Count >= 20, $"only {panels.Count} different pictures");
+        Assert.True(run.Global("score") > 0, "the snake ate nothing in 4 seconds");
+    }
+
+    [Fact]
+    public void PongPlaysItself()
+    {
+        var run = Run.Start(Program("OledThing", "Pong.bas"));
+        var balls = new HashSet<int>();
+        for (int i = 0; i < 40; i++)
+        {
+            run.For(0.1);
+            Assert.Equal(0, run.VmFault);
+            balls.Add(run.Global("bx") / 4);
+        }
+        Assert.True(balls.Min() < 16 && balls.Max() > 48, "the ball did not cross the court");
     }
 }
