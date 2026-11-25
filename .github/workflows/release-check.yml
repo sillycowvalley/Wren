@@ -77,6 +77,14 @@ jobs:
           Compress-Archive -Path publish/* -DestinationPath $zip
           "ZIP=$zip" >> $env:GITHUB_ENV
 
+      - name: Wren starts
+        run: |
+          $p = Start-Process publish/Wren.exe -PassThru
+          Start-Sleep -Seconds 20
+          if ($p.HasExited) { Write-Error "Wren.exe exited with $($p.ExitCode)"; exit 1 }
+          "Wren.exe still running after 20 s: started"
+          Stop-Process -Id $p.Id -Force
+
       - name: Keep the zip
         uses: actions/upload-artifact@v4
         with:
