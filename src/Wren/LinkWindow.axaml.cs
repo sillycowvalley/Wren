@@ -62,6 +62,29 @@ public partial class LinkWindow : Window
         portNames = SerialPorts.Names();
         portWatch.Tick += (_, _) => WatchPorts();
         portWatch.Start();
+        CheckDigicoolFirmware();
+    }
+
+    private static readonly Lazy<HttpClient> GitHub = new(DigicoolFirmware.CreateClient);
+
+    /// <summary>
+    /// Wren carries none of Digicool's firmware: each time this window opens it fetches any new
+    /// or changed .s19 file from Digicool's GitHub into the per-user folder Write image… opens.
+    /// Quiet in the background; offline, what was fetched before is still there.
+    /// </summary>
+    private async void CheckDigicoolFirmware()
+    {
+        var firmware = new DigicoolFirmware(GitHub.Value, DigicoolFirmware.DefaultFolder);
+        firmware.LearnFolder();
+        var check = await firmware.UpdateAsync();
+        foreach (string name in check.Downloaded) Log($"Digicool firmware: fetched {name} from Digicool's GitHub.");
+        foreach (string failure in check.Failures) DiagnosticLog.Write($"Firmware: Digicool firmware: {failure}");
+        if (check.Downloaded.Count == 0 && check.Failures.Count == 0)
+            Log($"Digicool firmware: up to date ({check.UpToDate.Count} files).");
+        else if (check.Failures.Count > 0)
+            Log(check.UpToDate.Count + check.Downloaded.Count > 0
+                ? $"Digicool firmware: not all checked ({check.Failures[0]})."
+                : $"Digicool firmware: could not check Digicool's GitHub ({check.Failures[0]}).");
     }
 
     /// <summary>Puts this window's placement in the settings (saved when a window closes).</summary>
@@ -304,9 +327,8 @@ public partial class LinkWindow : Window
         if (link == null) return;
         if (imageToWrite == null)
         {
-            string? folder = Kernel.FindFirmwareFolder(AppContext.BaseDirectory);
-            string? digicool = folder == null ? null : Path.Combine(folder, "digicool");
-            var start = digicool != null && Directory.Exists(digicool) ? await StorageProvider.TryGetFolderFromPathAsync(digicool) : null;
+            string digicool = DigicoolFirmware.DefaultFolder;
+            var start = Directory.Exists(digicool) ? await StorageProvider.TryGetFolderFromPathAsync(digicool) : null;
             var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 Title = "Choose a firmware image to write to the Thing",

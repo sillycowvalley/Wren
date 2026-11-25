@@ -146,5 +146,7 @@ The detailed design, for approval, is in [Design.md](Design.md).
 5. **The LED Thing.** Built and tested in the emulator (`docs/LedThing.md`): the kernel's
    LED build, `LEDS` and the mode pins `M0`-`M2`, **Board → LED Thing**, Install kernel and
    debugging through the programmer, and `programs/LedThing/LedThing.bas` checked against
-   Digicool's firmware. Open: try it on Michael's LED Things; and a larger program store
+   what Digicool's firmware showed. Open: try it on Michael's LED Things; and a larger program store
    on this board (its kernel leaves about 4.6 KB unused), which needs a second table layout.
+   Digicool's firmware is fetched from Digicool's GitHub when the Firmware window opens
+   (`docs/Design.md`). Open: try the fetch on Windows.

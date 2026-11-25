@@ -70,8 +70,7 @@ public class ProgrammerTests
         Assert.Equal(FlashContents.OtherFirmware, link.Programmer.ReadStatus(Kernel.Image).Flash);
     }
 
-    private static MemoryImage Factory => MemoryImage.Parse(File.ReadAllText(
-        Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", "8-bit_oled_thing_v1.1.s19")));
+    private static MemoryImage Factory => DigicoolStandIn.Image(DigicoolStandIn.OledV11);
 
     [Fact]
     public void RestoresTheFactoryFirmwareOnAProtectedThing()
@@ -102,7 +101,7 @@ public class ProgrammerTests
         Assert.All(Enumerable.Range(0x4000, 128), a => Assert.Equal(0, thing.Mcu.Read(a)));
         Assert.Equal(FlashContents.OtherFirmware, link.Programmer.ReadStatus(Kernel.Image).Flash);
 
-        // And it runs: Digicool's firmware starts and drives the OLED without faulting.
+        // And it runs without faulting.
         link.Programmer.Run();
         thing.Mcu.Run(0.5);
         Assert.Null(thing.Mcu.Cpu.Fault);

@@ -129,4 +129,3 @@ target is in reach), `END`. Placing two things at the same address is an error.
 MIT. See [LICENSE](LICENSE). Some files are others' work under their own terms:
 - `firmware/PicoLink`'s `swimlib.c`, `swim.h` and `swim.pio.h`: Richard Hulme's pico-swimlib,
   BSD 3-Clause (`LICENSE-pico-swimlib.txt`).
-- `firmware/digicool`: Digicool Things' factory firmware, included with Digicool's permission.

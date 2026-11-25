@@ -1,4 +1,5 @@
-using Wren.Asm;
+using System.Security.Cryptography;
+using System.Text;
 using Wren.Emu;
 using Xunit;
 
@@ -6,8 +7,9 @@ namespace Wren.Script.Tests;
 
 /// <summary>
 /// programs/OledThing/OledThing.bas: the Thing's own behaviour in Wren BASIC, checked against
-/// Digicool's factory firmware (firmware/digicool) run in the emulator, and against the
-/// die faces read from its image. Only the hex digits differ: they are in Wren's font.
+/// what Digicool's factory firmware showed when run in the emulator: its bit cells, drawn here
+/// by the same rule, and its die faces, recorded as hashes (the faces are Digicool's artwork).
+/// Only the hex digits differ: they are in Wren's font.
 /// </summary>
 public class OledThingProgramTests
 {
@@ -18,34 +20,37 @@ public class OledThingProgramTests
             modes?.Invoke(t);
         }, seconds: 0.1);
 
-    private static readonly Lazy<MemoryImage> Factory = new(() => MemoryImage.Parse(File.ReadAllText(
-        Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", "8-bit_oled_thing_v1.1.s19"))));
-
-    /// <summary>What Digicool's firmware shows for these inputs and mode pins.</summary>
-    private static string FactoryPanel(byte inputs, Action<OledThing>? modes = null)
-    {
-        var thing = new OledThing();
-        thing.Mcu.Load(Factory.Value.Bytes);
-        thing.SetInputs(inputs);
-        modes?.Invoke(thing);
-        thing.PowerOn();
-        thing.Mcu.Run(0.1);
-        return thing.Oled.PanelText();
-    }
-
-    /// <summary>Digicool's die face n (1-6): its 32 x 32 bitmap at x 16, from the image.</summary>
-    private static string FactoryFace(int n)
+    /// <summary>
+    /// Digicool's bit cells for v, as its firmware draws them in rows top to bottom: eight cells
+    /// 7 pixels wide on an 8-pixel pitch, bit 7 at the left, filled for a 1 and outlined for a 0.
+    /// </summary>
+    private static string Cells(int v, int top, int bottom)
     {
         var p = new Panel();
-        int table = 0x897B + (n - 1) * 128;
-        for (int i = 0; i < 128; i++)
+        for (int bit = 0; bit < 8; bit++)
         {
-            byte b = Factory.Value[table + i];
-            for (int bit = 0; bit < 8; bit++)
-                if ((b >> bit & 1) != 0) p.Set(16 + i / 4, (i % 4) * 8 + bit);
+            bool one = (v >> (7 - bit) & 1) != 0;
+            for (int y = top; y <= bottom; y++)
+                for (int x = bit * 8; x < bit * 8 + 7; x++)
+                    if (one || y == top || y == bottom || x == bit * 8 || x == bit * 8 + 6) p.Set(x, y);
         }
         return p.ToString();
     }
+
+    /// <summary>The bit cells along the bottom (rows 24-31), under the hex digits.</summary>
+    private static string FactoryBits(int v) => Rows(Cells(v, 24, 31), 24, 31);
+
+    /// <summary>Digicool's die faces 1-6 as its firmware shows them: the first 16 hex digits of the SHA-256 of the panel's text.</summary>
+    private static readonly string[] FaceHashes =
+    {
+        "DB72D1F1E894F871", "A27DE48C231388A9", "7CECECA77472C761", "167D6998340F7FB6", "AE8F78EF80ED5CDF", "A4AD75470E36B2BB",
+    };
+
+    private static string Hash(string panel) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(panel)))[..16];
+
+    /// <summary>The die face shown (1-6), or 0 when the panel shows none of Digicool's faces.</summary>
+    private static int FaceShown(string panel) => Array.IndexOf(FaceHashes, Hash(panel)) + 1;
 
     private static string Rows(string panel, int from, int to) =>
         string.Join("\n", panel.Split('\n').Skip(from).Take(to - from + 1));
@@ -68,12 +73,12 @@ public class OledThingProgramTests
     public void HexAndBarByDefault()
     {
         var run = Start(0xA5);
-        Assert.Equal(Rows(FactoryPanel(0xA5), 24, 31), Rows(run.Panel, 24, 31));   // the bit cells
+        Assert.Equal(FactoryBits(0xA5), Rows(run.Panel, 24, 31));   // the bit cells
         Assert.Equal(Rows(Digits(21, 2, 0xA5, 2), 0, 23), Rows(run.Panel, 0, 23));  // Wren's digits
         Assert.False(run.Thing.Oled.Inverse);
         run.Thing.SetInputs(0x3C);
         run.For(0.05);
-        Assert.Equal(Rows(FactoryPanel(0x3C), 24, 31), Rows(run.Panel, 24, 31));
+        Assert.Equal(FactoryBits(0x3C), Rows(run.Panel, 24, 31));
     }
 
     [Fact]
@@ -87,7 +92,7 @@ public class OledThingProgramTests
     public void HexLowShowsBitsOnlyAsDigicoolsDoes()
     {
         var run = Start(0x96, t => t.HexLow = true);
-        Assert.Equal(FactoryPanel(0x96, t => t.HexLow = true), run.Panel);
+        Assert.Equal(Cells(0x96, 4, 27), run.Panel);
     }
 
     [Fact]
@@ -100,7 +105,7 @@ public class OledThingProgramTests
         run.Thing.BarLow = false;
         run.Thing.HexLow = true;
         run.For(0.05);
-        Assert.Equal(FactoryPanel(0x12, t => t.HexLow = true), run.Panel);
+        Assert.Equal(Cells(0x12, 4, 27), run.Panel);
     }
 
     [Fact]
@@ -123,10 +128,10 @@ public class OledThingProgramTests
         run.Thing.SetInputs(0x99);
         run.Thing.Pd3Low = false;
         run.For(0.05);
-        Assert.Equal(Rows(FactoryPanel(0x42), 24, 31), Rows(run.Panel, 24, 31));
+        Assert.Equal(FactoryBits(0x42), Rows(run.Panel, 24, 31));
         run.Thing.Reset();
         run.For(0.1);
-        Assert.Equal(Rows(FactoryPanel(0x99), 24, 31), Rows(run.Panel, 24, 31));
+        Assert.Equal(FactoryBits(0x99), Rows(run.Panel, 24, 31));
     }
 
     [Fact]
@@ -137,18 +142,17 @@ public class OledThingProgramTests
         run.For(0.05);
         run.Thing.SetInputs(0x77);
         run.For(0.05);
-        Assert.Equal(Rows(FactoryPanel(0x11), 24, 31), Rows(run.Panel, 24, 31));
+        Assert.Equal(FactoryBits(0x11), Rows(run.Panel, 24, 31));
         run.Thing.Pd2Low = false;
         run.For(0.05);
-        Assert.Equal(Rows(FactoryPanel(0x77), 24, 31), Rows(run.Panel, 24, 31));
+        Assert.Equal(FactoryBits(0x77), Rows(run.Panel, 24, 31));
     }
 
     [Fact]
     public void EnteringDiceShowsDigicoolsSix()
     {
         var run = Start(0xFF, t => { t.HexLow = true; t.BarLow = true; });
-        Assert.Equal(FactoryFace(6), run.Panel);
-        Assert.Equal(FactoryPanel(0xFF, t => { t.HexLow = true; t.BarLow = true; }), run.Panel);
+        Assert.Equal(6, FaceShown(run.Panel));
     }
 
     [Fact]
@@ -162,14 +166,14 @@ public class OledThingProgramTests
         run.Thing.HexLow = false;               // back to hex and bits
         run.Thing.BarLow = false;
         run.For(0.1);
-        Assert.Equal(Rows(FactoryPanel(0xFF), 24, 31), Rows(run.Panel, 24, 31));
+        Assert.Equal(FactoryBits(0xFF), Rows(run.Panel, 24, 31));
     }
 
     [Fact]
     public void DiceRollsWhileHeldThenSlowsToAResult()
     {
         var run = Start(0xFF, t => { t.HexLow = true; t.BarLow = true; });
-        int Shown() => Enumerable.Range(1, 6).SingleOrDefault(n => FactoryFace(n) == run.Panel);
+        int Shown() => FaceShown(run.Panel);
 
         // Held: a new face every 117 ms, never the same twice in a row.
         run.Thing.SetInputs(0xFE);
@@ -197,7 +201,7 @@ public class OledThingProgramTests
         int result = Shown();
         Assert.Equal(result, run.Global("die"));
         run.For(0.5);
-        Assert.Equal(FactoryFace(result), run.Panel);
+        Assert.Equal(result, Shown());
     }
 
     [Fact]

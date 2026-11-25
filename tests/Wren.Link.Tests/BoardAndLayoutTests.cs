@@ -20,8 +20,7 @@ public class BoardAndLayoutTests
 
     private static readonly MemoryImage[] BothKernels = { SharedKernel.Value.Image, SharedLedKernel.Value.Image };
 
-    private static MemoryImage Digicool(string file) =>
-        MemoryImage.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", file)));
+    private static MemoryImage Digicool(byte[] vectors) => DigicoolStandIn.Image(vectors);
 
     private static ThingLink Connect(Stm8Device mcu)
     {
@@ -54,11 +53,15 @@ public class BoardAndLayoutTests
     public void DigicoolsFirmwareNamesItsBoard()
     {
         var oled = new OledThing();
-        oled.Mcu.Load(Digicool("8-bit_oled_thing_v1.1.s19").Bytes);
+        oled.Mcu.Load(Digicool(DigicoolStandIn.OledV11).Bytes);
         Assert.Equal(Board.OledThing, Connect(oled.Mcu).Programmer.DetectBoard().Board);
 
+        var older = LedThingChip();                          // no display answering: known by its firmware alone
+        older.Load(Digicool(DigicoolStandIn.OledV10).Bytes);
+        Assert.Equal(Board.OledThing, Connect(older).Programmer.DetectBoard().Board);
+
         var led = LedThingChip();
-        led.Load(Digicool("8-bit_led_thing.s19").Bytes);
+        led.Load(Digicool(DigicoolStandIn.Led).Bytes);
         Assert.Equal(Board.LedThing, Connect(led).Programmer.DetectBoard().Board);
     }
 
@@ -66,7 +69,7 @@ public class BoardAndLayoutTests
     public void InstallPutsTheLedKernelOnAnLedThing()
     {
         var led = new LedThing();
-        led.Mcu.Load(Digicool("8-bit_led_thing.s19").Bytes);
+        led.Mcu.Load(Digicool(DigicoolStandIn.Led).Bytes);
         var link = Connect(led.Mcu);
         link.Programmer.InstallKernel(BothKernels);
         link.Target.Connect();
@@ -97,7 +100,7 @@ public class BoardAndLayoutTests
     public void TheDebuggerAsksForTheThingsBoard()
     {
         var led = new LedThing();
-        led.Mcu.Load(Digicool("8-bit_led_thing.s19").Bytes);
+        led.Mcu.Load(Digicool(DigicoolStandIn.Led).Bytes);
         var link = Connect(led.Mcu);
         link.Programmer.InstallKernel(BothKernels);
         var ex = Assert.Throws<LinkException>(() => ThingDebugger.Attach(Connect(led.Mcu), Kernel));

@@ -272,8 +272,24 @@ END SUB
 `programs/OledThing/OledThing.bas` recreates the OLED Thing's firmware in Wren BASIC: the HEX,
 BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold, laid out and
 timed as Digicool's firmware does them; only the hex digits are in Wren's font. It is 502
-bytes (8 blocks). Its tests compare its pixels with Digicool's firmware run in the
-emulator, and its die with the faces in Digicool's image.
+bytes (8 blocks). Its tests compare its pixels with what Digicool's firmware showed in
+the emulator: its bit cells drawn by the same rule, and its die faces as hashes (the faces
+are Digicool's artwork, so only their hashes are in the tests).
+
+## Digicool's firmware on this machine
+
+Wren carries none of Digicool's firmware. Each time Tools → Firmware opens, `DigicoolFirmware`
+(Wren.Link) lists the Firmware folders of Digicool's two GitHub repositories
+(`DigicoolThings/8-bit_OLED_Thing`, `DigicoolThings/8-bit_LED_Thing`) through GitHub's public
+API and fetches every `.s19` file that is missing from `%LocalAppData%\Wren\firmware\digicool`
+or differs from Digicool's, compared by git's blob hash, which the listing gives. A file is
+kept only if its hash matches the listing, it came from `raw.githubusercontent.com/DigicoolThings`,
+and its S-records lie wholly in the S003's flash. Offline, the check says so in the log and
+what was fetched before stays. **Write image…** opens that folder.
+
+The board detection knows Digicool's images by their first 8 bytes (the reset and TRAP
+vectors): the three published (OLED Thing v1.0 and v1.1, LED Thing) are built in, and each
+image fetched or found in the folder is added, its board taken from Digicool's file name.
 
 ## How it is built and tested
 
