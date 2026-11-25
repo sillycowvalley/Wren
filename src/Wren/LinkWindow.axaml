@@ -1,42 +1,56 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Wren.LinkWindow"
-        Title="Wren — Programmer"
+        Title="Wren — Firmware"
         Width="720" Height="560" MinWidth="560" MinHeight="420">
   <DockPanel Margin="12">
     <StackPanel DockPanel.Dock="Top" Spacing="8">
-      <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                 Text="Programs a Thing (or the development board) on its SWIM header. ST-LINK V2: RST to NRST, SWIM to SWIM, GND to GND, 3.3 V or 5 V to VCC. Pico or RP2040 Plus with pico-swimlib: GP16 to SWIM (470 Ω pull-up to 3V3), GP17 to NRST, GND to GND, 3V3(OUT) to VCC; the Thing at 3.3 V only." />
+      <StackPanel Orientation="Horizontal" Spacing="14">
+        <TextBlock Text="Wiring:" VerticalAlignment="Center" />
+        <Button Classes="link" Click="OnPicoWiring" ToolTip.Tip="How to wire a Pico (or RP2040 Plus) to the Thing, and which firmware to put on it">
+          <TextBlock Text="Pico programmer" />
+        </Button>
+        <Button Classes="link" Click="OnStLinkWiring" ToolTip.Tip="How to wire an ST-LINK V2 to the Thing">
+          <TextBlock Text="ST-LINK V2 programmer" />
+        </Button>
+      </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB and Picos on serial ports" />
         <ComboBox Name="DeviceBox" MinWidth="260" />
+        <Button Name="FindButton" Content="↻" Click="OnFind" Padding="6,3" ToolTip.Tip="Refresh the list: look again for ST-LINKs on USB and Picos on serial ports" />
         <Button Name="ConnectButton" Content="Connect" Click="OnConnect" ToolTip.Tip="Open the programmer, enter SWIM and read the Thing" />
         <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect"
                 ToolTip.Tip="Lets go of the Thing, which then runs (connected, its program is stopped)" />
       </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="FactoryButton" Content="Restore factory settings" Click="OnRestoreFactory"
-                ToolTip.Tip="Writes Digicool's factory firmware back (removing read-out protection first if it is on, which erases the chip), clears the EEPROM and leaves the Thing unprotected" />
-        <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
-                ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
-      </StackPanel>
-      <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"
-                ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as the Thing's factory firmware) like Install kernel: only blocks that differ, then checked. Leaves read-out protection off." />
-        <Button Name="WearButton" Content="Wear report…" Click="OnWearReport"
-                ToolTip.Tip="Shows the writes the Thing has recorded for each of its 54 program-store blocks; reads only" />
-        <Button Name="DebugChecksButton" Content="Debug module checks" Click="OnDebugChecks"
-                ToolTip.Tip="Checks the chip's debug module for debugging on the Thing: a breakpoint on reading the program, reading RAM while it runs, stopping it, and freezing its 1 ms timer. Writes no flash or EEPROM." />
-        <Button Name="EepromButton" Content="EEPROM size check" Click="OnEepromCheck"
-                ToolTip.Tip="Finds out whether this Thing has 640 bytes of EEPROM rather than 128: writes a test pattern above Wren's 128 bytes, asks you to power-cycle the Thing, reads it back and puts the original bytes back. Writes no flash." />
-        <Button Name="UnprotectButton" Content="Remove protection" Click="OnRemoveProtection"
-                ToolTip.Tip="Turns read-out protection off. The chip erases all its flash and EEPROM as it does so." />
-      </StackPanel>
-      <TextBlock Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold" />
+      <HeaderedContentControl Classes="group" Header="Write FLASH">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Name="KernelButton" Content="Install kernel" Click="OnInstallKernel"
+                  ToolTip.Tip="Writes only the kernel blocks that differ; each written block costs one of the Thing's ~100 flash writes" />
+          <Button Name="ImageButton" Content="Write image…" Click="OnWriteImage"
+                  ToolTip.Tip="Writes a firmware file (.s19 or .hex, such as Digicool's factory firmware in firmware\digicool) like Install kernel: only blocks that differ, then checked. Removes read-out protection first if it is on (which erases the chip), clears the EEPROM and leaves protection off." />
+          <TextBlock Text="Warning: FLASH can only be written ~100 times." VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#A0522D" />
+        </StackPanel>
+      </HeaderedContentControl>
+      <HeaderedContentControl Classes="group" Header="Diagnostics">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button Name="WearButton" Content="Wear report…" Click="OnWearReport"
+                  ToolTip.Tip="Shows the writes the Thing has recorded for each of its 54 program-store blocks; reads only" />
+          <Button Name="DebugChecksButton" Content="Debug module checks" Click="OnDebugChecks"
+                  ToolTip.Tip="Checks the chip's debug module for debugging on the Thing: a breakpoint on reading the program, reading RAM while it runs, stopping it, and freezing its 1 ms timer. Writes no flash or EEPROM." />
+        </StackPanel>
+      </HeaderedContentControl>
+      <TextBlock Name="StatusText" TextWrapping="Wrap" />
     </StackPanel>
+    <Button DockPanel.Dock="Bottom" HorizontalAlignment="Right" Content="Close" Click="OnClose" IsCancel="True"
+            MinWidth="75" Margin="0,8,0,0" ToolTip.Tip="Closes this window; a connected Thing is let go and runs" />
     <HeaderedContentControl Classes="group" Header="Log" Margin="0,8,0,0">
-      <TextBox Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-               FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="12" />
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Margin="0,6,0,0">
+          <Button Content="Copy" Click="OnCopyLog" ToolTip.Tip="Copies the whole log to the clipboard" />
+          <Button Content="Clear" Click="OnClearLog" ToolTip.Tip="Empties the log" />
+        </StackPanel>
+        <TextBox Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                 FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="12" />
+      </DockPanel>
     </HeaderedContentControl>
   </DockPanel>
 </Window>

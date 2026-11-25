@@ -113,6 +113,7 @@ public sealed class FakePico : Stream
                 int n = r[1], address = (r[2] << 16) | (r[3] << 8) | r[4];
                 LargestTransfer = Math.Max(LargestTransfer, n);
                 if (n < 1 || n > PicoLink.MaxChunk) { Reply(r[0], PicoLink.StatusBadCommand); return; }
+                if (swimStatus == PicoLink.StatusOk && Asleep && address != SwimTarget.SwimCsr) swimStatus = PicoLink.StatusNack;
                 if (swimStatus == PicoLink.StatusOk)
                     for (int i = 0; i < n; i++) WriteTarget(address + i, r[5 + i]);
                 Reply(r[0], swimStatus);
@@ -124,10 +125,16 @@ public sealed class FakePico : Stream
         }
     }
 
+    /// <summary>
+    /// The chip in WFI and not stalled: SWIM cannot reach its memory or debug module (UM0470
+    /// 3.8). SWIM_CSR shows NO_ACCESS, reads give nothing useful and writes are refused.
+    /// </summary>
+    private bool Asleep => Device.Cpu.State == CpuState.Waiting && !Device.Debug.Stalled && Device.Debug.SwimActive;
+
     private byte ReadTarget(int address) => address switch
     {
-        SwimTarget.SwimCsr => swimCsr,
-        _ => Device.Read(address),
+        SwimTarget.SwimCsr => (byte)(swimCsr | (Asleep ? 0x40 : 0)),
+        _ => Asleep ? (byte)0xAA : Device.Read(address),
     };
 
     private void WriteTarget(int address, byte value)

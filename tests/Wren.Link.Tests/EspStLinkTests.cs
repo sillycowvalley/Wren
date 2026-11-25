@@ -137,7 +137,7 @@ public class EspStLinkTests
         link.Link.Sleep = _ => { };
         link.Target.Connect();
 
-        link.Programmer.RestoreFactory(Factory);
+        link.Programmer.ReplaceFirmware(Factory, "factory firmware");
         Assert.All(Factory.Bytes, kv => Assert.Equal(kv.Value, thing.Mcu.Read(kv.Key)));
         Assert.Equal(0x00, thing.Mcu.Read(0x4800));
         Assert.Equal(ThingProgrammer.DefaultOptions, link.Target.Read(0x4801, 10));
@@ -150,7 +150,7 @@ public class EspStLinkTests
         link.Programmer.InstallKernel(Kernel.Image);
         link.Programmer.UploadProgram(Compiler.Compile("DIM a\nON START\n a = 1\nEND ON\n").Image);
 
-        link.Programmer.RestoreFactory(Factory);
+        link.Programmer.ReplaceFirmware(Factory, "factory firmware");
         Assert.All(Factory.Bytes, kv => Assert.Equal(kv.Value, thing.Mcu.Read(kv.Key)));
         Assert.Equal(0, thing.Mcu.ProtectedBlocks);
         Assert.All(Enumerable.Range(0x4000, 128), a => Assert.Equal(0, thing.Mcu.Read(a)));
@@ -167,9 +167,13 @@ public class EspStLinkTests
     {
         var (_, _, link) = Connect();
         link.Programmer.InstallKernel(Kernel.Image);
-        var big = Compiler.Compile("DIM a\nON START\n" + string.Concat(Enumerable.Repeat(" a = a + 1234\n", 30)) + "END ON\n");
-        Assert.True(big.Success);
-        for (int i = 0; i < 3; i++) link.Programmer.UploadProgram(big.Image);
+        CompiledProgram big = null!;
+        for (int i = 0; i < 3; i++)                                // each different in every block: none is reused
+        {
+            big = Compiler.Compile("DIM a\nON START\n" + string.Concat(Enumerable.Repeat($" a = a + {1234 + i}\n", 30)) + "END ON\n");
+            Assert.True(big.Success);
+            link.Programmer.UploadProgram(big.Image);
+        }
 
         var wear = link.Programmer.ReadWear();
         Assert.Equal(3, wear.Uploads);

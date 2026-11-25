@@ -46,4 +46,24 @@ public class KernelTests
         Assert.Equal(0x4080, large.SettingsAddress);
         Assert.Equal(512, large.SettingsSize);
     }
+
+    private static readonly Lazy<Kernel> LedKernel = new(() =>
+        Kernel.Assemble(Path.Combine(AppContext.BaseDirectory, "firmware"), Board.LedThing));
+
+    [Fact]
+    public void TheLedKernelHasLedsAndNamesItsBoard()
+    {
+        var led = LedKernel.Value;
+        Assert.Equal(Board.LedThing, led.Board);
+        Assert.Equal(Op.Leds - Op.PushByte + 1, led.Symbol("OP_COUNT"));
+        var info = KernelInfo.Of(led.Image)!;
+        Assert.Equal(Board.LedThing, info.Board);
+        Assert.Equal(ProgramStore.StoreAddress, info.StoreAddress);
+        Assert.True(led.Image.Bytes.Max(kv => kv.Key) < ProgramStore.StoreAddress);
+        Assert.True(led.Symbol("kernel_end") < KernelInfo.Address);
+        // The symbols the debugger reads are where the OLED kernel has them.
+        foreach (string name in new[] { "vpc", "vsp", "fp", "csp", "evt_id", "evt_value", "vm_fault", "VARS" })
+            Assert.Equal(Run.Kernel.Symbol(name), led.Symbol(name));
+        Assert.False(led.Assembly.Symbols.ContainsKey("oled_show"));
+    }
 }

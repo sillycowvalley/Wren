@@ -24,12 +24,12 @@ public class SessionTests
         var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
         Assert.True(s.Upload(Source).Success);
         var lines = new List<int>();
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 7; i++)
         {
             Assert.Equal(SessionStop.Statement, s.Step(0.5));
             lines.Add(s.CurrentLine);
         }
-        Assert.Equal(new[] { 3, 4, 9, 10, 5 }, lines);
+        Assert.Equal(new[] { 3, 4, 9, 10, 11, 5, 6 }, lines);     // END SUB and END ON are stops too
         Assert.Equal(SessionStop.TimeUp, s.Step(0.05)); // nothing more to run: waiting for events
     }
 
@@ -92,12 +92,36 @@ public class SessionTests
     }
 
     [Fact]
+    public void SteppingOverOrOutOfTheEndOfAHandlerRunsOn()
+    {
+        const string events = "DIM n\nON CHANGE\n n = n + 1\n n = n + 1\nEND ON\n";
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        s.Upload(events);
+        Assert.Equal(SessionStop.Statement, s.Step(0.5));           // 3, in the CHANGE at start
+        Assert.Equal(SessionStop.Statement, s.StepOver(0.5, s.CallDepth));
+        Assert.Equal(4, s.CurrentLine);
+        Assert.Equal(SessionStop.Statement, s.StepOver(0.5, s.CallDepth));
+        Assert.Equal(5, s.CurrentLine);                             // END ON
+        Assert.Equal(SessionStop.HandlerEnded, s.StepOver(0.5, s.CallDepth));
+        Assert.Equal(SessionStop.TimeUp, s.Run(0.01));              // the caller runs on
+        s.SetInputs(0x0F);                                    // the next CHANGE: no stop
+        Assert.Equal(SessionStop.TimeUp, s.Run(0.05));
+        Assert.Equal("4", s.Globals().Single().Value);
+
+        var t = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        t.Upload(events);
+        t.Step(0.5);
+        Assert.Equal(SessionStop.HandlerEnded, t.StepOut(0.5, t.CallDepth));
+    }
+
+    [Fact]
     public void RunToCursorStopsAtTheLine()
     {
         var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
         s.Upload(Source);
         Assert.True(s.HasStatement(10));
-        Assert.False(s.HasStatement(6));
+        Assert.True(s.HasStatement(6));                             // END ON
+        Assert.False(s.HasStatement(8));                            // a DIM
         Assert.Equal(SessionStop.Statement, s.RunTo(0.5, 10));
         Assert.Equal(10, s.CurrentLine);
     }

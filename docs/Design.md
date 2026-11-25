@@ -8,8 +8,9 @@ Thing holds **one program**; the EEPROM is used as below.
 
 ## The idea in one paragraph
 
-Each Thing gets a **kernel** once, over SWIM: the VM, the OLED driver, graphics, fonts,
-timers and the program loading. The kernel sits in the first part of flash, locked by the
+Each Thing gets a **kernel** once, over SWIM: the VM, timers, the program loading and its
+board's own parts (the OLED Thing's display driver, graphics and fonts; the LED Thing's
+LED scan). The kernel sits in the first part of flash, locked by the
 user boot code (UBC) option byte so nothing can erase it except a SWIM programmer.
 Programs are written in Wren BASIC, compiled by Wren on the PC, and uploaded into the
 rest of flash, the **program store**, as many times as needed. A **file allocation
@@ -30,7 +31,8 @@ Facts from RM0016 for the STM8S003 (low density):
 - The UBC option byte locks blocks 0 to N-1 against all writes from firmware.
 - The 128-byte data EEPROM is 2 blocks of 64 bytes, rated ~100k writes. Some STM8S003s
   have the S103's 640 bytes ($4000-$427F); Wren checks each Thing as it installs the
-  kernel (the Programmer window's EEPROM size check proves it with a power cycle).
+  kernel: it writes and reads back one block at $4080, and records the answer in the
+  kernel's info block. EEPROM is non-volatile, so no power cycle is needed.
 
 | Blocks | Address | Size | Use |
 |---|---|---|---|
@@ -59,18 +61,24 @@ A program may sit in any blocks of the store, in any order. The EEPROM describes
 
 Writing a program (Wren does this over SWIM and reads everything back):
 
-1. Read the FAT. The blocks the new program needs are taken from all 54, least-written
-   first. The old program is replaced, so all its blocks are free for the new one: a
-   program can use the whole store (3,456 bytes).
-2. Write the program's blocks; each is one block write, one wear cycle.
+1. Read the FAT and the whole store. A block of the new program that some store block
+   already holds, byte for byte (the current program's or one left by an earlier
+   program), is chained as it is and not written. The other blocks are taken from those
+   left, least-written first. The old program is replaced, so all its blocks are free for
+   the new one: a program can use the whole store (3,456 bytes).
+2. Write the program's new blocks; each is one block write, one wear cycle. On
+   `OledThing.bas` (8 blocks), changing a number or adding a statement near the end
+   writes 1 block, and going back to a program uploaded earlier writes none; an edit near
+   the start moves all the code after it, so every block is written.
 3. Write the new FAT: chain, header and the raised write counts.
 4. Read back the blocks and the FAT and compare. If anything differs, do it again.
 
 At start-up the kernel checks the CRC, follows the chain once and builds a RAM table
 from program address to physical block, so the VM finds any byte with one lookup.
 
-How far this stretches the ~100 writes (54-block store). Choosing the least-written
-blocks keeps all 54 within one write of each other:
+How far this stretches the ~100 writes (54-block store), for programs that differ in
+every block (reused blocks cost nothing, so real use goes further). Choosing the
+least-written blocks keeps all 54 within one write of each other:
 
 | Program size | Blocks | Uploads before any block reaches 100 writes |
 |---|---|---|
@@ -82,15 +90,16 @@ blocks keeps all 54 within one write of each other:
 Wren shows the write counts after every upload. The EEPROM itself is rated ~100k
 writes, so the FAT outlasts the flash many times over.
 
-Uploads go over SWIM: Wren.Link reads the FAT through the programmer, writes the blocks,
-then the FAT, and verifies. It uploads only to a kernel whose info block says this
+Uploads go over SWIM: Wren.Link reads the FAT and the store through the programmer,
+writes the new blocks, then the FAT, and verifies. It uploads only to a kernel whose info block says this
 layout, and skips the upload when the Thing already holds the program.
 
 Kernel updates go over SWIM and need the UBC lock cleared and set again. Each one
 costs a wear cycle on the kernel blocks, so the kernel is developed on the emulator and
 the development board and installed on a Thing only a handful of times. Before writing,
 Install kernel checks the board (Digicool's firmware, a Wren kernel's info block, or an
-OLED answering on I2C) and refuses anything but an OLED Thing; it checks the EEPROM's
+OLED answering on I2C) and installs that board's kernel, refusing a board it cannot tell;
+it checks the EEPROM's
 size and records it in the kernel's info block. A Thing whose FAT is version 1 (the
 47-block store at $9440) keeps its program: old block n is new block n + 7 at the same
 address, so the table is rewritten with the program and its write counts in place.
@@ -104,7 +113,8 @@ address, so the table is rewritten with the program and its write counts in plac
 - Speed: about 100-200 thousand operations a second at 16 MHz, far more than a 64x32
   display needs.
 - Safety: stack depth, array indexes and jump targets are checked. A fault stops the
-  program and shows `ERR code @ address` on the OLED. The kernel itself keeps running,
+  program and shows `ERR code @ address` on the OLED (on the LED Thing, b7 lit with the
+  code in b0-b6). The kernel itself keeps running,
   so a new program can always be uploaded.
 
 Code density. BASIC lets one statement do a lot, and the bytecode is shaped so that it
@@ -144,7 +154,7 @@ nothing.
 | Handler | When it runs |
 |---|---|
 | `ON START` | Once, after reset |
-| `ON LATCH pin [FALLING\|RISING\|BOTH] [WHILE pin LOW\|HIGH]` | An edge on PA1-PA3, PD2 or PD3 (falling unless stated), optionally only while another of those pins is at a level, e.g. `ON LATCH PD3 RISING WHILE PD2 LOW` for a clock and /WE. The interrupt reads b0-b7 first; the handler gets them as `VALUE`. The host must hold b0-b7 for 3 µs after the edge (2.7 µs worst case from PM0044's cycle counts: an instruction finishing and the interrupt entry). A LATCH alone on port D (PD2 or PD3, one edge, no `WHILE`) is caught from a strobe of any length, since port D's interrupt is set to that edge and is the edge itself. Any other LATCH reads the pins back to find which pin moved, and which way, so its strobe must last about 5 µs. The port interrupts outrank the 1 ms tick, so a LATCH never waits for it; edges closer together than one interrupt's run (about 7 µs) can merge into one |
+| `ON LATCH pin [FALLING\|RISING\|BOTH] [WHILE pin LOW\|HIGH]` | An edge on PA1-PA3, PD2 or PD3 (falling unless stated), optionally only while another of those pins is at a level, e.g. `ON LATCH PD3 RISING WHILE PD2 LOW` for a clock and /WE. The interrupt reads b0-b7 first; the handler gets them as `VALUE`. The host must hold b0-b7 for 3 µs after the edge (2.7 µs worst case from PM0044's cycle counts: an instruction finishing and the interrupt entry), and about 3 µs more when the program has `EVERY`, `CHANGE`, `PINS`, `PRESS` or `RELEASE` handlers: the 1 ms tick queues their events with interrupts off (4.6 µs in the emulator, which counts cycles high). A LATCH alone on port D (PD2 or PD3, one edge, no `WHILE`) is caught from a strobe of any length, since port D's interrupt is set to that edge and is the edge itself. Any other LATCH reads the pins back to find which pin moved, and which way, so its strobe must last about 5 µs. The port interrupts outrank the 1 ms tick, so a LATCH never waits for it; edges closer together than one interrupt's run (about 7 µs) can merge into one |
 | `ON PRESS pin` / `ON RELEASE pin` | A button on PA1-PA3, PD2 or PD3, debounced (20 ms) |
 | `ON PINS` | Any of PA1-PA3, PD2 or PD3 changes, debounced (20 ms), and once after `ON START` |
 | `ON CHANGE` | b0-b7 differ from their last value (checked every millisecond), and once after `ON START`; `VALUE` holds the byte |
@@ -259,13 +269,18 @@ END SUB
 
 ## The Thing's own behaviour
 
-`programs/OledThing.bas` recreates the OLED Thing's firmware in Wren BASIC: the HEX,
+`programs/OledThing/OledThing.bas` recreates the OLED Thing's firmware in Wren BASIC: the HEX,
 BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold, laid out and
 timed as Digicool's firmware does them; only the hex digits are in Wren's font. It is 502
 bytes (8 blocks). Its tests compare its pixels with Digicool's firmware run in the
 emulator, and its die with the faces in Digicool's image.
 
 ## How it is built and tested
+
+- **One kernel source, two boards**: `Kernel.asm` is assembled with `BOARD` set to 1 (the
+  OLED Thing and the development board) or 2 (the LED Thing, `docs/LedThing.md`), and
+  `IF BOARD = BOARD_OLED ... ELSE ... ENDIF` keeps each board's parts. Adding the LED
+  build left the OLED kernel's bytes unchanged, so it costs the OLED Things no flash writes.
 
 - **Kernel** in STM8 assembly under `firmware/kernel/`, assembled by Wren.Asm when Wren
   starts. It is about 4.6 KB and must end below its info block at $9270 (the assembler

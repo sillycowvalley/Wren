@@ -1,21 +1,22 @@
 # Wren project plan
 
-**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer, and programs are debugged on it from the main window.**
+**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer, and programs are debugged on it from the main window. The LED Thing's kernel and `LedThing.bas` are built and tested in the emulator.**
 
 Wren is a C# / .NET 8 development environment for STM8S003F3-class microcontrollers.
-It is driven through an ST-LINK V2 over SWIM. The first target is the Digicool
-"8-bit OLED Thing" (STM8S003F3U, 64x32 SSD1315 OLED over I2C on PB4/PB5). Licence: MIT.
-The Thing's pins are in [OledThing.md](OledThing.md).
+It is driven through an ST-LINK V2 over SWIM. Its targets are Digicool's "8-bit OLED
+Thing" (STM8S003F3U, 64x32 SSD1315 OLED over I2C on PB4/PB5) and "8-bit LED Thing" (the
+same chip, eight charlieplexed LEDs). Licence: MIT. Their pins are in
+[OledThing.md](OledThing.md) and [LedThing.md](LedThing.md).
 
 ## Strategy: protect the Things' flash
 
 A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 
-1. **Emulator.** Both the MCU and the OLED are emulated in Wren. Rewrites are unlimited.
+1. **Emulator.** The MCU, the OLED and the LEDs are emulated in Wren. Rewrites are unlimited.
 2. **Development board.** An STM8S103F3 board with a real 0.49" 64x32 OLED module wired
    to it. The firmware keeps to the S003's limits: 8 KB flash, 1 KB RAM, 128 B EEPROM.
-3. **The OLED Thing.** Each Thing is flashed once with the finished firmware. After that,
-   changes go to its EEPROM only.
+3. **The Things.** Each Thing is flashed once with the finished kernel. After that,
+   programs go to its program store, reusing what it already holds.
 
 ## Hardware (ordered)
 
@@ -36,13 +37,13 @@ A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 |---|---|---|
 | **Wren** | The Avalonia app (Windows, Mac, Linux). | Runs and debugs Wren BASIC on the emulated Thing. |
 | **Wren.Asm** | An STM8 assembler, ST's syntax (PM0044). | Done. Every instruction form checked against sdasstm8. |
-| **Wren.Emu** | An STM8 emulator, the SSD1315 model and the OLED Thing board. | Done for the Thing's needs. CPU checked against ucsim. |
+| **Wren.Emu** | An STM8 emulator, the SSD1315 model and the OLED Thing and LED Thing boards. | Done for the Thing's needs. CPU checked against ucsim. |
 | **Wren.Link** | SWIM through an ST-LINK V2 (USB) or a Pico (serial), replacing STVP. | With pico-swimlib's firmware on the Pico it has installed the kernel, uploaded a program and restored Digicool's firmware on a real Thing. Wren's own Pico sketch fails part way through long transfers; the ST-LINK is not yet tried. See [PicoLink.md](PicoLink.md). |
 | **Wren.Script** | The Wren BASIC compiler, the FAT planner and the debugging session. | Done. Tested against the kernel on the emulator. |
 
 Each library has its own test project (`Wren.Asm.Tests` and so on) and stays UI-free.
-The kernel lives in `firmware/kernel/`; BASIC programs in `programs/`.
-`programs/OledThing.bas` recreates the Thing's own behaviour and is what Wren opens on
+The kernel lives in `firmware/kernel/`; BASIC programs in `programs/`, a folder for each
+Thing. `programs/OledThing/OledThing.bas` recreates the Thing's own behaviour and is what Wren opens on
 first run. The firmware design is in [Design.md](Design.md) and the bytecode in
 [Bytecode.md](Bytecode.md).
 
@@ -65,8 +66,9 @@ first run. The firmware design is in [Design.md](Design.md) and the bytecode in
    scan, because the Thing's module is mounted rotated 180°. It also turns on pull-ups on
    b0–b7, so inputs left open read 1 (`PULLUPS` changes that). Programs reach a Thing over
    SWIM (Wren.Link). Install kernel first tells the board from its firmware or by asking
-   for the OLED on I2C, and refuses anything but an OLED Thing.
-4. **Wren BASIC (done).** The Thing's own behaviour is 502 bytes of BASIC.
+   for the OLED on I2C, and installs that board's kernel.
+4. **Wren BASIC (done).** The OLED Thing's own behaviour is 502 bytes of BASIC, the LED
+   Thing's 625.
 5. **Debugging on the Thing (built).** On **Debug → Target → Thing on the programmer** the
    main window runs and debugs a program on a real Thing with the same keys as the
    emulator, through the chip's debug module and no kernel code (`ThingDebugger`):
@@ -123,7 +125,7 @@ The detailed design, for approval, is in [Design.md](Design.md).
 1. **The USB driver (first).** Wren.Link opens the ST-LINK through WinUSB, which ST's
    own ST-LINK driver (STSW-LINK009) uses, so it should work beside STVP without Zadig.
    To check, with the ST-LINK plugged in and nothing else using it:
-   1. In Visual Studio, run **Wren** and choose **Tools → Programmer…**.
+   1. In Visual Studio, run **Wren** and choose **Tools → Firmware…**.
    2. The log should list the ST-LINK. If it says "No ST-LINK found", open Device
       Manager and note where the ST-LINK appears and what driver it shows.
    3. Wire the ST-LINK to the S103 board (RST, SWIM, GND, and 3.3 V to the board), click
@@ -136,18 +138,13 @@ The detailed design, for approval, is in [Design.md](Design.md).
    ($4000-$427F) rather than the 128 B the S003's datasheet promises? The first OLED Thing
    checked does, and keeps it through a power cycle. Install kernel writes and reads
    back one block at $4080 and, if it holds, gives the program 512 setting bytes there
-   instead of 12 (the kernel's info block records which). That quick check does not prove
-   the extra EEPROM keeps its contents: the Programmer window's **EEPROM size check** does,
-   with a power cycle between writing a pattern to $4080-$427F and reading it back, and
-   puts the original bytes back. Run it on the other Things and copy the logs back.
+   instead of 12 (the kernel's info block records which). Install the kernel on the other
+   Things and note the EEPROM size the Firmware window shows for each.
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.
-5. **The LED Thing.** Digicool's second board (`docs/LedThing.md`) has the same chip, with
-   b0-b7 on other pins and eight charlieplexed LEDs on PD3-PD6 instead of the OLED. The
-   plan: kernel board profiles (a shared core with an OLED layer or an LED
-   layer; the LED kernel drops the graphics, OLED driver and fonts, about 1.8 KB, which
-   goes to its program store); `LEDS value` and `LED n, ON|OFF` in Wren BASIC, the
-   graphics statements refused on the LED board; a board byte in programs too (a kernel's
-   is in its info block), so neither lands on the wrong board; an emulated LED Thing in the app; and
-   `programs/LedThing.bas` recreating its eight modes. Michael has LED Things to test on.
+5. **The LED Thing.** Built and tested in the emulator (`docs/LedThing.md`): the kernel's
+   LED build, `LEDS` and the mode pins `M0`-`M2`, **Board → LED Thing**, Install kernel and
+   debugging through the programmer, and `programs/LedThing/LedThing.bas` checked against
+   Digicool's firmware. Open: try it on Michael's LED Things; and a larger program store
+   on this board (its kernel leaves about 4.6 KB unused), which needs a second table layout.

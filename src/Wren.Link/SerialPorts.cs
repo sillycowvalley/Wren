@@ -7,26 +7,55 @@ namespace Wren.Link;
 /// <summary>Serial ports, with the ones belonging to Raspberry Pi boards (USB vendor 2E8A) marked.</summary>
 public static class SerialPorts
 {
-    /// <summary>Opens a USB serial port the way the Pico boards want it (DTR on), with timeouts.</summary>
+    /// <summary>
+    /// Opens a USB serial port the way the Pico boards want it (DTR on), with timeouts. Windows
+    /// finishes closing a port after Close returns, so a port Wren has just closed can be refused
+    /// for a moment: it is tried again for up to two seconds.
+    /// </summary>
     public static SerialPort Open(string portName)
     {
-        var port = new SerialPort(portName, 115200)
+        for (int attempt = 0; ; attempt++)
         {
-            DtrEnable = true, // a Pico's USB serial sends nothing until the port is opened with DTR
-            RtsEnable = true,
-            ReadTimeout = 2000,
-            WriteTimeout = 2000,
-        };
+            var port = new SerialPort(portName, 115200)
+            {
+                DtrEnable = true, // a Pico's USB serial sends nothing until the port is opened with DTR
+                RtsEnable = true,
+                ReadTimeout = 2000,
+                WriteTimeout = 2000,
+            };
+            try
+            {
+                port.Open();
+                // .NET's serial stream closes its handle again from its finalizer, which throws on
+                // the finalizer thread, ending the app, when the USB device was unplugged; the
+                // port is closed by Dispose (ThingLink) instead.
+                GC.SuppressFinalize(port.BaseStream);
+                port.DiscardInBuffer();
+                return port;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                port.Dispose();
+                if (attempt < 20)
+                {
+                    Thread.Sleep(100);
+                    continue;
+                }
+                throw new LinkException($"Cannot open {portName}: {ex.Message} (is the Arduino IDE's Serial Monitor or another program using it?)", ex);
+            }
+        }
+    }
+
+    /// <summary>The serial ports Windows lists now; empty if they cannot be listed.</summary>
+    public static HashSet<string> Names()
+    {
         try
         {
-            port.Open();
-            port.DiscardInBuffer();
-            return port;
+            return new HashSet<string>(SerialPort.GetPortNames(), StringComparer.OrdinalIgnoreCase);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException or System.ComponentModel.Win32Exception)
         {
-            port.Dispose();
-            throw new LinkException($"Cannot open {portName}: {ex.Message} (is the Arduino IDE's Serial Monitor or another program using it?)", ex);
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
     }
 

@@ -49,7 +49,7 @@
         <MenuItem Header="Select _All" InputGesture="Ctrl+A" Click="OnSelectAll" />
       </MenuItem>
       <MenuItem Header="_Build">
-        <MenuItem Header="_Build" InputGesture="Ctrl+Shift+B" Click="OnBuild"
+        <MenuItem Header="_Build" InputGesture="F7" Click="OnBuild"
                   ToolTip.Tip="Compiles the program and lists any errors in Messages; runs nothing" />
       </MenuItem>
       <MenuItem Header="_Debug">
@@ -76,12 +76,19 @@
       </MenuItem>
       <MenuItem Header="_Board">
         <MenuItem Name="ThingMenu" Header="_OLED Thing (STM8S003F3)" ToggleType="Radio" GroupName="board" IsChecked="True" Click="OnBoardChanged" />
+        <MenuItem Name="LedThingMenu" Header="_LED Thing (STM8S003F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
         <MenuItem Name="DevBoardMenu" Header="_Development board (STM8S103F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
       </MenuItem>
       <MenuItem Header="_Tools">
-        <MenuItem Header="_Programmer…" Click="OnOpenLink" />
-        <MenuItem Header="_Debug module checks…" Click="OnDebugChecks"
-                  ToolTip.Tip="Bench checks of the chip's debug module, for debugging on a real Thing: opens the programmer" />
+        <MenuItem Header="_Firmware…" Click="OnOpenLink"
+                  ToolTip.Tip="Sets a real Thing up: installs Wren's kernel, restores the factory firmware, and checks the Thing" />
+        <Separator />
+        <MenuItem Name="DiagnosticLogMenu" Header="_Diagnostic log" ToggleType="CheckBox" Click="OnDiagnosticLog"
+                  ToolTip.Tip="Records what happens in this session (commands, keys, breakpoints, the program, the debugger's decisions) to a file, to pass along with a problem" />
+        <MenuItem Name="CopyLogMenu" Header="_Copy diagnostic log" Click="OnCopyDiagnosticLog"
+                  ToolTip.Tip="Copies this session's diagnostic log to the clipboard" />
+        <MenuItem Header="_Open log folder" Click="OnOpenLogFolder"
+                  ToolTip.Tip="Opens the folder of diagnostic logs, one file per session" />
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="Wren BASIC _quick reference" Click="OnQuickReference" />
@@ -100,28 +107,31 @@
     <Grid Name="RightGrid" Margin="10,8,10,8">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="*" MinWidth="260" />
-        <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="8" />
         <ColumnDefinition Width="320" MinWidth="220" MaxWidth="700" />
       </Grid.ColumnDefinitions>
-      <HeaderedContentControl Grid.Column="0" Classes="group" Header="Program (F9, or click left of a line number, for a breakpoint)">
-        <Border Classes="view">
-          <edit:TextEditor Name="Editor" ShowLineNumbers="True"
-                           FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="13"
-                           HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
-                           LineNumbersForeground="#2B91AF" Background="White" />
-        </Border>
-      </HeaderedContentControl>
-
-      <!-- Middle: the board -->
-      <Border Grid.Column="1" Padding="10,0">
-        <DockPanel>
-          <TextBlock Name="ThingNote" DockPanel.Dock="Top" IsVisible="False" TextWrapping="Wrap" MaxWidth="460"
-                     Margin="0,0,0,6" FontWeight="SemiBold"
-                     Text="The program runs on the Thing: its own OLED and pins show what it does. This is the emulator's board." />
+      <!-- Left: the program and, when the emulator is the target, its board beside it -->
+      <DockPanel Grid.Column="0">
+      <!-- Middle: the emulator's board, shown only when the emulator is the target -->
+      <Border Name="BoardColumn" DockPanel.Dock="Right" Padding="10,0,0,0">
         <ScrollViewer>
-          <StackPanel Name="BoardPanel" Spacing="2">
-            <HeaderedContentControl Classes="group" Header="OLED">
+          <StackPanel Spacing="2">
+            <HeaderedContentControl Name="LedGroup" Classes="group" Header="LEDs b7 – b0" IsVisible="False">
+              <Border Background="#1B2A4A" Padding="10" HorizontalAlignment="Left" BorderBrush="#0E1626" BorderThickness="1">
+                <StackPanel Orientation="Horizontal" Spacing="14">
+                  <Ellipse Name="Led7" Width="30" Height="30" Fill="#461414" />
+                  <Ellipse Name="Led6" Width="30" Height="30" Fill="#461414" />
+                  <Ellipse Name="Led5" Width="30" Height="30" Fill="#461414" />
+                  <Ellipse Name="Led4" Width="30" Height="30" Fill="#461414" />
+                  <Ellipse Name="Led3" Width="30" Height="30" Fill="#461414" />
+                  <Ellipse Name="Led2" Width="30" Height="30" Fill="#461414" />
+                  <Ellipse Name="Led1" Width="30" Height="30" Fill="#461414" />
+                  <Ellipse Name="Led0" Width="30" Height="30" Fill="#461414" />
+                </StackPanel>
+              </Border>
+            </HeaderedContentControl>
+
+            <HeaderedContentControl Name="OledGroup" Classes="group" Header="OLED">
               <Border Background="#1B2A4A" Padding="8" HorizontalAlignment="Left" BorderBrush="#0E1626" BorderThickness="1">
                 <local:OledView Name="Oled" Width="448" Height="224" />
               </Border>
@@ -153,7 +163,7 @@
               </StackPanel>
             </HeaderedContentControl>
 
-            <HeaderedContentControl Classes="group" Header="Spare pins">
+            <HeaderedContentControl Name="SpareGroup" Classes="group" Header="Spare pins">
               <StackPanel>
                 <TextBlock Classes="note" Text="Checked = held low; Pulse pulls the pin low while it is pressed." />
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -166,7 +176,7 @@
               </StackPanel>
             </HeaderedContentControl>
 
-            <HeaderedContentControl Classes="group" Header="Analog inputs (for ANALOG)">
+            <HeaderedContentControl Name="AnalogGroup" Classes="group" Header="Analog inputs (for ANALOG)">
               <Grid ColumnDefinitions="Auto,*,48" RowDefinitions="Auto,Auto" Width="440" HorizontalAlignment="Left">
                 <CheckBox Name="Pd2Analog" Grid.Row="0" Content="PD2" Click="OnPinClicked"
                           ToolTip.Tip="Feed PD2 an analog level instead of its digital one" />
@@ -182,13 +192,22 @@
             </HeaderedContentControl>
           </StackPanel>
         </ScrollViewer>
-        </DockPanel>
       </Border>
 
-      <GridSplitter Name="Splitter" Grid.Column="2" ResizeDirection="Columns" Background="Transparent"
+      <HeaderedContentControl Classes="group" Header="Program (F9, or click left of a line number, for a breakpoint)">
+        <Border Classes="view">
+          <edit:TextEditor Name="Editor" ShowLineNumbers="True"
+                           FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="13"
+                           HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                           LineNumbersForeground="#2B91AF" Background="White" />
+        </Border>
+      </HeaderedContentControl>
+      </DockPanel>
+
+      <GridSplitter Name="Splitter" Grid.Column="1" ResizeDirection="Columns" Background="Transparent"
                     ToolTip.Tip="Drag to resize" />
 
-      <DockPanel Grid.Column="3">
+      <DockPanel Grid.Column="2">
         <StackPanel DockPanel.Dock="Top">
           <HeaderedContentControl Classes="group" Header="Now">
             <TextBlock Name="NowText" TextWrapping="Wrap" />
@@ -201,7 +220,13 @@
           </HeaderedContentControl>
         </StackPanel>
         <HeaderedContentControl Classes="group" Header="Messages">
-          <ListBox Name="MessagesList">
+          <ListBox Name="MessagesList" SelectionMode="Multiple" KeyDown="OnMessagesKeyDown">
+            <ListBox.ContextMenu>
+              <ContextMenu>
+                <MenuItem Header="_Copy" InputGesture="Ctrl+C" Click="OnCopyMessages" />
+                <MenuItem Header="Copy _All" Click="OnCopyAllMessages" />
+              </ContextMenu>
+            </ListBox.ContextMenu>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="x:String">
                 <TextBlock Text="{Binding}" TextWrapping="Wrap" />

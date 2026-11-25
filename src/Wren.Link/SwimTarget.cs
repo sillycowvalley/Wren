@@ -78,10 +78,33 @@ public sealed class SwimTarget
     /// <summary>Resets the target through SWIM and leaves SWIM, so the firmware runs.</summary>
     public void Run()
     {
+        ReleaseDebugModule();
         WriteByte(SwimCsr, (byte)(ReadByte(SwimCsr) | 0x04)); // RST
         Link.GenerateReset();
         Link.LeaveSwimMode();
     }
+
+    /// <summary>
+    /// Leaves the debug module as a power-up does: no breakpoints (DM_CR1), the CPU not
+    /// stalled (DM_CSR2), every peripheral running while stalled (DM_ENFCTR). Before every
+    /// reset, so a debugging session, or a check, that ended with the CPU held cannot keep it
+    /// held past the reset: only a power cycle would free it otherwise. A chip that refuses
+    /// memory access (read-out protection) is left as it is.
+    /// </summary>
+    public void ReleaseDebugModule()
+    {
+        try
+        {
+            WriteByte(DmCr1, 0x00);
+            WriteByte(DmEnfctr, 0xFF);
+            WriteByte(DmCsr2, 0x00);
+        }
+        catch (LinkException)
+        {
+        }
+    }
+
+    private const int DmCr1 = 0x7F96, DmEnfctr = 0x7F9A;
 
     public byte ReadByte(int address) => Link.ReadMemory(address, 1)[0];
 

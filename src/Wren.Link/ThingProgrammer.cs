@@ -238,14 +238,22 @@ public sealed class ThingProgrammer
     /// differ, sets the option bytes the kernel image carries (UBC), and checks it all.
     /// Returns how many flash blocks were written.
     /// </summary>
-    public int InstallKernel(MemoryImage kernel)
+    public int InstallKernel(MemoryImage kernel) => InstallKernel(new[] { kernel });
+
+    /// <summary>
+    /// Installs the kernel for this Thing's board, chosen from kernels by the board byte in each
+    /// one's info block. A board Wren cannot tell gets nothing: a blank LED Thing is told
+    /// from a blank OLED Thing only by its missing display, so it is refused rather than guessed.
+    /// </summary>
+    public int InstallKernel(IEnumerable<MemoryImage> kernels)
     {
         var found = DetectBoard();
         Say($"The board: {found.How}.");
-        if (found.Board == Board.LedThing)
-            throw new LinkException("This is an LED Thing. Wren's kernel for it is not ready yet; this kernel is the OLED Thing's.");
-        if (found.Board != Board.OledThing)
-            throw new LinkException("Wren could not tell this is an OLED Thing, so it installs nothing: " + found.How + ".");
+        if (found.Board == Board.Unknown)
+            throw new LinkException("Wren could not tell which Thing this is, so it installs nothing: " + found.How +
+                ". On an LED Thing, write Digicool's LED Thing firmware first (Write image…), then Install kernel.");
+        var kernel = kernels.FirstOrDefault(k => KernelInfo.Of(k)?.Board == found.Board)
+            ?? throw new LinkException($"This Wren has no kernel for the {(found.Board == Board.LedThing ? "LED Thing" : "OLED Thing")}.");
         bool large = EepromSizeCheck.HasExtraEeprom(target);
         Say(large ? "EEPROM: 640 bytes, so the program settings get 512 bytes at $4080." : $"EEPROM: 128 bytes, so the program settings get {ProgramStore.SettingsSize}.");
         int written = WriteImage(KernelInfo.ForEeprom(kernel, large ? 640 : 128), "kernel");
@@ -297,15 +305,16 @@ public sealed class ThingProgrammer
     }
 
     /// <summary>
-    /// Puts a Thing back to its factory behaviour, without read-out protection: removes the
-    /// protection first if the chip refuses memory access (which erases it), writes the
-    /// factory firmware, clears the EEPROM (where Wren keeps its program table) and leaves
-    /// ST's default option bytes. Only blocks that differ are written.
+    /// Write image: replaces the Thing's firmware with another (such as Digicool's factory
+    /// firmware), without read-out protection: removes the protection first if the chip
+    /// refuses memory access (which erases it), writes the image, clears the EEPROM (Wren's
+    /// program table means nothing to other firmware) and leaves ST's default option bytes.
+    /// Only blocks that differ are written.
     /// </summary>
-    public void RestoreFactory(MemoryImage factory)
+    public void ReplaceFirmware(MemoryImage image, string name)
     {
         if (target.NoAccess) RemoveReadOutProtection();
-        WriteImage(factory, "factory firmware");
+        WriteImage(image, name);
         var eeprom = Enumerable.Range(EepromStart, EepromSize).Select(a => new KeyValuePair<int, byte>(a, 0)).ToList();
         int cleared = WriteChangedBlocks(eeprom, TargetMemory.Eeprom, "EEPROM");
         if (cleared > 0) Say($"EEPROM cleared: {cleared} blocks");
@@ -314,7 +323,7 @@ public sealed class ThingProgrammer
             if (target.ReadByte(OptionUbc + i) != DefaultOptions[i]) target.WriteOptionByte(OptionUbc + i, DefaultOptions[i]);
         }
         Verify(eeprom, "EEPROM");
-        Say("Factory firmware restored, without read-out protection. Disconnect (or close this window) and it runs.");
+        Say($"{name} written, without read-out protection. Disconnect (or close this window) and it runs.");
     }
 
     /// <summary>ST's default option bytes from $4801 on: everything off, each with its complement.</summary>
@@ -354,7 +363,14 @@ public sealed class ThingProgrammer
         if (info == null || info.FatVersion != ProgramStore.FatVersion || info.StoreAddress != ProgramStore.StoreAddress)
             throw new LinkException("The Thing's kernel is older than this Wren's: click Install kernel first.");
         byte[] fat = target.Read(ProgramStore.FatAddress, ProgramStore.FatSize);
-        var upload = ProgramStore.Plan(fat, program);
+        // Read before writing: blocks the store already holds are chained, not written.
+        var store = new byte[ProgramStore.Blocks * ProgramStore.BlockSize];
+        for (int offset = 0; offset < store.Length; offset += 1024)
+        {
+            int length = Math.Min(1024, store.Length - offset);
+            target.Read(ProgramStore.StoreAddress + offset, length).CopyTo(store, offset);
+        }
+        var upload = ProgramStore.Plan(fat, program, store);
 
         foreach (var (block, data) in upload.BlockWrites)
         {
@@ -366,7 +382,10 @@ public sealed class ThingProgrammer
             .Select(i => new KeyValuePair<int, byte>(ProgramStore.FatAddress + i, upload.Fat[i])).ToList();
         WriteChangedBlocks(fatBytes, TargetMemory.Eeprom, "FAT");
         Verify(upload.Bytes(), "program");
-        Say($"Uploaded {program.Length} bytes in {upload.BlockWrites.Count} blocks");
+        Say(upload.Reused == 0
+            ? $"Uploaded {program.Length} bytes in {upload.BlockWrites.Count} blocks"
+            : $"Uploaded {program.Length} bytes: {upload.BlockWrites.Count} block{(upload.BlockWrites.Count == 1 ? "" : "s")} written, " +
+              $"{upload.Reused} already in the store");
     }
 
     /// <summary>

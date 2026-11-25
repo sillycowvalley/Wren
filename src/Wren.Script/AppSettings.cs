@@ -8,6 +8,7 @@ public enum BoardChoice
 {
     Thing,
     DevelopmentBoard,
+    LedThing,
 }
 
 /// <summary>Where Start runs the program (Debug → Target).</summary>
@@ -64,8 +65,11 @@ public sealed class AppSettings
     /// <summary>Where Start runs the program: the emulator, or a real Thing through the programmer.</summary>
     public RunTarget Target { get; set; } = RunTarget.Emulator;
 
-    /// <summary>The programmer last connected to, as the Programmer window names it.</summary>
+    /// <summary>The programmer last connected to, as the Firmware window names it.</summary>
     public string? LastProgrammer { get; set; }
+
+    /// <summary>Tools → Diagnostic log: each run writes its session to a file in DiagnosticLog.DefaultFolder.</summary>
+    public bool DiagnosticLog { get; set; }
 
     /// <summary>The program file last opened.</summary>
     public string? LastFile { get; set; }

@@ -22,17 +22,20 @@ public partial class MainWindow
         IReadOnlyList<Variable> Globals, IReadOnlyList<Variable> Locals, IReadOnlyList<int> Armed);
 
     private bool thingBusy => thingPending > 0;
+    private string? thingSeen;
+    private DateTime thingPortChecked;
 
     /// <summary>
-    /// How the window reaches the Thing: through the programmer used last. A headless check of
-    /// the window replaces it with one on the emulated Thing.
+    /// How the window reaches the Thing, all on its own: the programmer that worked last if it
+    /// is there, else the first one found that answers. A headless check of the window
+    /// replaces it with one on the emulated Thing.
     /// </summary>
     internal static Func<Kernel, string?, ThingDebugger> OpenThing = (k, last) =>
     {
-        var found = ThingLink.Find(out _);
-        int index = ThingLink.Preferred(found, last);
-        if (index < 0) throw new LinkException("no programmer found. Plug it in, or look for it in Tools → Programmer….");
-        return ThingDebugger.Open(found[index], k);
+        var d = ThingDebugger.Find(k, last, out var found);
+        string name = found.ToString()!;
+        Dispatcher.UIThread.Post(() => SavedSettings.Current.LastProgrammer = name);
+        return d;
     };
     private bool OnThingTarget => Target == RunTarget.Thing;
 
@@ -87,6 +90,9 @@ public partial class MainWindow
         }, _ => done?.Invoke());
     }
 
+    /// <summary>A failure the app caught at its last line of defence (App), shown in the Messages pane.</summary>
+    internal void Report(string text) => Say(text);
+
     private void Say(string text) => Dispatcher.UIThread.Post(() =>
     {
         messages.Add(text);
@@ -99,6 +105,7 @@ public partial class MainWindow
         var d = thing;
         thing = null;
         thingView = null;
+        TellProgrammerWindow();
         if (d != null) Task.Run(() =>
         {
             try { d.Dispose(); }
@@ -107,21 +114,32 @@ public partial class MainWindow
         SetMode(Mode.Design);
     }
 
+    /// <summary>Tells the Firmware window whether this window holds the Thing.</summary>
+    private void TellProgrammerWindow() => linkWindow?.HeldByMainWindow(thing != null, () =>
+    {
+        ThingStop();
+        UpdateView();
+    });
+
     /// <summary>The window's mode follows the debugger's state after each call.</summary>
     private void FollowThing()
     {
         if (thing == null || thingView == null) return;
+        var v = thingView;
+        string seen = $"{v.State} line {v.Line} depth {v.Depth} fault {v.Fault} armed [{string.Join(", ", v.Armed)}]";
+        if (seen != thingSeen) DiagnosticLog.Write($"Thing: {seen}");
+        thingSeen = seen;
         if (thingView.State == ThingRunState.Paused) mode = Mode.Paused;
         else if (thingView.State == ThingRunState.Stepping) mode = Mode.Stepping;
         else if (mode != Mode.Design) mode = Mode.Debugging;
     }
 
     /// <summary>
-    /// F5, Ctrl+F5, F10, F11 or Ctrl+F10 from a stopped program: builds if needed, takes the
-    /// programmer (from the Programmer window too), uploads the program only if the Thing holds
+    /// F5 or Ctrl+F5 from a stopped program: builds if needed, takes the
+    /// programmer (from the Firmware window too), uploads the program only if the Thing holds
     /// something else, and starts it, under the debugger or on its own.
     /// </summary>
-    private void ThingStart(bool debug, bool stopAtFirst = false, int runTo = 0)
+    private void ThingStart(bool debug)
     {
         if (kernel == null || thing != null) return;
         if (!BuildIfNeeded()) return;
@@ -131,7 +149,7 @@ public partial class MainWindow
         var lines = session?.Breakpoints.ToList() ?? new List<int>();
         linkWindow?.ReleaseThing();
         messages.Add(debug ? "Starting the program on the Thing, with the debugger…" : "Starting the program on the Thing…");
-        SetMode(debug ? (stopAtFirst ? Mode.Stepping : Mode.Debugging) : Mode.Design);
+        SetMode(debug ? Mode.Debugging : Mode.Design);
         thingView = null;
         ThingQueue(() =>
         {
@@ -140,7 +158,7 @@ public partial class MainWindow
             {
                 d.Progress += Say;
                 d.Breakpoints.UnionWith(lines);
-                d.Start(program, debug, stopAtFirst, runTo);
+                d.Start(program, debug);
             }
             catch
             {
@@ -153,6 +171,8 @@ public partial class MainWindow
         }, d =>
         {
             thing = d;
+            TellProgrammerWindow();
+            if (SavedSettings.Current.LastProgrammer is string through) messages.Add($"Through {through}.");
             if (!debug) messages.Add("The Thing is running the program.");
             else WarnIfTooManyBreakpoints();
         });
@@ -171,13 +191,20 @@ public partial class MainWindow
         thing = null;
         ThingQueue(() =>
         {
-            d.Stop();
-            d.Dispose();
+            try
+            {
+                d.Stop();
+            }
+            finally
+            {
+                d.Dispose();                           // the port is closed whatever Stop met
+            }
             return null;
         }, _ =>
         {
             messages.Add("Debugging stopped: the Thing runs the program on its own.");
             thingView = null;
+            TellProgrammerWindow();
             SetMode(Mode.Design);
             then?.Invoke();
         });
@@ -187,6 +214,16 @@ public partial class MainWindow
     private void ThingTick()
     {
         if (thing == null || thingBusy) return;
+        if (DateTime.Now - thingPortChecked > TimeSpan.FromSeconds(1))
+        {
+            thingPortChecked = DateTime.Now;
+            if (thing.Vanished)
+            {
+                ThingFailed($"the programmer on {thing.PortName} was unplugged. Plug it in again and press F5.");
+                UpdateView();
+                return;
+            }
+        }
         if (mode == Mode.Debugging && DateTime.Now - thingRefreshed > TimeSpan.FromMilliseconds(250))
         {
             thingRefreshed = DateTime.Now;

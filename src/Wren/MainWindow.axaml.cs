@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Wren.Emu;
@@ -23,7 +24,17 @@ public partial class MainWindow : Window
     private readonly Stopwatch clock = new();
     private readonly List<string> messages = new();
     private ToggleButton[] bits = Array.Empty<ToggleButton>();
-    private Kernel? kernel;
+    private Kernel? oledKernel, ledKernel;
+    private BoardChoice boardChoice = BoardChoice.Thing;
+
+    /// <summary>The kernel for the board chosen in the Board menu.</summary>
+    private Kernel? kernel => boardChoice == BoardChoice.LedThing ? ledKernel : oledKernel;
+
+    /// <summary>The board programs are built for.</summary>
+    private Board BuildBoard => boardChoice == BoardChoice.LedThing ? Board.LedThing : Board.OledThing;
+
+    /// <summary>LED brightness from the emulator's last run, b0 first.</summary>
+    private double[] ledLevels = new double[8];
     private ThingSession? session;
     private DeviceInfo chip = DeviceInfo.Stm8s003f3;
     private string? path;
@@ -72,7 +83,7 @@ public partial class MainWindow : Window
     private readonly WindowLayout layout;
 
     /// <summary>The right-hand column, sized with the splitter.</summary>
-    private ColumnDefinition SidePanel => RightGrid.ColumnDefinitions[3];
+    private ColumnDefinition SidePanel => RightGrid.ColumnDefinitions[2];
 
     /// <summary>The right-hand column's width as last chosen with the splitter (or the default).</summary>
     private double sideWidth = 320;
@@ -83,15 +94,17 @@ public partial class MainWindow : Window
     /// </summary>
     private void FitSidePanel()
     {
-        double room = RightGrid.Bounds.Width - RightGrid.ColumnDefinitions[0].MinWidth
-            - RightGrid.ColumnDefinitions[1].ActualWidth - RightGrid.ColumnDefinitions[2].ActualWidth;
+        // The left column keeps room for the program (260) and, when it shows, the board.
+        var left = RightGrid.ColumnDefinitions[0];
+        left.MinWidth = 260 + (BoardColumn.IsVisible ? BoardColumn.DesiredSize.Width : 0);
+        double room = RightGrid.Bounds.Width - left.MinWidth - RightGrid.ColumnDefinitions[1].ActualWidth;
         double width = Math.Max(Math.Min(sideWidth, room), SidePanel.MinWidth);
         if (SidePanel.Width.Value != width) SidePanel.Width = new GridLength(width);
     }
 
     public MainWindow() : this(null) { }
 
-    /// <summary>Opens startPath if given, otherwise the program open last time, otherwise programs/OledThing.bas.</summary>
+    /// <summary>Opens startPath if given, otherwise the program open last time, otherwise programs/OledThing/OledThing.bas.</summary>
     public MainWindow(string? startPath)
     {
         InitializeComponent();
@@ -100,6 +113,12 @@ public partial class MainWindow : Window
         SetUpEditor();
 
         var settings = SavedSettings.Current;
+        if (settings.DiagnosticLog && !DiagnosticLog.Enabled) DiagnosticLog.Start();
+        DiagnosticLogMenu.IsChecked = DiagnosticLog.Enabled;
+        AddHandler(MenuItem.ClickEvent, (_, e) =>
+        {
+            if (e.Source is MenuItem { Header: string header }) DiagnosticLog.Write($"Menu: {header.Replace("_", "")}");
+        }, RoutingStrategies.Bubble, handledEventsToo: true);
         layout = new WindowLayout(this, settings.MainWindow);
         Closing += (_, e) =>
         {
@@ -114,9 +133,12 @@ public partial class MainWindow : Window
                 try
                 {
                     thing.Stop();
-                    thing.Dispose();
                 }
                 catch (Exception ex) when (Expected(ex)) { }
+                finally
+                {
+                    thing.Dispose();
+                }
                 thing = null;
             }
             settings.MainWindow = layout.Placement;
@@ -131,22 +153,22 @@ public partial class MainWindow : Window
         Splitter.DragCompleted += (_, _) => sideWidth = SidePanel.ActualWidth;
         ThingTargetMenu.IsChecked = settings.Target == RunTarget.Thing;
         EmulatorTargetMenu.IsChecked = settings.Target == RunTarget.Emulator;
-        if (settings.Board == BoardChoice.DevelopmentBoard)
-        {
-            chip = DeviceInfo.Stm8s103f3;
-            DevBoardMenu.IsChecked = true;
-            ThingMenu.IsChecked = false;
-        }
+        boardChoice = settings.Board;
+        chip = boardChoice == BoardChoice.DevelopmentBoard ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
+        ThingMenu.IsChecked = boardChoice == BoardChoice.Thing;
+        DevBoardMenu.IsChecked = boardChoice == BoardChoice.DevelopmentBoard;
+        LedThingMenu.IsChecked = boardChoice == BoardChoice.LedThing;
+        Editor.SyntaxHighlighting = WrenHighlighting.For(BuildBoard);
 
         Pd2Button.PropertyChanged += (_, e) =>
         {
             if (e.Property == Button.IsPressedProperty && session != null)
-                session.Board.Pd2Low = Pd2Button.IsPressed || Pd2Pin.IsChecked == true;
+                if (session.Oled != null) session.Oled.Pd2Low = Pd2Button.IsPressed || Pd2Pin.IsChecked == true;
         };
         Pd3Button.PropertyChanged += (_, e) =>
         {
             if (e.Property == Button.IsPressedProperty && session != null)
-                session.Board.Pd3Low = Pd3Button.IsPressed || Pd3Pin.IsChecked == true;
+                if (session.Oled != null) session.Oled.Pd3Low = Pd3Button.IsPressed || Pd3Pin.IsChecked == true;
         };
 
         timer = new DispatcherTimer(TimeSpan.FromMilliseconds(15), DispatcherPriority.Background, OnTick);
@@ -156,7 +178,8 @@ public partial class MainWindow : Window
         {
             string? firmware = Kernel.FindFirmwareFolder(AppContext.BaseDirectory)
                 ?? throw new InvalidOperationException("The firmware folder was not found next to Wren.");
-            kernel = Kernel.Assemble(firmware);
+            oledKernel = Kernel.Assemble(firmware, Board.OledThing);
+            ledKernel = Kernel.Assemble(firmware, Board.LedThing);
             NewSession();
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException)
@@ -165,7 +188,7 @@ public partial class MainWindow : Window
         }
 
         string? last = settings.LastFile is { } saved && File.Exists(saved) ? saved : null;
-        string? first = startPath ?? last ?? FindProgram("OledThing.bas");
+        string? first = startPath ?? last ?? FindProgram(Path.Combine("OledThing", "OledThing.bas"));
         if (first != null) Open(first);
         UpdateView();
     }
@@ -190,11 +213,18 @@ public partial class MainWindow : Window
     private void NewSession()
     {
         if (kernel == null) return;
-        byte inputs = session?.Board.Inputs ?? 0;
+        byte inputs = session?.Inputs ?? 0;
         session = new ThingSession(kernel, chip);
-        session.Board.SetInputs(inputs);
+        session.SetInputs(inputs);
         ApplyPins();
-        Oled.Oled = session.Board.Oled;
+        if (session.Oled != null) Oled.Oled = session.Oled.Oled;
+        ledLevels = new double[8];
+        bool led = session.Leds != null;
+        OledGroup.IsVisible = SpareGroup.IsVisible = AnalogGroup.IsVisible = !led;
+        LedGroup.IsVisible = led;
+        HexPin.Content = led ? "M2 (PA1)" : "HEX (PA1)";
+        BarPin.Content = led ? "M1 (PA2)" : "BAR (PA2)";
+        InvPin.Content = led ? "M0 (PA3)" : "INV (PA3)";
     }
 
     // ---- The program ----
@@ -237,7 +267,7 @@ public partial class MainWindow : Window
         messages.Clear();
         built = null;
         builtText = "";
-        SetMode(Mode.Design);
+        StopForAnotherProgram();
         messages.Add("A new program. Press F5 to build it and run it.");
         UpdateTitle();
         shownLine = -1;
@@ -380,11 +410,22 @@ public partial class MainWindow : Window
         errorLine = 0;
         built = null;
         builtText = "";
-        SetMode(Mode.Design);
+        StopForAnotherProgram();
         messages.Clear();
         messages.Add($"Opened {FileName}. F5 builds it and runs it with the debugger, Ctrl+F5 without.");
         shownLine = -1;
         UpdateView();
+    }
+
+    /// <summary>
+    /// Another program is in the editor: whatever ran stops, as Shift+F5 stops it. On the
+    /// Thing that means the debugger lets go (the Thing runs on by itself), so F5 and Ctrl+F5
+    /// can take it again for the new program.
+    /// </summary>
+    private void StopForAnotherProgram()
+    {
+        if (thing != null) ThingStop();
+        SetMode(Mode.Design);
     }
 
     // ---- Building ----
@@ -395,10 +436,14 @@ public partial class MainWindow : Window
     private bool Build()
     {
         string text = Editor.Text ?? "";
+        UpdateView();                                  // logs the messages about to be cleared
         messages.Clear();
+        if (DiagnosticLog.Enabled)
+            DiagnosticLog.Write($"Build {FileName}, the source as built:\n" +
+                string.Join("\n", text.Replace("\r\n", "\n").Split('\n').Select((l, i) => $"  {i + 1,3}| {l}")));
         errorLine = 0;
         sourceLines = text.Replace("\r\n", "\n").Split('\n');
-        var program = Compiler.Compile(text);
+        var program = Compiler.Compile(text, BuildBoard);
         builtText = text;
         if (!program.Success)
         {
@@ -441,7 +486,7 @@ public partial class MainWindow : Window
     private void OnExit(object? sender, RoutedEventArgs e) => Close();
 
     /// <summary>
-    /// The menu shortcuts, Visual Studio's where it has them: Ctrl+Shift+B build; F5 start
+    /// The menu shortcuts, Visual Studio's where it has them: F7 build; F5 start
     /// debugging or continue, Ctrl+F5 start without debugging, Shift+F5 stop, Ctrl+Shift+F5
     /// restart, Ctrl+Alt+Break break all; F11 step into, F10 step over, Shift+F11 step out,
     /// Ctrl+F10 run to cursor, F9 toggle breakpoint; and the File menu's. Caught before the
@@ -450,10 +495,13 @@ public partial class MainWindow : Window
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
         var m = e.KeyModifiers;
+        if (DiagnosticLog.Enabled && (e.Key is >= Key.F1 and <= Key.F12 || (m & (KeyModifiers.Control | KeyModifiers.Alt)) != 0) &&
+            e.Key is not (Key.LeftCtrl or Key.RightCtrl or Key.LeftShift or Key.RightShift or Key.LeftAlt or Key.RightAlt))
+            DiagnosticLog.Write($"Key: {(m == KeyModifiers.None ? "" : m.ToString().Replace(", ", "+") + "+")}{e.Key} (line {Editor.TextArea.Caret.Line}, mode {mode})");
         const KeyModifiers None = KeyModifiers.None, Ctrl = KeyModifiers.Control, Shift = KeyModifiers.Shift;
         switch (e.Key)
         {
-            case Key.B when m == (Ctrl | Shift): OnBuild(sender, e); break;
+            case Key.F7 when m == None: OnBuild(sender, e); break;
             case Key.F5 when m == None: OnStartDebugging(sender, e); break;
             case Key.F5 when m == Ctrl: OnStartWithoutDebugging(sender, e); break;
             case Key.F5 when m == Shift: OnStop(sender, e); break;
@@ -487,10 +535,43 @@ public partial class MainWindow : Window
         Process.Start(new ProcessStartInfo(found) { UseShellExecute = true });
     }
 
+    private void OnDiagnosticLog(object? sender, RoutedEventArgs e)
+    {
+        if (DiagnosticLog.Enabled) DiagnosticLog.Stop();
+        else DiagnosticLog.Start();
+        DiagnosticLogMenu.IsChecked = DiagnosticLog.Enabled;
+        SavedSettings.Current.DiagnosticLog = DiagnosticLog.Enabled;
+        SavedSettings.Save();
+        messages.Add(DiagnosticLog.Enabled
+            ? $"Diagnostic log on: {DiagnosticLog.FilePath}. Tools → Copy diagnostic log copies it."
+            : "Diagnostic log off.");
+        UpdateView();
+    }
+
+    private async void OnCopyDiagnosticLog(object? sender, RoutedEventArgs e)
+    {
+        string text = DiagnosticLog.Text;
+        if (text.Length == 0)
+        {
+            messages.Add("The diagnostic log is off: turn it on with Tools → Diagnostic log, then do what went wrong again.");
+            UpdateView();
+            return;
+        }
+        if (Clipboard is { } clipboard) await clipboard.SetTextAsync(text);
+        messages.Add($"Copied the diagnostic log ({text.Count(c => c == '\n')} lines) to the clipboard.");
+        UpdateView();
+    }
+
+    private void OnOpenLogFolder(object? sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(DiagnosticLog.DefaultFolder);
+        Process.Start(new ProcessStartInfo(DiagnosticLog.DefaultFolder) { UseShellExecute = true });
+    }
+
     private void OnAbout(object? sender, RoutedEventArgs e) => new SplashWindow { IsAbout = true, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(this);
 
     /// <summary>A file in the repository (looking upward from Wren) or beside Wren.</summary>
-    private static string? FindBeside(string relative)
+    internal static string? FindBeside(string relative)
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null)
@@ -513,21 +594,18 @@ public partial class MainWindow : Window
             linkWindow.Activate();
             return;
         }
-        linkWindow = new LinkWindow(kernel);
+        linkWindow = new LinkWindow(oledKernel, ledKernel);
         linkWindow.Closed += (_, _) => linkWindow = null;
         linkWindow.Show(this);
+        TellProgrammerWindow();
     }
 
-    private void OnDebugChecks(object? sender, RoutedEventArgs e)
-    {
-        OnOpenLink(sender, e);
-        linkWindow?.ExplainDebugChecks();
-    }
 
     // ---- Starting, stopping and stepping (Visual Studio's keys) ----
 
     private void SetMode(Mode next)
     {
+        if (next != mode) DiagnosticLog.Write($"Mode: {mode} → {next}");
         mode = next;
         clock.Restart();
     }
@@ -636,17 +714,12 @@ public partial class MainWindow : Window
         BeginStep(StepKind.ToCursor);
     }
 
-    /// <summary>
-    /// A step from a pause; from Design (not started) it starts the program and stops at its
-    /// first statement, as F10 and F11 do in Visual Studio (Run To Cursor runs to the line).
-    /// </summary>
+    /// <summary>A step (or Run To Cursor) from a pause: the stepping commands work only while the program is paused.</summary>
     private void BeginStep(StepKind kind)
     {
+        if (mode != Mode.Paused || thingBusy) return;
         if (OnThingTarget)
         {
-            if (mode == Mode.Design && kind != StepKind.Out)
-                ThingStart(debug: true, stopAtFirst: kind != StepKind.ToCursor, runTo: kind == StepKind.ToCursor ? stepLine : 0);
-            else if (mode == Mode.Paused)
             {
                 SetMode(Mode.Stepping);
                 int line = stepLine;
@@ -662,18 +735,8 @@ public partial class MainWindow : Window
             return;
         }
         if (session == null) return;
-        if (mode == Mode.Design)
-        {
-            if (kind == StepKind.Out || !StartEmulator()) { UpdateView(); return; }
-            stepKind = kind == StepKind.ToCursor ? StepKind.ToCursor : StepKind.Into;
-            stepDepth = 0;
-        }
-        else if (mode == Mode.Paused)
-        {
-            stepKind = kind;
-            stepDepth = session.CallDepth;
-        }
-        else return;
+        stepKind = kind;
+        stepDepth = session.CallDepth;
         SetMode(Mode.Stepping);
         UpdateView();
     }
@@ -681,14 +744,14 @@ public partial class MainWindow : Window
     private void OnReset(object? sender, RoutedEventArgs e)
     {
         if (OnThingTarget || session?.Program == null || mode == Mode.Design) return;
-        session.Board.Reset();
+        session.Mcu.Reset();
         if (mode != Mode.RunningFree) SetMode(Mode.Debugging);
     }
 
     private void OnPowerCycle(object? sender, RoutedEventArgs e)
     {
         if (OnThingTarget || session?.Program == null || mode == Mode.Design) return;
-        session.Board.PowerOn();
+        session.PowerOn();
         ApplyPins();
         if (mode != Mode.RunningFree) SetMode(Mode.Debugging);
     }
@@ -742,11 +805,13 @@ public partial class MainWindow : Window
                     StepKind.ToCursor => session.RunTo(seconds, stepLine),
                     _ => session.Step(seconds),
                 };
-                if (stop != SessionStop.TimeUp) SetMode(Mode.Paused);
+                if (stop == SessionStop.HandlerEnded) SetMode(Mode.Debugging);   // off the end of a handler: run on
+                else if (stop != SessionStop.TimeUp) SetMode(Mode.Paused);
                 break;
         }
 
         if (session.Fault != 0 && (running || stepping)) SetMode(Mode.Paused);
+        if (session.Leds != null && mode is Mode.Debugging or Mode.RunningFree or Mode.Stepping) ledLevels = session.Leds.TakeBrightness();
         UpdateView();
     }
 
@@ -754,13 +819,17 @@ public partial class MainWindow : Window
 
     private void OnBoardChanged(object? sender, RoutedEventArgs e)
     {
-        var chosen = DevBoardMenu.IsChecked ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
-        if (chosen == chip) return;
-        chip = chosen;
-        SavedSettings.Current.Board = chip == DeviceInfo.Stm8s103f3 ? BoardChoice.DevelopmentBoard : BoardChoice.Thing;
+        var chosen = LedThingMenu.IsChecked ? BoardChoice.LedThing : DevBoardMenu.IsChecked ? BoardChoice.DevelopmentBoard : BoardChoice.Thing;
+        if (chosen == boardChoice) return;
+        if (thing != null) ThingStop();
+        boardChoice = chosen;
+        chip = chosen == BoardChoice.DevelopmentBoard ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
+        SavedSettings.Current.Board = chosen;
         NewSession();
         SetMode(Mode.Design);
-        messages.Add($"Board: {(chip == DeviceInfo.Stm8s103f3 ? "the development board" : "the OLED Thing")}. Press F5 to run the program on it.");
+        built = null;                                  // build again, for this board
+        Editor.SyntaxHighlighting = WrenHighlighting.For(BuildBoard);
+        messages.Add($"Board: {chosen switch { BoardChoice.DevelopmentBoard => "the development board", BoardChoice.LedThing => "the LED Thing", _ => "the OLED Thing" }}. Press F5 to run the program on it.");
         UpdateView();
     }
 
@@ -771,7 +840,7 @@ public partial class MainWindow : Window
         {
             if (bits[i].IsChecked == true) value |= 1 << i;
         }
-        session?.Board.SetInputs((byte)value);
+        session?.SetInputs((byte)value);
         UpdateView();
     }
 
@@ -781,7 +850,7 @@ public partial class MainWindow : Window
         string text = (HexBox.Text ?? "").Trim().TrimStart('$');
         if (byte.TryParse(text, System.Globalization.NumberStyles.HexNumber, null, out byte value))
         {
-            session?.Board.SetInputs(value);
+            session?.SetInputs(value);
             UpdateView();
         }
     }
@@ -793,7 +862,14 @@ public partial class MainWindow : Window
     private void ApplyPins()
     {
         if (session == null) return;
-        var board = session.Board;
+        if (session.Leds is { } leds)
+        {
+            leds.M2Low = HexPin.IsChecked == true;
+            leds.M1Low = BarPin.IsChecked == true;
+            leds.M0Low = InvPin.IsChecked == true;
+            return;
+        }
+        var board = session.Oled!;
         board.HexLow = HexPin.IsChecked == true;
         board.BarLow = BarPin.IsChecked == true;
         board.InvLow = InvPin.IsChecked == true;
@@ -813,6 +889,7 @@ public partial class MainWindow : Window
     {
         if (session == null) return;
         if (!session.Breakpoints.Remove(line)) session.Breakpoints.Add(line);
+        DiagnosticLog.Write($"Breakpoint {(session.Breakpoints.Contains(line) ? "set" : "removed")} at line {line}: now [{string.Join(", ", session.Breakpoints.OrderBy(l => l))}]");
         session.UpdateBreakpoints();
         ThingBreakpointsChanged();
         shownLine = -1;
@@ -821,13 +898,18 @@ public partial class MainWindow : Window
 
     // ---- View ----
 
+    private int messagesLogged;
+
     private void UpdateView()
     {
-        var board = session?.Board;
+        if (messagesLogged > messages.Count) messagesLogged = 0;       // the list was cleared
+        for (; messagesLogged < messages.Count; messagesLogged++) DiagnosticLog.Write($"Message: {messages[messagesLogged]}");
+        var board = session;
         if (board != null)
         {
             for (int i = 0; i < 8; i++) bits[i].IsChecked = (board.Inputs & (1 << i)) != 0;
             if (!HexBox.IsFocused) HexBox.Text = board.Inputs.ToString("X2");
+            if (board.Leds != null) ShowLeds();
         }
 
         int current = mode is not (Mode.Paused or Mode.Stepping) ? 0
@@ -852,10 +934,12 @@ public partial class MainWindow : Window
         string target = Target == RunTarget.Thing ? (thingBusy ? "Target: Thing (busy)" : "Target: Thing") : "Target: emulator";
         StatusText.Text = board == null ? "" :
             $"{state}   {target}" + (OutOfDate && (Editor.Text ?? "").Length > 0 ? "   Edited since the last build" : "") +
-            (mode == Mode.Design || OnThingTarget ? "" : $"   {board.Mcu.Seconds:F2} s since reset   OLED {(board.Oled.Lit ? "on" : "off")}");
-        ThingNote.IsVisible = OnThingTarget;
-        BoardPanel.Opacity = OnThingTarget ? 0.45 : 1;
-        BoardPanel.IsEnabled = !OnThingTarget;
+            (mode == Mode.Design || OnThingTarget ? "" : $"   {board.Mcu.Seconds:F2} s since reset" + (board.Oled is { } o ? $"   OLED {(o.Oled.Lit ? "on" : "off")}" : ""));
+        if (BoardColumn.IsVisible == OnThingTarget)
+        {
+            BoardColumn.IsVisible = !OnThingTarget;           // the Thing's own OLED and pins show what it does
+            Dispatcher.UIThread.Post(FitSidePanel, DispatcherPriority.Background);
+        }
 
         bool emulator = Target == RunTarget.Emulator;
         StartMenu.Header = mode == Mode.Paused ? "_Continue" : "_Start Debugging";
@@ -864,10 +948,21 @@ public partial class MainWindow : Window
         StopMenu.IsEnabled = mode != Mode.Design;
         RestartMenu.IsEnabled = mode != Mode.Design;
         BreakMenu.IsEnabled = mode is Mode.Debugging or Mode.Stepping;
-        StepIntoMenu.IsEnabled = StepOverMenu.IsEnabled = RunToCursorMenu.IsEnabled = !thingBusy && mode is Mode.Design or Mode.Paused;
-        StepOutMenu.IsEnabled = !thingBusy && mode == Mode.Paused;
+        StepIntoMenu.IsEnabled = StepOverMenu.IsEnabled = StepOutMenu.IsEnabled = RunToCursorMenu.IsEnabled = !thingBusy && mode == Mode.Paused;
         ResetMenu.IsEnabled = PowerMenu.IsEnabled = emulator && mode != Mode.Design;
         Oled.Refresh();
+    }
+
+    /// <summary>The emulated LED Thing's LEDs: a scan lights each LED an eighth of the time, which is full brightness.</summary>
+    private void ShowLeds()
+    {
+        var shapes = new[] { Led0, Led1, Led2, Led3, Led4, Led5, Led6, Led7 };
+        bool running = mode is Mode.Debugging or Mode.RunningFree or Mode.Stepping or Mode.Paused;
+        for (int i = 0; i < 8; i++)
+        {
+            double level = running ? Math.Clamp(ledLevels[i] * 8, 0, 1) : 0;
+            shapes[i].Fill = new SolidColorBrush(Color.FromRgb((byte)(70 + 185 * level), (byte)(20 + 30 * level), (byte)(20 + 30 * level)));
+        }
     }
 
     private void UpdateSource(int current)
@@ -881,15 +976,26 @@ public partial class MainWindow : Window
         breakpointMargin.InvalidateVisual();
         int show = current > 0 ? current : errorLine;
         if (show > 0 && show <= Editor.Document.LineCount) Editor.ScrollToLine(show);
+        // Stopping at a line puts the caret on it, as Visual Studio does, so F9 there takes the
+        // breakpoint off. Only when the stop moves, so the caret is not pulled back otherwise.
+        if (current > 0 && current != caretStop && current <= Editor.Document.LineCount)
+        {
+            Editor.TextArea.Caret.Line = current;
+            Editor.TextArea.Caret.Column = 1;
+            Editor.TextArea.Focus();
+        }
+        caretStop = current;
     }
+
+    private int caretStop;
 
     private string NowDescription(int current)
     {
         if (session == null) return "";
         if (mode == Mode.Design)
             return errorLine > 0 ? "The program has errors: see Messages." :
-                OnThingTarget ? (thingBusy ? "Talking to the Thing…" : "Not running on the Thing. F5 runs it there with the debugger, F10 or F11 stops at the first statement, Ctrl+F5 runs it without.") :
-                "Not running. F5 starts debugging, F10 or F11 starts and stops at the first statement, Ctrl+F5 runs without debugging.";
+                OnThingTarget ? (thingBusy ? "Talking to the Thing…" : "Not running on the Thing. F5 runs it there with the debugger (set breakpoints with F9), Ctrl+F5 runs it without.") :
+                "Not running. F5 starts debugging (set breakpoints with F9), Ctrl+F5 runs without debugging.";
         if (OnThingTarget) return ThingNow(current);
         if (session.Program == null) return "No program.";
         int fault = session.Fault;
@@ -934,7 +1040,7 @@ public partial class MainWindow : Window
         if (session == null) return "";
         if (OnThingTarget)
             return (built == null ? "" : $"Program: {built.Image.Length} bytes in {built.Blocks} of {ProgramStore.Blocks} blocks.\n") +
-                "The Thing's own wear: Tools → Programmer…, Wear report.";
+                "The Thing's own wear: Tools → Firmware…, Wear report.";
         var fat = session.ReadFat();
         var counts = ProgramStore.WriteCounts(fat);
         int uploads = ProgramStore.IsFormatted(fat) ? (fat[6] << 8) | fat[7] : 0;
@@ -944,5 +1050,28 @@ public partial class MainWindow : Window
         return program +
             $"Uploads to this emulated Thing: {uploads}. Most writes to one block: {counts.Max()} " +
             $"(rated {chip.FlashEndurance:N0}); fewest: {counts.Min()}.";
+    }
+
+    // ---- Copying the messages ----
+
+    private void OnCopyMessages(object? sender, RoutedEventArgs e) => CopyMessages(selectedOnly: true);
+    private void OnCopyAllMessages(object? sender, RoutedEventArgs e) => CopyMessages(selectedOnly: false);
+
+    private void OnMessagesKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.C && e.KeyModifiers == KeyModifiers.Control)
+        {
+            CopyMessages(selectedOnly: true);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>The selected messages (or, with none selected, all of them) to the clipboard, one a line.</summary>
+    private async void CopyMessages(bool selectedOnly)
+    {
+        var lines = selectedOnly && MessagesList.SelectedItems is { Count: > 0 } selected
+            ? messages.Where(m => selected.Contains(m)).ToList()
+            : messages.ToList();
+        if (Clipboard is { } clipboard) await clipboard.SetTextAsync(string.Join(Environment.NewLine, lines));
     }
 }

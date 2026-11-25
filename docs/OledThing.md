@@ -69,3 +69,6 @@ reads everything raw, about every 37 µs, with no debounce; the only interrupt i
 
 ST-LINK V2 to J2: RST to NRST, SWIM to SWIM, GND to GND, and the ST-LINK's 3.3 V or
 5 V pin to the Thing's VCC (top-right corner).
+The sheet: [Infographics/StLink_Programmer_Wiring.png](Infographics/StLink_Programmer_Wiring.png);
+a Pico instead: [Infographics/Pico_Programmer_Wiring.png](Infographics/Pico_Programmer_Wiring.png).
+In Wren, both open from **Tools → Firmware…**.

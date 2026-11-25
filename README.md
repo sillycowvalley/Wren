@@ -3,22 +3,31 @@
 <img src="src/Wren/Assets/wren.png" alt="Wren, a small brown bird with its tail cocked up" width="160" align="right" />
 
 A development environment for STM8S003F3-class microcontrollers, in C# / .NET 8.
-Its first target is the Digicool Things "8-bit OLED Thing".
+Its targets are the Digicool Things "8-bit OLED Thing" and "8-bit LED Thing".
 
 Wren is not affiliated with STMicroelectronics or Digicool Things. STM8, ST-LINK and
 SWIM are ST's names, used here to describe compatibility.
 
+## Download
+
+Windows builds are on the [Releases](https://github.com/sillycowvalley/wren/releases) page: a
+zip to unzip and run, with nothing to install. A release is made when its notes,
+`docs/Releases/<version>.md` (such as `v0.1.0-beta.1.md`), reach main:
+`.github/workflows/release.yml` runs the tests, publishes Wren self-contained for 64-bit
+Windows, checks it starts, and creates the release and its tag with the zip. A version with
+a suffix makes a pre-release. Pushing a version tag by hand makes one too.
+
 ## What is in it
 
 - **Wren**: the app. You edit a Wren BASIC program in it (File and Edit menus, Notepad
-  style) and build, run and debug it with Visual Studio's keys: Ctrl+Shift+B builds, F5
+  style) and build, run and debug it with Visual Studio's keys: F7 builds, F5
   starts debugging (building first if the program changed), Ctrl+F5 runs without
-  debugging, Shift+F5 stops, F9 toggles a breakpoint, F11, F10 and Shift+F11 step into,
-  over and out, Ctrl+F10 runs to the cursor. **Debug → Target** chooses where: the
-  emulated OLED Thing (the OLED, the inputs and pins, the current line, variables and the
-  flash write counts), or a real Thing on the programmer, where the same keys upload the
+  debugging, Shift+F5 stops, F9 toggles a breakpoint, and while it is paused F11, F10
+  and Shift+F11 step into, over and out and Ctrl+F10 runs to the cursor. **Debug → Target** chooses where: the
+  emulated Thing chosen in **Board** (its OLED or LEDs, the inputs and pins, the current line,
+  variables and the flash write counts), or a real Thing on the programmer, where the same keys upload the
   program only if it changed, run it and debug it on the chip (two breakpoints at a time).
-  **Tools → Programmer…** sets a Thing up. A program saved from another editor reloads
+  **Tools → Firmware…** sets a Thing up. A program saved from another editor reloads
   by itself.
 - **Wren BASIC**: the Thing's language. Programs react to events (`ON CHANGE`,
   `ON LATCH PD3 RISING WHILE PD2 LOW`, `ON EVERY 100` ...) and draw with statements
@@ -30,8 +39,13 @@ SWIM are ST's names, used here to describe compatibility.
 - **Wren.Script**: the BASIC compiler and the debugger's engine.
 - **Wren.Asm**: an STM8 assembler using ST's instruction syntax. It writes Intel HEX
   and S-records, which ST Visual Programmer can load.
-- **Wren.Emu**: an STM8 emulator with the SSD1315 OLED and the OLED Thing board.
-- **programs/**: Wren BASIC programs. `OledThing.bas` is the Thing's own behaviour.
+- **Wren.Emu**: an STM8 emulator with the SSD1315 OLED, the OLED Thing and the LED Thing.
+- **programs/**: Wren BASIC programs, a folder for each Thing. `OledThing/OledThing.bas` and
+  `LedThing/LedThing.bas` are the two Things' own behaviour; each folder also has two
+  scanner demos, `KnightRider.bas` and `Cylon.bas`; the OLED Thing's has `Snake.bas` and
+  `Pong.bas`, which play themselves, `SevenSegment.bas`, the inputs in seven-segment
+  digits at any of four angles, and `RotatedHex.bas`, the same in a smoothed font of its own. **Board → LED Thing** builds for the
+  LED Thing (`LEDS`, the mode pins `M0`-`M2`).
 - **art/**: the wren, as hand-written SVG sources: `wren.svg` (the full drawing),
   `wren-icon.svg` (simplified for small icons), `wren-16.svg` (hand-placed 16 x 16 pixels)
   and `wren-oled.svg` (1-bit, as the 64 x 32 OLED would show it). The PNGs and the `.ico`
@@ -40,7 +54,7 @@ SWIM are ST's names, used here to describe compatibility.
 - **Wren.Link**: programming a real Thing through an ST-LINK V2 (Windows, WinUSB) or a
   Raspberry Pi Pico or RP2040 Plus running pico-swimlib ([docs/PicoLink.md](docs/PicoLink.md)): install
   the kernel, upload programs through the FAT, read the wear history. Only blocks that
-  change are written. In Wren: **Tools → Programmer…**.
+  change are written. In Wren: **Tools → Firmware…**.
 
 See [docs/ProjectPlan.md](docs/ProjectPlan.md).
 

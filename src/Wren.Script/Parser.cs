@@ -11,7 +11,10 @@ public sealed class Parser
 
     private Parser(List<Token> tokens) => this.tokens = tokens;
 
-    public static ProgramSyntax Parse(string source) => new Parser(Lexer.Read(source)).ParseProgram();
+    public static ProgramSyntax Parse(string source, Board board = Board.OledThing) =>
+        new Parser(Lexer.Read(source)) { board = board }.ParseProgram();
+
+    private Board board = Board.OledThing;
 
     private Token Current => tokens[pos];
     private Token Next => tokens[Math.Min(pos + 1, tokens.Count - 1)];
@@ -131,10 +134,11 @@ public sealed class Parser
         EndOfStatement();
         string end = isFunction ? "FUNCTION" : "SUB";
         var body = ParseBlock(() => Current.Is("END") && Next.Is(end));
+        int endLine = Current.Line;
         Expect("END");
         Expect(end);
         EndOfStatement();
-        return new Routine(line, name, parameters, isFunction, body);
+        return new Routine(line, name, parameters, isFunction, body, endLine);
     }
 
     private Handler ParseHandler(int line)
@@ -178,20 +182,24 @@ public sealed class Parser
         }
         EndOfStatement();
         var body = ParseBlock(() => Current.Is("END") && Next.Is("ON"));
+        int endLine = Current.Line;
         Expect("END");
         Expect("ON");
         EndOfStatement();
-        return new Handler(line, ev, pin, edges, qualifier, qualifierHigh, interval, body);
+        return new Handler(line, ev, pin, edges, qualifier, qualifierHigh, interval, body, endLine);
     }
 
     private int ParsePin()
     {
-        if (Current.Kind == TokenKind.Name && Names.Pins.TryGetValue(Current.Text.ToUpperInvariant(), out int pin))
+        if (Current.Kind == TokenKind.Name && Names.PinsFor(board).TryGetValue(Current.Text.ToUpperInvariant(), out int pin))
         {
             pos++;
             return pin;
         }
-        throw Error($"Expected a pin (PA1, PA2, PA3, PD2 or PD3), found {Current}");
+        if (Current.Kind == TokenKind.Name && Names.NotOn(Current.Text, board) is string why) throw Error(why);
+        throw Error(board == Board.LedThing
+            ? $"Expected a pin (M0, M1 or M2), found {Current}"
+            : $"Expected a pin (PA1, PA2, PA3, PD2 or PD3), found {Current}");
     }
 
     // ---- Statements ----
@@ -330,13 +338,16 @@ public sealed class Parser
 
         EndOfStatement();
         var branches = new List<(Expr, List<Stmt>)>();
+        var elseIfLines = new List<int>();
         List<Stmt>? elseBody = null;
         bool AtBranchEnd() => Current.Is("ELSEIF") || Current.Is("ELSE") || (Current.Is("END") && Next.Is("IF"));
         branches.Add((condition, ParseBlock(AtBranchEnd)));
         while (true)
         {
+            int branchLine = Current.Line;
             if (Accept("ELSEIF"))
             {
+                elseIfLines.Add(branchLine);
                 Expr c = ParseExpression();
                 Expect("THEN");
                 EndOfStatement();
@@ -352,7 +363,7 @@ public sealed class Parser
         Expect("END");
         Expect("IF");
         needsEnd = true;
-        return new IfStmt(line, branches, elseBody);
+        return new IfStmt(line, branches, elseBody, elseIfLines);
     }
 
     private List<Expr> ParseArguments()

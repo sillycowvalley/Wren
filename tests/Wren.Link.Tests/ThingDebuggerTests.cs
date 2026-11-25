@@ -89,13 +89,13 @@ public class ThingDebuggerTests
         d.Start(Compile(Source), debug: true, stopAtFirst: true);
         UntilPaused(thing, d);
         var lines = new List<int> { d.CurrentLine };
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 6; i++)
         {
             d.StepInto();
             UntilPaused(thing, d);
             lines.Add(d.CurrentLine);
         }
-        Assert.Equal(new[] { 3, 4, 9, 10, 5 }, lines);
+        Assert.Equal(new[] { 3, 4, 9, 10, 11, 5, 6 }, lines);   // END SUB and END ON are stops too
     }
 
     [Fact]
@@ -230,4 +230,116 @@ public class ThingDebuggerTests
         UntilPaused(thing, d);
         Assert.Equal(new[] { 3, 4 }, d.ArmedBreakpoints);   // 6 has no statement
     }
+
+    [Fact]
+    public void TheKernelNeverSleepsSoAnIdleProgramCanBeReadAndPaused()
+    {
+        // The program finishes ON START and waits for events; a kernel that slept in WFI
+        // would be out of SWIM's reach now (the simulated Pico refuses it, as the chip does).
+        var (thing, d) = Ready();
+        d.Start(Compile("DIM n, m\nON START\n n = 42\nEND ON\nON CHANGE\n m = VALUE\nEND ON\n"), debug: true);
+        RunPolling(thing, d, 0.05);
+        Assert.Equal(CpuState.Running, thing.Mcu.Cpu.State);
+        d.Refresh();
+        Assert.Equal(ThingRunState.Running, d.State);
+        Assert.Equal(42, Global(d, "n"));
+        d.Pause();                                  // idle: it stops at the next statement to come
+        thing.SetInputs(0x5A);
+        UntilPaused(thing, d);
+        Assert.Equal(6, d.CurrentLine);
+        Assert.Equal(0x5A, d.EventValue);
+    }
+
+    [Fact]
+    public void SteppingOverTheEndOfAHandlerRunsOn()
+    {
+        var (thing, d) = Ready();
+        d.Start(Compile("DIM n\nON CHANGE\n n = n + 1\n n = n + 1\nEND ON\n"), debug: true, stopAtFirst: true);
+        UntilPaused(thing, d);                       // 3, in the CHANGE at start
+        d.StepOver(); UntilPaused(thing, d);
+        Assert.Equal(4, d.CurrentLine);
+        d.StepOver(); UntilPaused(thing, d);
+        Assert.Equal(5, d.CurrentLine);              // END ON
+        d.StepOver();                                // off the end of the handler
+        RunPolling(thing, d, 0.02);
+        Assert.Equal(ThingRunState.Running, d.State);
+        thing.SetInputs(0x0F);                       // the next CHANGE: it runs, no stop
+        RunPolling(thing, d, 0.05);
+        d.Refresh();
+        Assert.Equal(ThingRunState.Running, d.State);
+        Assert.Equal(4, Global(d, "n"));
+    }
+
+    [Fact]
+    public void ARemovedBreakpointInAHandlerStopsNoMore()
+    {
+        var (thing, d) = Ready();
+        d.Breakpoints.Add(3);
+        d.Start(Compile("DIM n\nON CHANGE\n n = n + 1\nEND ON\n"), debug: true);
+        UntilPaused(thing, d);                       // the CHANGE at start
+        Assert.Equal(3, d.CurrentLine);
+        d.Breakpoints.Clear();                       // removed while paused
+        d.UpdateBreakpoints();
+        d.Continue();
+        RunPolling(thing, d, 0.02);
+        thing.SetInputs(0x0F);
+        RunPolling(thing, d, 0.05);
+        thing.SetInputs(0xF0);
+        RunPolling(thing, d, 0.05);
+        d.Refresh();
+        Assert.Equal(ThingRunState.Running, d.State);
+        Assert.Equal(3, Global(d, "n"));
+
+        d.Breakpoints.Add(3);                        // set and removed again while running
+        d.UpdateBreakpoints();
+        thing.SetInputs(0x0F);
+        UntilPaused(thing, d);
+        d.Continue();
+        RunPolling(thing, d, 0.02);
+        d.Breakpoints.Clear();
+        d.UpdateBreakpoints();
+        thing.SetInputs(0xF0);
+        RunPolling(thing, d, 0.05);
+        d.Refresh();
+        Assert.Equal(ThingRunState.Running, d.State);
+        Assert.Equal(5, Global(d, "n"));
+    }
+
+    [Fact]
+    public void TheDebuggerWorksOnAnLedThing()
+    {
+        var ledKernel = Kernel.Assemble(Path.Combine(AppContext.BaseDirectory, "firmware"), Board.LedThing);
+        var thing = new LedThing();
+        thing.Mcu.Load(MemoryImageOf("8-bit_led_thing.s19").Bytes);
+        var link = new ThingLink(new PicoLink(new FakePico(thing.Mcu)), "COM9");
+        link.Link.Sleep = _ => { };
+        link.Target.Connect();
+        link.Programmer.InstallKernel(new[] { Kernel.Image, ledKernel.Image });
+        var d = ThingDebugger.Attach(link, ledKernel);
+        var program = Compiler.Compile("DIM n\nON START\n n = 7\n LEDS n\nEND ON\n", Board.LedThing);
+        Assert.True(program.Success, string.Join("\n", program.Errors));
+        d.Breakpoints.Add(4);
+        d.Start(program, debug: true);
+        for (int i = 0; i < 500 && d.State != ThingRunState.Paused; i++)
+        {
+            thing.Mcu.Run(0.002);
+            d.Poll();
+        }
+        Assert.Equal(ThingRunState.Paused, d.State);
+        Assert.Equal(4, d.CurrentLine);
+        Assert.Equal("7", d.Globals().Single(v => v.Name == "n").Value.ToString());
+        d.Continue();
+        for (int i = 0; i < 20; i++)
+        {
+            thing.Mcu.Run(0.002);
+            d.Poll();
+        }
+        thing.TakeBrightness();
+        thing.Mcu.Run(0.02);
+        var seen = thing.TakeBrightness();
+        Assert.True(seen[0] > 0.05 && seen[1] > 0.05 && seen[2] > 0.05 && seen[3] < 0.01);
+    }
+
+    private static Wren.Asm.MemoryImage MemoryImageOf(string file) => Wren.Asm.MemoryImage.Parse(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", file)));
 }

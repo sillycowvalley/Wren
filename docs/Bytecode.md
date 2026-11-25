@@ -129,11 +129,18 @@ Stack effects are written before -- after; the top of the stack is on the right.
 | $73 | LOST | | -- events lost |
 | $74 | FLIP | | f -- (non-zero: the picture upside down) |
 | $75 | PULLUPS | | mask -- (bit n set: bn pulled up; clear: floating) |
+| $76 | LEDS | | v -- (LED Thing: bit n lights bn's LED) |
 
 Opcodes from $30 are dispatched through one table in the kernel, so they stay
 contiguous: a new opcode goes on the end.
 
-Colours: 0 clear, 1 set, 2 invert. Pins: PA1 0, PA2 1, PA3 2, PD2 3, PD3 4.
+The kernel is built for one board (`BOARD` in `Kernel.asm`). The OLED Thing's kernel
+ends its table at $75, so `LEDS` is a bad opcode there. The LED Thing's kernel has
+`LEDS`, and treats the OLED's services (`CLS` to `BAR`, `FLIP`, `ANALOG`) as bad opcodes.
+The compiler refuses the other board's words before either happens.
+
+Colours: 0 clear, 1 set, 2 invert. Pins: PA1 0, PA2 1, PA3 2, PD2 3, PD3 4; on the LED
+Thing, M2 (PA1) 0, M1 (PA2) 1, M0 (PA3) 2.
 Fonts: SMALL 0, NORMAL 1, LARGE 2, BIG 3.
 
 ## Calls
@@ -145,6 +152,7 @@ call stack ends the event handler.
 
 ## Faults
 
-A fault stops the program and shows `ERR n` and the program address on the OLED:
+A fault stops the program and shows `ERR n` and the program address on the OLED (on
+the LED Thing, b7 lit with n in b0-b6):
 1 value stack full, 2 value stack empty, 3 call stack full, 4 array index,
 5 division by zero, 6 bad opcode, 7 jump outside the program.

@@ -64,4 +64,24 @@ public class DigicoolFirmwareTests
         }
         Assert.True(lit);
     }
+
+    [Fact]
+    public void TheLedThingShowsItsInputsOnTheLeds()
+    {
+        // Mode 7 (M0-M2 high, the default): each LED shows its input, scanned one at a time.
+        var thing = new LedThing();
+        thing.Mcu.Load(Image("8-bit_led_thing.s19").Bytes);
+        thing.SetInputs(0x5A);
+        thing.PowerOn();
+        thing.Mcu.Run(0.05);
+        thing.TakeBrightness();
+        thing.Mcu.Run(0.03);
+        var seen = thing.TakeBrightness();
+        for (int i = 0; i < 8; i++)
+        {
+            bool on = (0x5A & (1 << i)) != 0;
+            if (on) Assert.InRange(seen[i], 0.08, 0.17);    // about one eighth
+            else Assert.True(seen[i] < 0.01, $"b{i} at {seen[i]:P}");     // dark, but for a glimpse as the port changes
+        }
+    }
 }

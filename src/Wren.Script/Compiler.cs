@@ -80,12 +80,15 @@ public sealed class Compiler
     private Scope scope = new();
     private int hiddenCount;
 
-    public static CompiledProgram Compile(string source)
+    private Board board = Board.OledThing;
+
+    /// <summary>Compiles a program for a board: the OLED Thing (and the development board) or the LED Thing.</summary>
+    public static CompiledProgram Compile(string source, Board board = Board.OledThing)
     {
         try
         {
-            var syntax = Parser.Parse(source);
-            return new Compiler().Generate(syntax);
+            var syntax = Parser.Parse(source, board);
+            return new Compiler { board = board }.Generate(syntax);
         }
         catch (ScriptException ex)
         {
@@ -96,6 +99,12 @@ public sealed class Compiler
     }
 
     private static string Key(string name) => name.ToUpperInvariant();
+
+    /// <summary>Refuses a word that belongs to the other board.</summary>
+    private void Allowed(string key, int line)
+    {
+        if (Names.NotOn(key, board) is string why) throw new ScriptException(line, why);
+    }
 
     private CompiledProgram Generate(ProgramSyntax program)
     {
@@ -167,11 +176,11 @@ public sealed class Compiler
         {
             int end = code.NewLabel();
             code.Mark(label);
-            var names = GenerateBody("ON", 0, h.Body, Array.Empty<string>(), h.Line);
+            var names = GenerateBody("ON", 0, h.Body, Array.Empty<string>(), h.Line, h.EndLine);
             code.Mark(end);
             string title = h.Event switch
             {
-                "LATCH" or "PRESS" or "RELEASE" => $"ON {h.Event} {Names.Pins.First(p => p.Value == h.Pin).Key}",
+                "LATCH" or "PRESS" or "RELEASE" => $"ON {h.Event} {Names.PinsFor(board).First(p => p.Value == h.Pin).Key}",
                 _ => $"ON {h.Event}",
             };
             routineLabels.Add((title, label, end, names));
@@ -180,7 +189,7 @@ public sealed class Compiler
         {
             int end = code.NewLabel();
             code.Mark(r.Label);
-            var names = GenerateBody(r.Syntax.IsFunction ? "FUNCTION" : "SUB", r.Syntax.Parameters.Count, r.Syntax.Body, r.Syntax.Parameters, r.Syntax.Line);
+            var names = GenerateBody(r.Syntax.IsFunction ? "FUNCTION" : "SUB", r.Syntax.Parameters.Count, r.Syntax.Body, r.Syntax.Parameters, r.Syntax.Line, r.Syntax.EndLine);
             code.Mark(end);
             routineLabels.Add((r.Syntax.Name, r.Label, end, names));
         }
@@ -238,7 +247,7 @@ public sealed class Compiler
 
     // ---- Bodies ----
 
-    private List<string> GenerateBody(string kind, int parameters, List<Stmt> body, IReadOnlyList<string> parameterNames, int line)
+    private List<string> GenerateBody(string kind, int parameters, List<Stmt> body, IReadOnlyList<string> parameterNames, int line, int endLine = 0)
     {
         scope = new Scope { Parameters = parameters, Kind = kind };
         foreach (string p in parameterNames)
@@ -252,6 +261,9 @@ public sealed class Compiler
 
         foreach (var s in body) Statement(s);
 
+        // END ON, END SUB and END FUNCTION are where a step stops last, as Visual Studio stops
+        // on a method's closing brace (VB's End Sub).
+        if (endLine > 0) code.MarkLine(endLine);
         if (kind == "FUNCTION")
         {
             PushConstant(0);
@@ -387,6 +399,7 @@ public sealed class Compiler
         string key = Key(c.Name);
         if (Names.Statements.TryGetValue(key, out var builtin))
         {
+            Allowed(key, c.Line);
             if (key == "TEXT") { Text(c, builtin); return; }
             BuiltinArguments(builtin, c.Args, c.Line);
             code.Emit(builtin.Opcode);
@@ -439,9 +452,13 @@ public sealed class Compiler
     private void If(IfStmt i)
     {
         int end = code.NewLabel();
+        int branch = 0;
         foreach (var (condition, body) in i.Branches)
         {
             int next = code.NewLabel();
+            // An ELSEIF's test is a statement of its own, as Visual Studio stops on an else if.
+            if (branch > 0 && i.ElseIfLines is { } lines && branch - 1 < lines.Count) code.MarkLine(lines[branch - 1]);
+            branch++;
             Condition(condition, next);
             foreach (var s in body) Statement(s);
             code.Jump(Op.Jump, end);
@@ -606,6 +623,7 @@ public sealed class Compiler
         }
         if (Names.Functions.TryGetValue(key, out var f))
         {
+            Allowed(key, n.Line);
             if (f.MinArgs > 0) throw new ScriptException(n.Line, $"{f.Name} needs arguments: {f.Name}(...)");
             code.Emit(f.Opcode);
             return;
@@ -631,6 +649,7 @@ public sealed class Compiler
         }
         if (Names.Functions.TryGetValue(key, out var f))
         {
+            Allowed(key, c.Line);
             BuiltinArguments(f, c.Args, c.Line);
             code.Emit(f.Opcode);
             return;
@@ -689,7 +708,11 @@ public sealed class Compiler
                 string key = Key(name.Name);
                 if (scope.Locals.ContainsKey(key) || globals.ContainsKey(key)) return null;
                 if (constants.TryGetValue(key, out long c)) return c;
-                if (Names.Constants.TryGetValue(key, out long k)) return k;
+                if (Names.Constants.TryGetValue(key, out long k))
+                {
+                    Allowed(key, name.Line);
+                    return k;
+                }
                 return null;
             }
             case UnaryExpr u:

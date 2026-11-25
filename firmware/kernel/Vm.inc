@@ -13,7 +13,11 @@ FAULT_OPCODE    equ 6
 FAULT_JUMP      equ 7
 
 OP_FIRST        equ $30         ; opcodes from here on are in op_table
+        IF BOARD = BOARD_LED
+OP_COUNT        equ $47         ; $30-$76: the LED Thing's LEDS is $76
+        ELSE
 OP_COUNT        equ $46         ; $30-$75
+        ENDIF
 
 ; Runs the handler at program address X until it returns.
 vm_run:
@@ -59,6 +63,9 @@ op_table:
         dc.w sv_inverse,sv_text,sv_hex,sv_dec,sv_bin,sv_bits,sv_bar,sv_wait         ; $61
         dc.w sv_eewrite,sv_inputs,sv_pin,sv_analog,sv_millis,sv_eeread,sv_rnd,sv_abs ; $69
         dc.w sv_min,sv_max,sv_lost,sv_flip,sv_pullups                               ; $71
+        IF BOARD = BOARD_LED
+        dc.w sv_leds                                                                ; $76
+        ENDIF
 
 ; ---- Fetching and the value stack ----
 
@@ -626,6 +633,7 @@ pop_args_loop:
 pop_args_done:
         ret
 
+        IF BOARD = BOARD_OLED
 ; Copies args a0-a3 to the rectangle rx, ry, rw, rh.
 args_to_rect:
         ldw x,args
@@ -800,6 +808,7 @@ sv_bar:
         call pop_args
         call bar_view
         ret
+        ENDIF
 
 sv_wait:
         call vpop
@@ -811,7 +820,7 @@ wait_loop:
         subw x,buf+4
         cpw x,tmp2
         jruge wait_done
-        wfi
+        nop                         ; not WFI, so the debugger can still reach the chip
         jra wait_loop
 wait_done:
         ret
@@ -841,6 +850,7 @@ ee_wait:
 ee_same:
         ret
 
+        IF BOARD = BOARD_OLED
 ; PULLUPS mask: bit n pulls bn up (1) or leaves it floating (0). b0-b4 are PC7-PC3,
 ; b5-b7 PD6-PD4.
 sv_pullups:
@@ -869,6 +879,38 @@ pull_loop:
         or a,tmp+1
         ld PD_CR1,a
         ret
+        ELSE
+; LED Thing: PULLUPS mask. b0 is PD2, b1-b5 are PC7-PC3; b6 and b7 (PB4, PB5) are true
+; open-drain pins with no pull-up, so their bits are ignored.
+sv_pullups:
+        call vpop
+        ld a,xl
+        ld tmp,a
+        ld a,PD_CR1
+        and a,#$FB
+        btjf tmp,#0,pull_d
+        or a,#$04                   ; b0: PD2
+pull_d:
+        ld PD_CR1,a
+        srl tmp                     ; b0 done
+        clr tmp+1
+        ld a,#5
+pull_c:
+        srl tmp                     ; b1 first ...
+        rlc tmp+1                   ; ... ending in bit 4, b5 in bit 0
+        dec a
+        jrne pull_c
+        ld a,tmp+1
+        sll a
+        sll a
+        sll a                       ; b1 in bit 7 (PC7) ... b5 in bit 3 (PC3)
+        ld tmp+1,a
+        ld a,PC_CR1
+        and a,#$07
+        or a,tmp+1
+        ld PC_CR1,a
+        ret
+        ENDIF
 
 sv_inputs:
         call read_inputs
@@ -892,6 +934,7 @@ pin_zero:
         clrw x
         jp vpush
 
+        IF BOARD = BOARD_OLED
 ; ANALOG p: 0-1023 from PD2 (AIN3) or PD3 (AIN4); other pins give 0. The pin's pull-up
 ; is turned off, since it would pull the voltage up: the pin is then an analog input.
 sv_analog:
@@ -927,6 +970,7 @@ analog_wait:
 analog_zero:
         clrw x
         jp vpush
+        ENDIF
 
 sv_millis:
         ldw x,millis

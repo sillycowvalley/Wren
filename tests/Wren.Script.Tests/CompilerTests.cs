@@ -75,8 +75,36 @@ public class CompilerTests
     public void LineTable()
     {
         var p = Run.Compile("DIM a\nON START\n a = 1\n\n a = 2\nEND ON\n");
-        Assert.Equal(new[] { 3, 5 }, p.Lines.Select(l => l.Line));
+        Assert.Equal(new[] { 3, 5, 6 }, p.Lines.Select(l => l.Line));      // END ON is a stop
         Assert.Equal(3, p.LineAt(p.Lines[0].Address + 1));
+    }
+
+    [Fact]
+    public void EveryWordHasAColourAndTheOtherBoardsAreGrey()
+    {
+        foreach (var board in new[] { Board.OledThing, Board.LedThing })
+        {
+            var words = Names.Categories(board);
+            foreach (string w in Names.Statements.Keys.Concat(Names.Functions.Keys).Concat(Names.Constants.Keys))
+                Assert.True(words.ContainsKey(w), $"{w} has no colour");
+            Assert.All(words.Keys, w => Assert.True(Names.IsReserved(w), $"{w} is coloured but not reserved"));
+            foreach (var (w, only) in Names.OnlyOn)
+                Assert.Equal(only == board, words[w] != WordKind.OtherBoard);
+        }
+        Assert.Equal(WordKind.Keyword, Names.Categories(Board.OledThing)["WHILE"]);
+        Assert.Equal(WordKind.Keyword, Names.Categories(Board.OledThing)["ON"]);
+        Assert.Equal(WordKind.Statement, Names.Categories(Board.OledThing)["CLS"]);
+        Assert.Equal(WordKind.OtherBoard, Names.Categories(Board.LedThing)["CLS"]);
+        Assert.Equal(WordKind.Statement, Names.Categories(Board.LedThing)["LEDS"]);
+        Assert.Equal(WordKind.Function, Names.Categories(Board.LedThing)["INPUTS"]);
+        Assert.Equal(WordKind.Constant, Names.Categories(Board.LedThing)["M0"]);
+    }
+
+    [Fact]
+    public void ElseIfTestsAreStops()
+    {
+        var p = Run.Compile("DIM a\nON START\n IF a = 1 THEN\n  a = 2\n ELSEIF a = 0 THEN\n  a = 3\n END IF\nEND ON\n");
+        Assert.Equal(new[] { 3, 4, 5, 6, 8 }, p.Lines.Select(l => l.Line));
     }
 
     [Theory]

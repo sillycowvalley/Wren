@@ -5,14 +5,14 @@ using Xunit;
 namespace Wren.Script.Tests;
 
 /// <summary>
-/// programs/OledThing.bas: the Thing's own behaviour in Wren BASIC, checked against
+/// programs/OledThing/OledThing.bas: the Thing's own behaviour in Wren BASIC, checked against
 /// Digicool's factory firmware (firmware/digicool) run in the emulator, and against the
 /// die faces read from its image. Only the hex digits differ: they are in Wren's font.
 /// </summary>
 public class OledThingProgramTests
 {
     private static Run Start(byte inputs, Action<OledThing>? modes = null) =>
-        Run.Start(Run.ProgramText("OledThing.bas"), t =>
+        Run.Start(Run.ProgramText(Path.Combine("OledThing", "OledThing.bas")), t =>
         {
             t.SetInputs(inputs);
             modes?.Invoke(t);
@@ -203,7 +203,7 @@ public class OledThingProgramTests
     [Fact]
     public void SizeAndWear()
     {
-        var program = Run.Compile(Run.ProgramText("OledThing.bas"));
+        var program = Run.Compile(Run.ProgramText(Path.Combine("OledThing", "OledThing.bas")));
         Assert.True(program.Image.Length < 512, $"{program.Image.Length} bytes");
     }
 }
