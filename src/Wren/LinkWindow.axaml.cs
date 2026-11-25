@@ -20,6 +20,9 @@ public partial class LinkWindow : Window
     private bool kernelConfirmed;
     private bool hasWrenKernel;
     private bool hasCurrentKernel;
+
+    /// <summary>The Thing holds exactly the kernel this Wren installs: Install kernel has nothing to do.</summary>
+    private bool kernelUpToDate;
     private WearWindow? wearWindow;
     private string? imageToWrite;
 
@@ -80,7 +83,7 @@ public partial class LinkWindow : Window
         bool open = connected && !link!.Target.NoAccess;
         ConnectButton.IsEnabled = !connected && !heldByMainWindow && devices.Count > 0;
         DisconnectButton.IsEnabled = connected || heldByMainWindow;
-        KernelButton.IsEnabled = open && kernel != null;
+        KernelButton.IsEnabled = open && kernel != null && !kernelUpToDate;
         ImageButton.IsEnabled = connected;                     // on a protected Thing too: it removes the protection
         WearButton.IsEnabled = open && hasWrenKernel;
         DebugChecksButton.IsEnabled = open && hasCurrentKernel && kernel != null;
@@ -184,6 +187,7 @@ public partial class LinkWindow : Window
         var s = l.Programmer.ReadStatus(kernel?.Image);
         hasWrenKernel = s.HasKernel;
         hasCurrentKernel = s.Info != null;
+        kernelUpToDate = s.Flash == FlashContents.WrenKernel;
         string text;
         if (s.ReadOutProtected)
             text = "Read-out protection is on: the Thing cannot be read.\nWrite image… removes it (erasing the chip).";
@@ -267,6 +271,7 @@ public partial class LinkWindow : Window
         kernelConfirmed = false;
         hasWrenKernel = false;
         hasCurrentKernel = false;
+        kernelUpToDate = false;
         imageToWrite = null;
     }
 
