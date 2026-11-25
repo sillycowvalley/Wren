@@ -104,8 +104,8 @@ One heading a slide, in playing order, **headed with the title Michael
 sees on the slide**, never its file name: `## Snake that plays itself`.
 Under it, only:
 
-- the narration, one paragraph a line, so it pastes whole into a
-  prompter;
+- the narration, one paragraph a line beneath a `> `, so it shows with
+  a bar beside it and pastes whole into a prompter;
 - where something must be done, a short hint in italics just before
   the words it goes with: `*Breakpoint on line 83.*`, `*F10, F10.*`.
 
