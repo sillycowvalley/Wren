@@ -11,7 +11,7 @@ Wren BASIC is the language of Digicool Things' 8-bit OLED Thing and 8-bit LED Th
 
 In this video, a stopwatch for the OLED Thing, line by line:
 - the shape of a program: constants, globals, handlers, SUBs and FUNCTIONs
-- events: ON START, ON EVERY, ON PRESS, ON CHANGE, ON LATCH and the rest
+- events: ON START, ON EVERY, ON CHANGE, ON PRESS, ON LATCH and the rest
 - 16-bit integers, and why there's nothing else
 - drawing on a 64 x 32 screen, four fonts, and numbers in hex, decimal and binary
 - time, pins and the EEPROM: a best time that survives a power cut
@@ -54,9 +54,9 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## The stopwatch, on the emulator
 
-*Open Stopwatch.bas, F5. Pull HEX low and let go to start; again to stop. Pull BAR low to zero it.*
+*Open Stopwatch.bas, F5. In Spare pins, pull PD3 low and let go to start; again to stop. The same with PD2 to zero it.*
 
-> Here's the whole program running. The mode pins are its buttons: one starts and stops it, the other sets it back to zero.
+> Here's the whole program running. Two spare pins are its buttons: one starts and stops it, the other sets it back to zero. A real wire bounces when it touches, and the kernel takes care of that for you.
 
 > Stop it, and if that's the best time so far, it goes in the bottom corner.
 
@@ -90,9 +90,9 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## The stopwatch, on the Thing
 
-*Debug → Target → Thing on the programmer, Ctrl+F5. Touch the HEX wire to ground to start, again to stop.*
+*Debug → Target → Thing on the programmer, Ctrl+F5. Touch a wire from PD3 (J5 pin 4) to GND (J5 pin 1) to start, again to stop; PD2 (J5 pin 3) to zero it.*
 
-> On the real board, a wire to ground is the button. And it's the same three hundred and thirty-four bytes, doing exactly what it did on screen.
+> On the real board, a wire to ground is the button. And it's the same three hundred and forty-eight bytes, doing exactly what it did on screen.
 
 ## The limits
 

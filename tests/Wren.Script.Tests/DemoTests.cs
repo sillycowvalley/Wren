@@ -151,23 +151,33 @@ public class DemoTests
     public void TheStopwatchKeepsTimeAndRemembersTheBest()
     {
         var run = Run.Start(Program("OledThing", "Stopwatch.bas"), seconds: 0.1);
-        void Press(Action<OledThing, bool> pin)
+        // A button: the pin pulled low for 50 ms, bouncing for the first 3 ms.
+        void Press(Action<bool> pin)
         {
-            pin(run.Thing, true);
+            for (int i = 0; i < 3; i++)
+            {
+                pin(true);
+                run.For(0.0005);
+                pin(false);
+                run.For(0.0005);
+            }
+            pin(true);
             run.For(0.05);
-            pin(run.Thing, false);
+            pin(false);
+            run.For(0.05);
         }
+        void StartStop() => Press(low => run.Thing.Pd3Low = low);
         int Time() => run.Global("seconds") * 100 + run.Global("hundredths");
 
-        Press((t, low) => t.HexLow = low);                   // start
+        StartStop();
         run.For(3.0);
-        Press((t, low) => t.HexLow = low);                   // stop: 3.05 s since the start
+        StartStop();
         Assert.Equal(0, run.VmFault);
-        Assert.InRange(Time(), 303, 307);
+        Assert.InRange(Time(), 306, 314);                   // 3.1 s from press to press, give or take the debounce
         int best = (run.Mcu.Read(Run.Kernel.Symbol("SETTINGS")) << 8) | run.Mcu.Read(Run.Kernel.Symbol("SETTINGS") + 1);
         Assert.Equal(Time(), best);
 
-        Press((t, low) => t.BarLow = low);                   // back to 0
+        Press(low => run.Thing.Pd2Low = low);                // back to 0
         Assert.Equal(0, Time());
     }
 }

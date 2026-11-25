@@ -10,7 +10,7 @@
   "Capture screenshot" from the same menu. Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - Stopwatch.bas: programs/OledThing/Stopwatch.bas; 334 bytes in 6 blocks, 10 bytes of
+    - Stopwatch.bas: programs/OledThing/Stopwatch.bas; 348 bytes in 6 blocks, 10 bytes of
       variables (Wren's compiler); its test is DemoTests.TheStopwatchKeepsTimeAndRemembersTheBest.
     - The language: docs/Infographics/Wren_BASIC_Quick_Reference.html (Help menu).
     - The outline is Stopwatch.bas's own top level, every handler, SUB and FUNCTION in order, with
@@ -182,12 +182,12 @@
  </g>
 </svg><!--/WREN--></div>
 <h1 class="rise">No main loop</h1>
-<div class="outline"><div class="r rise d1"><b class="k">CONST</b>SLOT = 0: folded in at compile time</div><div class="r rise d2"><b class="k">DIM</b>hundredths, seconds, running, last, spare</div><div class="r rise d3"><b class="k">ON START</b>draw the first screen</div><div class="r rise d4"><b class="k">ON EVERY 20 MS</b>tick, and draw while running</div><div class="r rise d5"><b class="k">ON PRESS PA1</b>start or stop</div><div class="r rise d6"><b class="k">ON PRESS PA2</b>back to zero</div><div class="r rise d7"><b class="k">SUB</b>Tick, Draw, Two, Remember</div><div class="r rise d8"><b class="k">FUNCTION</b>Best</div></div>
+<div class="outline"><div class="r rise d1"><b class="k">CONST</b>SLOT = 0: folded in at compile time</div><div class="r rise d2"><b class="k">DIM</b>hundredths, seconds, running, last, spare</div><div class="r rise d3"><b class="k">ON START</b>draw the first screen</div><div class="r rise d4"><b class="k">ON EVERY 20 MS</b>tick, and draw while running</div><div class="r rise d5"><b class="k">ON PRESS PD3</b>start or stop</div><div class="r rise d6"><b class="k">ON PRESS PD2</b>back to zero</div><div class="r rise d7"><b class="k">SUB</b>StartStop, Zero, Tick, Draw, Two, Remember</div><div class="r rise d8"><b class="k">FUNCTION</b>Best</div></div>
 <div class="side rise d5">
   <div class="no"><s>10 PRINT</s> no line numbers</div>
   <div class="no"><s>GOTO 10</s> no GOTO</div>
   <div class="no"><s>DO … LOOP</s> no main loop</div>
-  <div class="card" style="position: static; margin-top: 30px;"><h2 class="kernel">Stopwatch.bas</h2><div style="font-size: 26px; color: #cbd5e1; line-height: 1.4;">334 bytes of bytecode, in 6 of the 54 blocks</div></div>
+  <div class="card" style="position: static; margin-top: 30px;"><h2 class="kernel">Stopwatch.bas</h2><div style="font-size: 26px; color: #cbd5e1; line-height: 1.4;">348 bytes of bytecode, in 6 of the 54 blocks</div></div>
 </div>
 <!--NAV--><a class="nav prev" href="Wren_03_00_Thumbnail.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_03_02_Events.html" aria-label="Next slide"></a><!--/NAV-->
 </body>

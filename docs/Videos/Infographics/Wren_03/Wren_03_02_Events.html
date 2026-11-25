@@ -191,13 +191,13 @@
 <tr class="us"><td>ON EVERY n MS</td><td>every n ms; up to four of them</td></tr>
 <tr><td>ON CHANGE</td><td>when b0–b7 differ from last time</td></tr>
 <tr><td>ON PINS</td><td>when a mode pin changes</td></tr>
-<tr class="us"><td>ON PRESS pin</td><td>when the pin goes low</td></tr>
+<tr class="us"><td>ON PRESS pin</td><td>when a pin goes low, debounced</td></tr>
 <tr><td>ON RELEASE pin</td><td>when it goes high</td></tr>
 <tr><td>ON LATCH pin</td><td>on an edge, b0–b7 caught in the interrupt</td></tr>
 </table>
 <div class="q rise d4"><div class="label">ONE AT A TIME</div>
   <div class="slot run">ON EVERY 20 MS</div>
-  <div class="slot w">ON PRESS PA1</div>
+  <div class="slot w">ON PRESS PD3</div>
   <div class="slot w">ON EVERY 20 MS</div>
   <p>The rest wait in the queue. <b style="color:#fff">LOST</b> counts any that didn't fit. The stopwatch's handlers are shaded.</p></div>
 <!--NAV--><a class="nav prev" href="Wren_03_01_NoMainLoop.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_03_03_Integers.html" aria-label="Next slide"></a><!--/NAV-->

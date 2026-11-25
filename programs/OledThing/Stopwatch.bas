@@ -1,7 +1,7 @@
 ' A stopwatch, written as a tour of Wren BASIC: events, SUBs, a FUNCTION, the fonts, a
-' bar and the mode pins. Pull HEX (PA1) low to start or stop it, BAR (PA2) low to set it
-' back to 0. The best time stopped so far is kept in the EEPROM, so it survives a power
-' cut.
+' bar and two buttons. Pull PD3 (J5 pin 4) low, with a wire to GND (J5 pin 1), to start
+' or stop it; PD2 (J5 pin 3) to set it back to 0. The best time stopped so far is kept in
+' the EEPROM, so it survives a power cut.
 
 CONST SLOT = 0                  ' the two setting bytes that hold the best time
 
@@ -20,20 +20,29 @@ ON EVERY 20 MS
   IF running THEN Draw
 END ON
 
-ON PRESS PA1
+' The buttons. PD2 and PD3 have pull-ups, and the kernel debounces a press (20 ms).
+ON PRESS PD3
+  StartStop
+END ON
+
+ON PRESS PD2
+  Zero
+END ON
+
+SUB StartStop
   Tick
   running = NOT running
   IF NOT running THEN Remember
   Draw
-END ON
+END SUB
 
-ON PRESS PA2
+SUB Zero
   running = FALSE
   hundredths = 0
   seconds = 0
   spare = 0
   Draw
-END ON
+END SUB
 
 ' Adds the time since the last look, if it is running.
 SUB Tick
