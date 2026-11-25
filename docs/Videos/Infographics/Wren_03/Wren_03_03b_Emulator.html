@@ -13,8 +13,8 @@
     - Stopwatch.bas: programs/OledThing/Stopwatch.bas; 348 bytes in 6 blocks, 10 bytes of
       variables (Wren's compiler); its test is DemoTests.TheStopwatchKeepsTimeAndRemembersTheBest.
     - The scene: docs/Videos/Wren_03_Basic.md.
-  A backdrop for OBS, for a scene with nothing worth filming: the console frame (48, 152; up to
-  1114 x 762), black inside, as on every backdrop; no camera frame, so the card takes the right.
+  A backdrop for OBS, for a scene on the emulator alone: one console frame the full width
+  (48, 152; 1824 x 762), black inside; no camera frame. What to do is in the strip.
 -->
 <html lang="en">
 <head>
@@ -122,8 +122,8 @@
   code { font-family: "DejaVu Sans Mono", Consolas, monospace; color: var(--basic); font-size: 22px; }
   .strip { position: absolute; left: 48px; right: 48px; top: 944px; height: 96px; display: flex; align-items: center; gap: 22px; padding: 0 28px; background: rgba(21, 36, 59, 0.92); border-left: 6px solid var(--gold); border-radius: 10px; font-size: 28px; }
   .strip b { color: var(--gold); }
-  .see.tall { top: 152px; height: 762px; }
-  .see.tall li { font-size: 27px; margin-bottom: 22px; }
+  .frame.wide { left: 48px; top: 152px; width: 1824px; height: 762px; }
+  .strip.steps { font-size: 25px; flex-wrap: wrap; gap: 10px 18px; line-height: 1.3; }
 </style>
 </head>
 <body>
@@ -186,11 +186,8 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<div class="frame console"></div>
-<div class="card see tall"><h2>WHAT YOU'LL SEE</h2><ol>
-<li><code>Stopwatch.bas</code>, <kbd>F5</kbd></li><li>Pull <b>PD3</b> low and let go: start; again: stop</li><li>The same with <b>PD2</b>: back to 0</li><li>A best time, in the bottom corner</li>
-</ol></div>
-<div class="strip">PD3 and PD2 are the buttons · the best time lives in the <b>EEPROM</b></div>
+<div class="frame wide"></div>
+<div class="strip steps"><span><code>Stopwatch.bas</code>, <kbd>F5</kbd> · Pull <b>PD3</b> low and let go: start; again: stop · The same with <b>PD2</b>: back to 0 · A best time, in the bottom corner</span></div>
 <!--NAV--><a class="nav prev" href="Wren_03_03_Integers.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_03_04_SubFunction.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>

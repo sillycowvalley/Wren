@@ -219,10 +219,13 @@ of them with only the image swapped:
 | console | 48, 152 | up to 1114 × 762 |
 | camera | 1210, 152 | 662 × 372, 16:9 |
 
-**A scene with nothing worth filming** (the emulator, or a scene about
-what Wren's own windows report) leaves the camera frame out: the console
-frame stays where and as big as it always is, and the "what you'll see"
-card takes the whole right-hand column.
+**A scene on the emulator alone** has no camera: its backdrop has one
+console frame the full width of the slide (48, 152; 1824 × 762), and
+what to do goes in the strip beneath it instead of a card. **Any other
+scene with nothing worth filming** (what Wren's own windows report, say)
+leaves the camera frame out too: the console frame stays where and as big
+as it always is, and the "what you'll see" card takes the whole
+right-hand column.
 
 The frames are black inside, so a source scaled to fit leaves no
 border. In an animated set a backdrop is a page in the sequence and
