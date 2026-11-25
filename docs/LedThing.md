@@ -98,8 +98,10 @@ and pulls M0-M2 up.
   ($9280, 54 blocks), with board 2 in the info block.
 - **The LEDs**: the 1 ms tick lights one LED, b0 to b7 in turn, so a frame is 8 ms and a lit
   LED is on one eighth of the time, as on Digicool's firmware (whose frame is 2.9 ms).
-  While the debugger has the program paused the tick stops, and the LED of that moment
-  stays lit.
+  Running under the debugger, the scan goes on (the variables are read beside the running
+  CPU). Paused, or stepping, the chip and its tick stop at every bytecode instruction for a
+  round trip over SWIM (about 50 ms through a Pico), so the LED of that moment stays lit
+  and the scan crawls; with no debugger the scan is full speed.
 - **Wren BASIC** on this board: `LEDS v` lights bn's LED for each bit n of v. The mode pins
   are `M0` (PA3), `M1` (PA2) and `M2` (PA1), for `PIN`, `ON PRESS`, `ON RELEASE`, `ON LATCH`
   and `ON PINS`. The display statements, the fonts, `ANALOG` and the OLED Thing's pin
