@@ -7,6 +7,7 @@ The Wren BASIC series and its YouTube playlist: videos about Wren, made as
 | Video | Script | Slides | State |
 |---|---|---|---|
 | 1. Snake and Pong in BASIC on an 8 KB chip (the overview) | [Wren_01_Overview.md](Wren_01_Overview.md) | `Infographics/Wren_01` | Script and slides ready; not yet recorded |
+| 2. A Raspberry Pi Pico as the programmer | [Wren_02_Pico.md](Wren_02_Pico.md) | `Infographics/Wren_02` | Script and slides ready; the LED Thing's header pin order to confirm; not yet recorded |
 
 ## The playlist, planned
 
@@ -17,7 +18,7 @@ dives after, for those who stay. Each headline leads with a name or a claim, nev
 | # | Video | What it covers |
 |---|---|---|
 | 1 | The overview | Done: above. |
-| 2 | A Pi Pico as the programmer | Flashing Wren's PicoLink firmware onto the Pico (drag the .uf2 on), wiring it to each Thing, installing the kernel, putting the factory firmware back. The ST-LINK V2 is mentioned only once it has been tried on a Thing. |
+| 2 | A Pi Pico as the programmer | Ready: above. Flashing Wren's PicoLink firmware onto the Pico (drag the .uf2 on), wiring it to each Thing, installing the kernel, putting the factory firmware back. The ST-LINK V2 is mentioned only once it has been tried on a Thing. |
 | 3 | BASIC in 1 KB of RAM | Wren BASIC in detail: the shape of a program, the events (`ON START`, `ON EVERY`, `ON CHANGE`, `ON PRESS` and the rest), variables and arrays, `SUB` and `FUNCTION`, drawing and the fonts, the number formats, the pins, and the limits that 1 KB of RAM sets. The Quick Reference (Help menu) on screen as the map. Under it all, briefly: the compiler turns it into the kernel's bytecode. |
 | 4 | Prototyping in the emulator | Writing, testing and debugging a program with no board at all, with `Snake.bas` as the example: stepping into `Move` as it weighs each way on, watching `grid` and the body's ring fill up, catching it as it boxes itself in. Then the inputs, mode pins and analog levels the emulator can set. The overview only stops Snake at the food; this goes inside it. |
 | 5 | Wear levelling | The flash's ~100 writes: why an interpreter helps, an upload reusing the blocks that did not change, the program table (the FAT) in the tiny EEPROM, the Wear report. |
