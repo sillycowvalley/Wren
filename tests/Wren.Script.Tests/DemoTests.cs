@@ -192,4 +192,24 @@ public class DemoTests
             Assert.Equal(mv, run.Global("mv"));
         }
     }
+
+    [Fact]
+    public void TheLatchCatchesTheInputsAtPd3sRisingEdge()
+    {
+        var run = Run.Start(Program("OledThing", "Latch.bas"), seconds: 0.1);
+        run.Thing.SetInputs(0x5A);
+        run.For(0.05);
+        Assert.Equal(0, run.Global("count"));                // no edge yet
+        run.Thing.Pd3Low = true;
+        run.For(0.05);
+        Assert.Equal(0, run.Global("count"));                // a falling edge: not latched
+        run.Thing.Pd3Low = false;
+        run.For(0.05);
+        Assert.Equal(0x5A, run.Global("captured"));
+        Assert.Equal(1, run.Global("count"));
+        run.Thing.SetInputs(0xC3);
+        run.For(0.05);
+        Assert.Equal(0x5A, run.Global("captured"));          // held until the next edge
+        Assert.Equal(0, run.VmFault);
+    }
 }

@@ -81,4 +81,4 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > A knob, one pin, ten bits, and a little integer arithmetic: a voltmeter in two hundred and eighty-two bytes.
 
-> Thanks for watching.
+> Next time: catching a byte on an edge. Thanks for watching.
