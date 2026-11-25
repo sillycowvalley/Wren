@@ -41,8 +41,8 @@ A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 | **Wren.Script** | The Wren BASIC compiler, the FAT planner and the debugging session. | Done. Tested against the kernel on the emulator. |
 
 Each library has its own test project (`Wren.Asm.Tests` and so on) and stays UI-free.
-The kernel lives in `firmware/kernel/`; BASIC programs in `programs/`.
-`programs/OledThing.bas` recreates the Thing's own behaviour and is what Wren opens on
+The kernel lives in `firmware/kernel/`; BASIC programs in `programs/`, a folder for each
+Thing. `programs/OledThing/OledThing.bas` recreates the Thing's own behaviour and is what Wren opens on
 first run. The firmware design is in [Design.md](Design.md) and the bytecode in
 [Bytecode.md](Bytecode.md).
 
@@ -143,6 +143,6 @@ The detailed design, for approval, is in [Design.md](Design.md).
    development board with a two-line test.
 5. **The LED Thing.** Built and tested in the emulator (`docs/LedThing.md`): the kernel's
    LED build, `LEDS` and the mode pins `M0`-`M2`, **Board → LED Thing**, Install kernel and
-   debugging through the programmer, and `programs/LedThing.bas` checked against
+   debugging through the programmer, and `programs/LedThing/LedThing.bas` checked against
    Digicool's firmware. Open: try it on Michael's LED Things; and a larger program store
    on this board (its kernel leaves about 4.6 KB unused), which needs a second table layout.

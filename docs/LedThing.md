@@ -112,7 +112,7 @@ and pulls M0-M2 up.
   holding Digicool's LED firmware or Wren's LED kernel. A blank LED Thing cannot be told
   from a blank OLED Thing whose display is not answering, so it is refused: write
   Digicool's LED firmware with **Write image…** first.
-- **`programs/LedThing.bas`** recreates the eight modes. Its tests run it and Digicool's
+- **`programs/LedThing/LedThing.bas`** recreates the eight modes. Its tests run it and Digicool's
   firmware side by side in the emulator: modes 0-5 show the same patterns in the same
   order, and the roll has the same shape. It differs from Digicool's in three ways:
   mode 7 lights each LED fully while its input is high, rather than dimming it by the

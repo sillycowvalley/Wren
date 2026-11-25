@@ -37,7 +37,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink` (Wren's Pico
   programmer sketch and its .uf2) and `firmware/pico-swimlib` (pico-swimlib built
   unchanged); both use the same wiring, `docs/PicoLink.md`.
-- `programs/` holds Wren BASIC programs; `OledThing.bas` and `LedThing.bas` are the two
+- `programs/` holds Wren BASIC programs in a folder for each board (`programs/OledThing`,
+  `programs/LedThing`); `OledThing.bas` and `LedThing.bas` in them are the two
   Things' own behaviour. The kernel builds for either board (`BOARD` in `Kernel.asm`; the
   LED Thing's parts are in `IF` blocks and `Leds.inc`); a change to it must leave the
   other board's kernel bytes unchanged unless that is the point.

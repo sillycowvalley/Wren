@@ -5,7 +5,7 @@ using Xunit;
 namespace Wren.Script.Tests;
 
 /// <summary>
-/// programs/LedThing.bas: the LED Thing's own behaviour in Wren BASIC, on the LED kernel,
+/// programs/LedThing/LedThing.bas: the LED Thing's own behaviour in Wren BASIC, on the LED kernel,
 /// checked against Digicool's factory firmware (firmware/digicool) run in the emulator.
 /// </summary>
 public class LedThingProgramTests
@@ -27,7 +27,7 @@ public class LedThingProgramTests
     private static LedThing Wren(int mode, byte inputs = 0)
     {
         var session = new ThingSession(LedKernel.Value, DeviceInfo.Stm8s003f3);
-        var program = session.Upload(Run.ProgramText("LedThing.bas"));
+        var program = session.Upload(Run.ProgramText(Path.Combine("LedThing", "LedThing.bas")));
         Assert.True(program.Success, string.Join("\n", program.Errors));
         var thing = session.Leds!;
         thing.SetInputs(inputs);

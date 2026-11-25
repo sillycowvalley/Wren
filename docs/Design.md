@@ -261,7 +261,7 @@ END SUB
 
 ## The Thing's own behaviour
 
-`programs/OledThing.bas` recreates the OLED Thing's firmware in Wren BASIC: the HEX,
+`programs/OledThing/OledThing.bas` recreates the OLED Thing's firmware in Wren BASIC: the HEX,
 BAR and combined views, INV, Dice Roll, and v1.1's PD3 Latch and PD2 Hold, laid out and
 timed as Digicool's firmware does them; only the hex digits are in Wren's font. It is 502
 bytes (8 blocks). Its tests compare its pixels with Digicool's firmware run in the

@@ -31,7 +31,8 @@ SWIM are ST's names, used here to describe compatibility.
 - **Wren.Asm**: an STM8 assembler using ST's instruction syntax. It writes Intel HEX
   and S-records, which ST Visual Programmer can load.
 - **Wren.Emu**: an STM8 emulator with the SSD1315 OLED, the OLED Thing and the LED Thing.
-- **programs/**: Wren BASIC programs. `OledThing.bas` and `LedThing.bas` are the two
+- **programs/**: Wren BASIC programs, a folder for each Thing. `OledThing/OledThing.bas` and
+  `LedThing/LedThing.bas` are the two
   Things' own behaviour; **Board → LED Thing** builds for the LED Thing (`LEDS`, the mode
   pins `M0`-`M2`).
 - **art/**: the wren, as hand-written SVG sources: `wren.svg` (the full drawing),

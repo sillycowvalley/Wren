@@ -102,7 +102,7 @@ public partial class MainWindow : Window
 
     public MainWindow() : this(null) { }
 
-    /// <summary>Opens startPath if given, otherwise the program open last time, otherwise programs/OledThing.bas.</summary>
+    /// <summary>Opens startPath if given, otherwise the program open last time, otherwise programs/OledThing/OledThing.bas.</summary>
     public MainWindow(string? startPath)
     {
         InitializeComponent();
@@ -185,7 +185,7 @@ public partial class MainWindow : Window
         }
 
         string? last = settings.LastFile is { } saved && File.Exists(saved) ? saved : null;
-        string? first = startPath ?? last ?? FindProgram("OledThing.bas");
+        string? first = startPath ?? last ?? FindProgram(Path.Combine("OledThing", "OledThing.bas"));
         if (first != null) Open(first);
         UpdateView();
     }
