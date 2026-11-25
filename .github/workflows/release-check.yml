@@ -1,0 +1,84 @@
+# Builds a Windows release of Wren: runs the tests, publishes Wren self-contained for 64-bit
+# Windows, zips it with the firmware, the programs and the reference sheets, and creates a
+# GitHub release with the zip. A version with a suffix (v0.1.0-beta.1) makes a pre-release.
+#
+# A release is made when new release notes, docs/Releases/<tag>.md, reach main: the release
+# takes the file's name as its tag (created on that commit) and the file as its notes. Pushing
+# a version tag (v*) by hand makes one too, with that tag's notes file if there is one.
+name: Release check (temporary)
+
+on:
+  push:
+    branches: ['claude/stoic-cray-p6p0no']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Which release
+        id: which
+        run: |
+          "tag=v0.1.0-beta.1" >> $env:GITHUB_OUTPUT
+
+      - name: Version
+        id: version
+        if: steps.which.outputs.tag != ''
+        run: |
+          $tag = '${{ steps.which.outputs.tag }}'
+          $version = $tag.TrimStart('v')
+          $prefix, $suffix = $version.Split('-', 2)
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "prefix=$prefix" >> $env:GITHUB_OUTPUT
+          "suffix=$suffix" >> $env:GITHUB_OUTPUT
+          "prerelease=$(if ($suffix) { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        if: steps.which.outputs.tag != ''
+        run: |
+          foreach ($project in 'Wren.Asm.Tests', 'Wren.Emu.Tests', 'Wren.Script.Tests', 'Wren.Link.Tests') {
+            dotnet test "tests/$project" -c Release
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Publish
+        if: steps.which.outputs.tag != ''
+        run: |
+          $suffix = '${{ steps.version.outputs.suffix }}'
+          $publish = @('publish', 'src/Wren/Wren.csproj', '-c', 'Release', '-r', 'win-x64', '--self-contained', 'true',
+                    '-p:PublishSingleFile=true', '-p:IncludeNativeLibrariesForSelfExtract=true',
+                    '-p:VersionPrefix=${{ steps.version.outputs.prefix }}', '-o', 'publish')
+          if ($suffix) { $publish += "-p:VersionSuffix=$suffix" }
+          dotnet @publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Force publish/docs/Infographics | Out-Null
+          Copy-Item docs/Infographics/*.png publish/docs/Infographics/
+          Copy-Item README.md, LICENSE publish/
+          Get-ChildItem publish -Filter *.pdb | Remove-Item
+
+      - name: Zip
+        if: steps.which.outputs.tag != ''
+        run: |
+          $zip = "Wren-${{ steps.version.outputs.version }}-win-x64.zip"
+          Compress-Archive -Path publish/* -DestinationPath $zip
+          "ZIP=$zip" >> $env:GITHUB_ENV
+
+      - name: Keep the zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-check
+          path: ${{ env.ZIP }}
