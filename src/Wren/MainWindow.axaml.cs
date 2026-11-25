@@ -372,6 +372,7 @@ public partial class MainWindow : Window
     private void SetUpEditor()
     {
         Editor.TextArea.LeftMargins.Insert(0, breakpointMargin);
+        Editor.TextArea.LeftMargins.Add(new Border { Width = 6 });   // a little room between the line numbers and the program
         Editor.TextArea.TextView.BackgroundRenderers.Add(highlighter);
         breakpointMargin.HasBreakpoint = line => session?.Breakpoints.Contains(line) ?? false;
         breakpointMargin.LineClicked += ToggleBreakpoint;
