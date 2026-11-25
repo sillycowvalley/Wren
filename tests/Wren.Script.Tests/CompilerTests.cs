@@ -80,6 +80,27 @@ public class CompilerTests
     }
 
     [Fact]
+    public void EveryWordHasAColourAndTheOtherBoardsAreGrey()
+    {
+        foreach (var board in new[] { Board.OledThing, Board.LedThing })
+        {
+            var words = Names.Categories(board);
+            foreach (string w in Names.Statements.Keys.Concat(Names.Functions.Keys).Concat(Names.Constants.Keys))
+                Assert.True(words.ContainsKey(w), $"{w} has no colour");
+            Assert.All(words.Keys, w => Assert.True(Names.IsReserved(w), $"{w} is coloured but not reserved"));
+            foreach (var (w, only) in Names.OnlyOn)
+                Assert.Equal(only == board, words[w] != WordKind.OtherBoard);
+        }
+        Assert.Equal(WordKind.Keyword, Names.Categories(Board.OledThing)["WHILE"]);
+        Assert.Equal(WordKind.Keyword, Names.Categories(Board.OledThing)["ON"]);
+        Assert.Equal(WordKind.Statement, Names.Categories(Board.OledThing)["CLS"]);
+        Assert.Equal(WordKind.OtherBoard, Names.Categories(Board.LedThing)["CLS"]);
+        Assert.Equal(WordKind.Statement, Names.Categories(Board.LedThing)["LEDS"]);
+        Assert.Equal(WordKind.Function, Names.Categories(Board.LedThing)["INPUTS"]);
+        Assert.Equal(WordKind.Constant, Names.Categories(Board.LedThing)["M0"]);
+    }
+
+    [Fact]
     public void ElseIfTestsAreStops()
     {
         var p = Run.Compile("DIM a\nON START\n IF a = 1 THEN\n  a = 2\n ELSEIF a = 0 THEN\n  a = 3\n END IF\nEND ON\n");

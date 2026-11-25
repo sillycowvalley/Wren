@@ -156,6 +156,7 @@ public partial class MainWindow : Window
         ThingMenu.IsChecked = boardChoice == BoardChoice.Thing;
         DevBoardMenu.IsChecked = boardChoice == BoardChoice.DevelopmentBoard;
         LedThingMenu.IsChecked = boardChoice == BoardChoice.LedThing;
+        Editor.SyntaxHighlighting = WrenHighlighting.For(BuildBoard);
 
         Pd2Button.PropertyChanged += (_, e) =>
         {
@@ -814,6 +815,7 @@ public partial class MainWindow : Window
         NewSession();
         SetMode(Mode.Design);
         built = null;                                  // build again, for this board
+        Editor.SyntaxHighlighting = WrenHighlighting.For(BuildBoard);
         messages.Add($"Board: {chosen switch { BoardChoice.DevelopmentBoard => "the development board", BoardChoice.LedThing => "the LED Thing", _ => "the OLED Thing" }}. Press F5 to run the program on it.");
         UpdateView();
     }

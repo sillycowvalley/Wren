@@ -3,6 +3,9 @@ namespace Wren.Script;
 /// <summary>A built-in statement or function: its opcode, how many arguments it takes, and defaults.</summary>
 public sealed record Builtin(string Name, byte Opcode, int MinArgs, int MaxArgs, long[] Defaults, bool ReturnsValue);
 
+/// <summary>How the editor colours a word.</summary>
+public enum WordKind { Keyword, Statement, Function, Constant, OtherBoard }
+
 /// <summary>The words of Wren BASIC.</summary>
 public static class Names
 {
@@ -96,6 +99,21 @@ public static class Names
         "AND", "OR", "XOR", "NOT", "MOD", "SHL", "SHR", "START", "CHANGE", "PINS", "LATCH", "PRESS",
         "RELEASE", "EVERY", "MS", "FALLING", "RISING", "BOTH", "LOW", "HIGH", "REM",
     };
+
+    /// <summary>
+    /// Every word of the language with how the editor colours it on a board: the other
+    /// board's words as OtherBoard, so they look wrong before a build says so.
+    /// </summary>
+    public static IReadOnlyDictionary<string, WordKind> Categories(Board board)
+    {
+        var words = new Dictionary<string, WordKind>(StringComparer.OrdinalIgnoreCase);
+        foreach (string w in Constants.Keys) words[w] = WordKind.Constant;
+        foreach (string w in Functions.Keys) words[w] = WordKind.Function;
+        foreach (string w in Statements.Keys) words[w] = WordKind.Statement;
+        foreach (string w in Keywords) words[w] = WordKind.Keyword;     // ON is a keyword before it is a constant
+        foreach (var (w, only) in OnlyOn) if (only != board) words[w] = WordKind.OtherBoard;
+        return words;
+    }
 
     public static bool IsReserved(string name)
     {
