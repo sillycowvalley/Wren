@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
+using Avalonia.Media;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -141,7 +143,7 @@ public partial class LinkWindow : Window
                 {
                     const string text = "Read-out protection is on: the Thing cannot be read.\nWrite image… removes it (erasing the chip).";
                     Log(text);
-                    Dispatcher.UIThread.Post(() => StatusText.Text = text);
+                    Dispatcher.UIThread.Post(() => SetStatus(text));
                     link = opened;
                     return;
                 }
@@ -155,6 +157,25 @@ public partial class LinkWindow : Window
                 throw;
             }
         });
+    }
+
+    /// <summary>The status under the buttons, one statement a line: each label (before its colon) in bold.</summary>
+    private void SetStatus(string text)
+    {
+        var inlines = new InlineCollection();
+        string[] lines = text.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (i > 0) inlines.Add(new LineBreak());
+            int colon = lines[i].IndexOf(": ", StringComparison.Ordinal);
+            if (colon > 0 && colon <= 30)
+            {
+                inlines.Add(new Run(lines[i][..(colon + 1)]) { FontWeight = FontWeight.Bold });
+                inlines.Add(new Run(lines[i][(colon + 1)..]));
+            }
+            else inlines.Add(new Run(lines[i]));
+        }
+        StatusText.Inlines = inlines;
     }
 
     /// <summary>What the Thing holds, as a few short lines under the buttons.</summary>
@@ -187,7 +208,7 @@ public partial class LinkWindow : Window
             if (s.HasKernel) text += $"\nProgram: {(s.ProgramLength > 0 ? $"{s.ProgramLength} bytes" : "none")}";
         }
         Log(text);
-        Dispatcher.UIThread.Post(() => StatusText.Text = text);
+        Dispatcher.UIThread.Post(() => SetStatus(text));
     }
 
     private void OnDisconnect(object? sender, RoutedEventArgs e)
@@ -214,7 +235,7 @@ public partial class LinkWindow : Window
             ? "Connected: the main window is debugging on the Thing.\nDisconnect stops that."
             : "The main window has let go of the Thing.";
         Log(text);
-        StatusText.Text = text;
+        SetStatus(text);
         UpdateButtons();
     }
 
@@ -264,7 +285,7 @@ public partial class LinkWindow : Window
             Forget();
             const string text = "The programmer was unplugged. Plug it in again and click Connect.";
             Log($"{port} has gone: {text}");
-            StatusText.Text = text;
+            SetStatus(text);
         }
         if (IsEnabled) Refresh(quiet: true);
         UpdateButtons();

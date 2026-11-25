@@ -38,7 +38,7 @@
                   ToolTip.Tip="Checks the chip's debug module for debugging on the Thing: a breakpoint on reading the program, reading RAM while it runs, stopping it, and freezing its 1 ms timer. Writes no flash or EEPROM." />
         </StackPanel>
       </HeaderedContentControl>
-      <TextBlock Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold" />
+      <TextBlock Name="StatusText" TextWrapping="Wrap" />
     </StackPanel>
     <HeaderedContentControl Classes="group" Header="Log" Margin="0,8,0,0">
       <DockPanel>
