@@ -24,6 +24,9 @@ public sealed class FakePico : Stream
     /// <summary>When set, SWIM requests answer this status (e.g. no answer from the target).</summary>
     public byte? SwimError { get; set; }
 
+    /// <summary>When set, the chip has read-out protection: SWIM_CSR shows NO_ACCESS and memory cannot be read.</summary>
+    public bool ReadOutProtected { get; set; }
+
     /// <summary>The largest read or write asked for.</summary>
     public int LargestTransfer { get; private set; }
 
@@ -105,6 +108,7 @@ public sealed class FakePico : Stream
                 int n = r[1], address = (r[2] << 16) | (r[3] << 8) | r[4];
                 LargestTransfer = Math.Max(LargestTransfer, n);
                 if (n < 1 || n > PicoLink.MaxChunk) { Reply(r[0], PicoLink.StatusBadCommand); return; }
+                if (swimStatus == PicoLink.StatusOk && ReadOutProtected && Withheld(address)) swimStatus = PicoLink.StatusNoAnswer;
                 Reply(r[0], swimStatus, Enumerable.Range(address, n).Select(ReadTarget).ToArray());
                 return;
             }
@@ -131,9 +135,12 @@ public sealed class FakePico : Stream
     /// </summary>
     private bool Asleep => Device.Cpu.State == CpuState.Waiting && !Device.Debug.Stalled && Device.Debug.SwimActive;
 
+    /// <summary>What read-out protection withholds: memory (RAM, EEPROM, option bytes, flash), not registers.</summary>
+    private static bool Withheld(int address) => address < 0x5000 || address >= 0x8000;
+
     private byte ReadTarget(int address) => address switch
     {
-        SwimTarget.SwimCsr => (byte)(swimCsr | (Asleep ? 0x40 : 0)),
+        SwimTarget.SwimCsr => (byte)(swimCsr | (Asleep || ReadOutProtected ? 0x40 : 0)),
         _ => Asleep ? (byte)0xAA : Device.Read(address),
     };
 
@@ -144,7 +151,17 @@ public sealed class FakePico : Stream
             swimCsr = (byte)((value & ~0x02) | (swimCsr & 0x02));
             Device.Debug.SwimActive = (swimCsr & 0x20) != 0;
         }
-        else Device.DebugWrite(address, value);
+        else
+        {
+            Device.DebugWrite(address, value);
+            if (ReadOutProtected && address == 0x4800 && value == 0x00 && Device.Read(0x4800) == 0x00)
+            {
+                // Removing the protection erases flash and EEPROM.
+                ReadOutProtected = false;
+                Device.Load(Enumerable.Range(0x8000, 0x2000).Select(a => new KeyValuePair<int, byte>(a, 0))
+                    .Concat(Enumerable.Range(0x4000, 128).Select(a => new KeyValuePair<int, byte>(a, 0))));
+            }
+        }
     }
 
     public override bool CanRead => true;
