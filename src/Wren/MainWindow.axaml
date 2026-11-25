@@ -51,6 +51,8 @@
       <MenuItem Header="_View">
         <MenuItem Name="DarkModeMenu" Header="_Dark Mode" ToggleType="CheckBox" Click="OnDarkMode"
                   ToolTip.Tip="The dark version of Wren's look" />
+        <MenuItem Name="LargeBoardMenu" Header="_Large Emulator" ToggleType="CheckBox" Click="OnLargeBoard"
+                  ToolTip.Tip="The emulated board at its large size; unchecked, it is compact and the program gets the room" />
       </MenuItem>
       <MenuItem Header="_Build">
         <MenuItem Header="_Build" InputGesture="F7" Click="OnBuild"
@@ -119,10 +121,10 @@
       <!-- Middle: the emulator's board, shown only when the emulator is the target -->
       <Border Name="BoardColumn" DockPanel.Dock="Right" Padding="10,0,0,0">
         <ScrollViewer>
-          <StackPanel Spacing="2">
+          <StackPanel Name="BoardStack" Spacing="2">
             <HeaderedContentControl Name="LedGroup" Classes="group" Header="LEDs b7 – b0" IsVisible="False">
               <Border Background="#1B2A4A" Padding="10" HorizontalAlignment="Left" BorderBrush="#0E1626" BorderThickness="1">
-                <StackPanel Orientation="Horizontal" Spacing="14">
+                <StackPanel Name="LedRow" Orientation="Horizontal" Spacing="14">
                   <Ellipse Name="Led7" Width="30" Height="30" Fill="#461414" />
                   <Ellipse Name="Led6" Width="30" Height="30" Fill="#461414" />
                   <Ellipse Name="Led5" Width="30" Height="30" Fill="#461414" />
@@ -137,7 +139,7 @@
 
             <HeaderedContentControl Name="OledGroup" Classes="group" Header="OLED">
               <Border Background="#1B2A4A" Padding="8" HorizontalAlignment="Left" BorderBrush="#0E1626" BorderThickness="1">
-                <local:OledView Name="Oled" Width="448" Height="224" />
+                <local:OledView Name="Oled" Width="320" Height="160" />
               </Border>
             </HeaderedContentControl>
 
@@ -158,7 +160,7 @@
 
             <HeaderedContentControl Classes="group" Header="Mode pins">
               <StackPanel>
-                <TextBlock Classes="note" Text="Checked = pulled to GND." />
+                <TextBlock Name="ModeNote" Classes="note" Text="Checked = pulled to GND." TextWrapping="Wrap" HorizontalAlignment="Left" />
                 <StackPanel Orientation="Horizontal" Spacing="16">
                   <CheckBox Name="HexPin" Content="HEX (PA1)" Click="OnPinClicked" />
                   <CheckBox Name="BarPin" Content="BAR (PA2)" Click="OnPinClicked" />
@@ -169,7 +171,7 @@
 
             <HeaderedContentControl Name="SpareGroup" Classes="group" Header="Spare pins">
               <StackPanel>
-                <TextBlock Classes="note" Text="Checked = held low; Pulse pulls the pin low while it is pressed." />
+                <TextBlock Name="SpareNote" Classes="note" Text="Checked = held low; Pulse pulls the pin low while it is pressed." TextWrapping="Wrap" HorizontalAlignment="Left" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <CheckBox Name="Pd2Pin" Content="PD2" Click="OnPinClicked" VerticalAlignment="Center" />
                   <Button Name="Pd2Button" Content="Pulse" />
@@ -181,7 +183,7 @@
             </HeaderedContentControl>
 
             <HeaderedContentControl Name="AnalogGroup" Classes="group" Header="Analog inputs (for ANALOG)">
-              <Grid ColumnDefinitions="Auto,*,48" RowDefinitions="Auto,Auto" Width="440" HorizontalAlignment="Left">
+              <Grid ColumnDefinitions="Auto,*,48" RowDefinitions="Auto,Auto">
                 <CheckBox Name="Pd2Analog" Grid.Row="0" Content="PD2" Click="OnPinClicked"
                           ToolTip.Tip="Feed PD2 an analog level instead of its digital one" />
                 <Slider Name="Pd2Level" Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="1023" Margin="12,0"
