@@ -1,5 +1,5 @@
 ' Latches b0-b7 on a rising edge on PD3 and shows the byte in hex.
-' LATCH has no debounce: a button on PD3 bounces, and count shows it.
+' LATCH has no debounce: it suits a clean strobe, such as an Arduino's, not a button.
 DIM captured, count
 
 ON LATCH PD3 RISING

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 7, slide 3/6: The program. The source of Wren_07_03_Program.png beside it.
+  Wren BASIC 7, slide 3/7: The program. The source of Wren_07_03_Program.png beside it.
 
   Shown live from Wren_07_00_Thumbnail.html (Chrome, F11): the right half of the page is the
   next slide, the left half the one before; F5 plays the slide again.
@@ -116,7 +116,7 @@
 </style>
 </head>
 <body>
-<div class="chip fade">WREN BASIC · LATCH · 3/6</div>
+<div class="chip fade">WREN BASIC · LATCH · 3/7</div>
 <div class="mark fade"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
@@ -176,12 +176,12 @@
  </g>
 </svg><!--/WREN--></div>
 <h1 class="rise">The program</h1>
-<div class="code rise d1" style="left: 48px; top: 270px; width: 1060px; font-size: 18px; overflow: hidden;"><div><span class="ln">1</span><span class="cm">&#x27; Latches b0-b7 on a rising edge on PD3 and shows the byte in hex.</span></div><div><span class="ln">2</span><span class="cm">&#x27; LATCH has no debounce: a button on PD3 bounces, and count shows it.</span></div><div><span class="ln">3</span><span class="kw">DIM</span> captured, count</div><div><span class="ln">4</span>&nbsp;</div><div><span class="ln">5</span><span class="kw">ON</span> <span class="kw">LATCH</span> <span class="kw">PD3</span> <span class="kw">RISING</span></div><div><span class="ln">6</span>  captured = <span class="kw">VALUE</span>              <span class="cm">&#x27; b0-b7 as they were at the edge</span></div><div><span class="ln">7</span>  count = count + 1</div><div><span class="ln">8</span><span class="kw">END</span> <span class="kw">ON</span></div><div><span class="ln">9</span>&nbsp;</div><div><span class="ln">10</span><span class="kw">ON</span> <span class="kw">EVERY</span> 50 <span class="kw">MS</span></div><div><span class="ln">11</span>  <span class="kw">CLS</span></div><div><span class="ln">12</span>  <span class="kw">HEX</span> 0, 0, captured, 2, <span class="kw">LARGE</span></div><div><span class="ln">13</span>  <span class="kw">DEC</span> 40, 0, count, <span class="kw">SMALL</span></div><div><span class="ln">14</span>  <span class="kw">SHOW</span></div><div><span class="ln">15</span><span class="kw">END</span> <span class="kw">ON</span></div></div><div class="side">
+<div class="code rise d1" style="left: 48px; top: 270px; width: 1060px; font-size: 18px; overflow: hidden;"><div><span class="ln">1</span><span class="cm">&#x27; Latches b0-b7 on a rising edge on PD3 and shows the byte in hex.</span></div><div><span class="ln">2</span><span class="cm">&#x27; LATCH has no debounce: it suits a clean strobe, such as an Arduino&#x27;s, not a button.</span></div><div><span class="ln">3</span><span class="kw">DIM</span> captured, count</div><div><span class="ln">4</span>&nbsp;</div><div><span class="ln">5</span><span class="kw">ON</span> <span class="kw">LATCH</span> <span class="kw">PD3</span> <span class="kw">RISING</span></div><div><span class="ln">6</span>  captured = <span class="kw">VALUE</span>              <span class="cm">&#x27; b0-b7 as they were at the edge</span></div><div><span class="ln">7</span>  count = count + 1</div><div><span class="ln">8</span><span class="kw">END</span> <span class="kw">ON</span></div><div><span class="ln">9</span>&nbsp;</div><div><span class="ln">10</span><span class="kw">ON</span> <span class="kw">EVERY</span> 50 <span class="kw">MS</span></div><div><span class="ln">11</span>  <span class="kw">CLS</span></div><div><span class="ln">12</span>  <span class="kw">HEX</span> 0, 0, captured, 2, <span class="kw">LARGE</span></div><div><span class="ln">13</span>  <span class="kw">DEC</span> 40, 0, count, <span class="kw">SMALL</span></div><div><span class="ln">14</span>  <span class="kw">SHOW</span></div><div><span class="ln">15</span><span class="kw">END</span> <span class="kw">ON</span></div></div><div class="side">
   <div class="f rise d3"><b>ON LATCH PD3 RISING</b>: every rising edge on PD3</div>
   <div class="f rise d4"><b>VALUE</b>: b0–b7 as they were at that edge</div>
   <div class="f rise d5"><b>ON EVERY 50 MS</b>: the screen, 20 times a second</div>
   <div class="f rise d6"><b>34 bytes</b>, the whole program</div>
 </div>
-<!--NAV--><a class="nav prev" href="Wren_07_02_ThreeWays.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_07_03b_Live.html" aria-label="Next slide"></a><!--/NAV-->
+<!--NAV--><a class="nav prev" href="Wren_07_02_ThreeWays.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_07_04_Bus.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  Wren BASIC 7, slide 4/6: Why the count jumps. The source of Wren_07_04_Bounce.png beside it.
+  Wren BASIC 7, slide 5/7: Wiring it up. The source of Wren_07_05_Wiring.png beside it.
 
   Shown live from Wren_07_00_Thumbnail.html (Chrome, F11): the right half of the page is the
   next slide, the left half the one before; F5 plays the slide again.
@@ -10,18 +10,18 @@
   "Capture screenshot" from the same menu. Save the 3840 x 2160 result over the PNG.
 
   Sources:
-    - Latch.bas: programs/OledThing/Latch.bas; 34 bytes (Wren's compiler); its test is
-      DemoTests.TheLatchCatchesTheInputsAtPd3sRisingEdge.
-    - The run: Latch.bas on Wren's kernel in Wren.Emu: inputs $5A, no edge: count 0; PD3 falls:
-      count 0; PD3 rises: captured $5A, count 1; inputs $C3, no edge: still $5A; then one press and
-      release with three 0.3 ms bounces each way: captured $C3, count 8 (seven latches).
-    - The drawing: the same press and release, three bounces each way; every rising edge (a dot) is
-      latched: 7. ON PRESS waits for 20 ms of steady level (the Quick Reference).
+    - The Mega's sketch: firmware/LatchFeeder/LatchFeeder.ino: port F (A0-A7) drives b0-b7, D2 the
+      strobe; the message "WREN BASIC " one byte a second; noise (random bytes) between strobes.
+    - The Thing's pins: b0 is J1 pin 8 ... b7 is J1 pin 1; PD3 J5 pin 4; GND J5 pin 1; VCC J3 pin 1
+      (docs/OledThing.md); VCC 2.95-5.5 V, so the Mega's 5 V runs it; off the Pico first, whose pins
+      are not 5 V tolerant (docs/PicoLink.md).
+    - The Mega: A0-A7 are port F, PF0-PF7, in one row of the header. The ribbon's colours are
+      illustrations.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Wren BASIC 7: Why the count jumps</title>
+<title>Wren BASIC 7: Wiring it up</title>
 <style>
 /*HOUSE*/
   /* The Wren BASIC house style (docs/Videos/README.md): one colour to a meaning.
@@ -115,15 +115,22 @@
   .code div { padding-left: 76px; position: relative; white-space: pre; padding-right: 20px; }
   .code .ln { position: absolute; left: 18px; width: 44px; text-align: right; color: #475569; font-size: 19px; }
   .code .kw { color: var(--basic); font-weight: 700; } .code .cm { color: #64748b; } .code .st { color: #fbbf77; }
-  .bn { position: absolute; left: 48px; top: 280px; width: 1824px; height: 330px; }
-  .scr { position: absolute; left: 48px; top: 650px; width: 600px; height: 300px; }
-  .side { position: absolute; left: 720px; top: 650px; width: 1152px; }
-  .f { background: var(--panel); border: 2px solid var(--line); border-radius: 16px; padding: 22px 26px; margin-bottom: 20px; font-size: 28px; color: #cbd5e1; }
-  .f b { color: var(--gold); }
+  .mega { position: absolute; left: 48px; top: 270px; width: 590px; height: 640px; background: #0f5a7a; border: 3px solid #0b4a64; border-radius: 22px; }
+  .thing { position: absolute; left: 1240px; top: 270px; width: 632px; height: 640px; background: var(--panel); border: 3px solid var(--thing); border-radius: 22px; }
+  .mega h3, .thing h3 { position: absolute; left: 30px; top: 22px; font-size: 32px; } .mega h3 { color: #e0f2fe; } .thing h3 { color: var(--thing); }
+  .mp, .tp { position: absolute; display: flex; align-items: center; gap: 14px; font-size: 26px; color: #fff; font-family: "DejaVu Sans Mono", Consolas, monospace; }
+  .mp { right: 30px; flex-direction: row-reverse; } .tp { left: 30px; }
+  .mp i, .tp i { width: 24px; height: 24px; border-radius: 4px; background: #e8c565; }
+  .tp span { color: var(--muted); font-size: 22px; }
+  .wires { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; pointer-events: none; }
+  .wires path { fill: none; stroke-width: 9; stroke-linecap: round; }
+  .more { position: absolute; left: 48px; right: 48px; top: 940px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .m { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; padding: 14px 20px; font-size: 24px; color: #cbd5e1; font-family: "DejaVu Sans Mono", Consolas, monospace; }
+  .m b { color: var(--gold); font-family: "Liberation Sans", Arial; }
 </style>
 </head>
 <body>
-<div class="chip fade">WREN BASIC · LATCH · 4/6</div>
+<div class="chip fade">WREN BASIC · LATCH · 5/7</div>
 <div class="mark fade"><!--WREN--><svg class="bird" viewBox="0 0 256 256" aria-label="Wren">
  <g transform="translate(-6 -16)">
   <defs>
@@ -182,21 +189,15 @@
   <circle cx="189.5" cy="102.5" r="3" fill="#FFFFFF" />
  </g>
 </svg><!--/WREN--></div>
-<h1 class="rise">Why the count <span>jumps</span></h1>
-<svg class="bn" viewBox="0 0 1824 330">
-  <g fill="none" stroke-width="6">
-    <path class="draw d1" d="M40 60 L300 60 L300 240 L330 240 L330 60 L355 60 L355 240 L375 240 L375 60 L390 60 L390 240 L900 240 L900 60 L920 60 L920 240 L940 240 L940 60 L960 60 L960 240 L985 240 L985 60 L1780 60" stroke="#facc15"/>
-  </g>
-  <g fill="#fde68a"><circle class="pop d3" cx="330" cy="60" r="12"/><circle class="pop d3" cx="355" cy="60" r="12"/><circle class="pop d3" cx="375" cy="60" r="12"/><circle class="pop d3" cx="900" cy="60" r="12"/><circle class="pop d3" cx="920" cy="60" r="12"/><circle class="pop d3" cx="940" cy="60" r="12"/><circle class="pop d3" cx="985" cy="60" r="12"/></g>
-  <g font-family="Liberation Sans, Arial" font-size="28" font-weight="700" fill="#94a3b8">
-    <text x="40" y="40">PD3</text><text x="250" y="300">press</text><text x="840" y="300">let go</text>
-  </g>
-</svg><div class="oled scr pop d5"><!--OLED:latch_c3--><svg class="px" viewBox="0 0 64 32" shape-rendering="crispEdges"><g><rect x="2" y="0" width="6" height="1"/><rect x="12" y="0" width="10" height="1"/><rect x="41" y="0" width="2" height="1"/><rect x="2" y="1" width="6" height="1"/><rect x="12" y="1" width="10" height="1"/><rect x="40" y="1" width="1" height="1"/><rect x="42" y="1" width="1" height="1"/><rect x="0" y="2" width="2" height="1"/><rect x="8" y="2" width="2" height="1"/><rect x="18" y="2" width="2" height="1"/><rect x="41" y="2" width="1" height="1"/><rect x="0" y="3" width="2" height="1"/><rect x="8" y="3" width="2" height="1"/><rect x="18" y="3" width="2" height="1"/><rect x="40" y="3" width="1" height="1"/><rect x="42" y="3" width="1" height="1"/><rect x="0" y="4" width="2" height="1"/><rect x="16" y="4" width="2" height="1"/><rect x="40" y="4" width="2" height="1"/><rect x="0" y="5" width="2" height="1"/><rect x="16" y="5" width="2" height="1"/><rect x="0" y="6" width="2" height="1"/><rect x="18" y="6" width="2" height="1"/><rect x="0" y="7" width="2" height="1"/><rect x="18" y="7" width="2" height="1"/><rect x="0" y="8" width="2" height="1"/><rect x="20" y="8" width="2" height="1"/><rect x="0" y="9" width="2" height="1"/><rect x="20" y="9" width="2" height="1"/><rect x="0" y="10" width="2" height="1"/><rect x="8" y="10" width="2" height="1"/><rect x="12" y="10" width="2" height="1"/><rect x="20" y="10" width="2" height="1"/><rect x="0" y="11" width="2" height="1"/><rect x="8" y="11" width="2" height="1"/><rect x="12" y="11" width="2" height="1"/><rect x="20" y="11" width="2" height="1"/><rect x="2" y="12" width="6" height="1"/><rect x="14" y="12" width="6" height="1"/><rect x="2" y="13" width="6" height="1"/><rect x="14" y="13" width="6" height="1"/></g><g></g></svg><!--/OLED--></div>
-<div class="side">
-  <div class="f rise d5"><b>7 rising edges</b> from one press and release, each one latched</div>
-  <div class="f rise d6"><b>A button?</b> ON PRESS, which waits 20 ms for the pin to settle</div>
-  <div class="f rise d7"><b>A clean strobe?</b> ON LATCH, which catches every edge</div>
+<h1 class="rise">Wiring <span>it up</span></h1>
+<div class="mega rise d1"><h3>Arduino Mega 2560</h3><div class="mp" style="top:150px;"><i></i>A0</div><div class="mp" style="top:206px;"><i></i>A1</div><div class="mp" style="top:262px;"><i></i>A2</div><div class="mp" style="top:318px;"><i></i>A3</div><div class="mp" style="top:374px;"><i></i>A4</div><div class="mp" style="top:430px;"><i></i>A5</div><div class="mp" style="top:486px;"><i></i>A6</div><div class="mp" style="top:542px;"><i></i>A7</div></div>
+<div class="thing rise d1"><h3>8-bit OLED Thing</h3><div class="tp" style="top:150px;"><i></i>J1 pin 8 <span>b0</span></div><div class="tp" style="top:206px;"><i></i>J1 pin 7 <span>b1</span></div><div class="tp" style="top:262px;"><i></i>J1 pin 6 <span>b2</span></div><div class="tp" style="top:318px;"><i></i>J1 pin 5 <span>b3</span></div><div class="tp" style="top:374px;"><i></i>J1 pin 4 <span>b4</span></div><div class="tp" style="top:430px;"><i></i>J1 pin 3 <span>b5</span></div><div class="tp" style="top:486px;"><i></i>J1 pin 2 <span>b6</span></div><div class="tp" style="top:542px;"><i></i>J1 pin 1 <span>b7</span></div></div>
+<svg class="wires" viewBox="0 0 1920 1080"><path class="draw d2" d="M640 432 L1240 432" stroke="#8b5cf6"/><path class="draw d2" d="M640 488 L1240 488" stroke="#3b82f6"/><path class="draw d2" d="M640 544 L1240 544" stroke="#22c55e"/><path class="draw d3" d="M640 600 L1240 600" stroke="#eab308"/><path class="draw d3" d="M640 656 L1240 656" stroke="#f97316"/><path class="draw d3" d="M640 712 L1240 712" stroke="#ef4444"/><path class="draw d4" d="M640 768 L1240 768" stroke="#a16207"/><path class="draw d4" d="M640 824 L1240 824" stroke="#6b7280"/></svg>
+<div class="more">
+  <div class="m rise d5"><b>Strobe</b> D2 → PD3 (J5 pin 4)</div>
+  <div class="m rise d6"><b>Power</b> 5V → VCC (J3 pin 1)</div>
+  <div class="m rise d7"><b>Ground</b> GND → GND (J5 pin 1)</div>
 </div>
-<!--NAV--><a class="nav prev" href="Wren_07_03b_Live.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_07_05_Edges.html" aria-label="Next slide"></a><!--/NAV-->
+<!--NAV--><a class="nav prev" href="Wren_07_04_Bus.html" aria-label="Previous slide"></a><a class="nav next" href="Wren_07_05b_Live.html" aria-label="Next slide"></a><!--/NAV-->
 </body>
 </html>
