@@ -103,8 +103,9 @@ public class EventTests
     public void ALatchIsNotHeldUpByTheTick()
     {
         // Strobes 1.013 ms apart walk across the 1 ms tick, so some land while it runs.
-        // The byte is there for 4 us only: a LATCH that waited for the tick would miss it.
-        // An EVERY 1 handler has the tick adding to the queue as the LATCHes do.
+        // The byte is there for 8 us only: a LATCH that waited for the tick (26 us) would
+        // miss it. An EVERY 1 handler has the tick adding to the queue as the LATCHes do,
+        // which it does with interrupts off for up to 4.6 us (emulator cycles).
         var run = Run.Start("DIM n, good, ticks, lostn\n" +
             "ON LATCH PD3\n n = n + 1\n IF VALUE = &H5A THEN good = good + 1\n lostn = LOST\nEND ON\n" +
             "ON EVERY 1\n ticks = ticks + 1\nEND ON\n");
@@ -114,9 +115,9 @@ public class EventTests
             run.Thing.Pd3Low = true;
             run.For(210e-9);
             run.Thing.Pd3Low = false;
-            run.For(4e-6);
+            run.For(8e-6);
             run.Thing.SetInputs(0);
-            run.For(1.013e-3 - 4.21e-6);
+            run.For(1.013e-3 - 8.21e-6);
         }
         run.For(0.002);
         Assert.Equal(150, run.Global("n"));

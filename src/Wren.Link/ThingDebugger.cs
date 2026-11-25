@@ -24,7 +24,8 @@ public sealed class ThingDebugger : IDisposable
     private const int DmBk1 = 0x7F90, DmBk2 = 0x7F93, DmCr1 = 0x7F96, DmCsr1 = 0x7F98, DmCsr2 = 0x7F99, DmEnfctr = 0x7F9A;
     private const int CpuX = 0x7F04;
     private const byte Stall = 0x08, BreakFlags = 0x06;
-    private const byte DataReadOnEither = 0x24, InstructionFetchInRange = 0x08;
+    private const byte DataReadOnEither = 0x24, InstructionFetchOnEither = 0x28;
+    private const int CpuPc = 0x7F01;
     private const byte CsrDebug = 0xA0;            // SAFE_MASK, SWIM_DM; PRI clear so reads do not stall the CPU
 
     private enum StepKind { None, Into, Over, Out }
@@ -33,11 +34,11 @@ public sealed class ThingDebugger : IDisposable
     private readonly Kernel kernel;
     private readonly ProgramView view;
     private readonly int vmNext;
+    private readonly int vmDone;
     private readonly byte[] ram = new byte[1024];
     private CompiledProgram? program;
     private IReadOnlyList<int> blocks = Array.Empty<int>();
     private HashSet<int> statementStarts = new();
-    private HashSet<int> handlerStarts = new();
     private StepKind step;
     private int stepDepth;
     private int targetLine;
@@ -52,6 +53,7 @@ public sealed class ThingDebugger : IDisposable
         this.kernel = kernel;
         view = new ProgramView(kernel);
         vmNext = kernel.Symbol("vm_next");
+        vmDone = kernel.Symbol("vm_done");
     }
 
     /// <summary>Messages for the user as the work goes.</summary>
@@ -106,9 +108,6 @@ public sealed class ThingDebugger : IDisposable
     {
         program = compiled;
         statementStarts = compiled.Lines.Select(l => l.Address).ToHashSet();
-        handlerStarts = compiled.Routines.Where(r => r.Name.StartsWith("ON "))
-            .Select(r => compiled.Lines.Where(l => l.Address >= r.Start && l.Address < r.End).Select(l => l.Address).DefaultIfEmpty(-1).Min())
-            .Where(a => a >= 0).ToHashSet();
         link.Programmer.UploadIfChanged(compiled.Image);
         blocks = ProgramStore.ProgramBlocks(link.Target.Read(ProgramStore.FatAddress, ProgramStore.FatSize));
         if (!debug)
@@ -135,7 +134,7 @@ public sealed class ThingDebugger : IDisposable
     /// <summary>Checks whether the program has stopped (a breakpoint or a step); call it often while running or stepping.</summary>
     public void Poll()
     {
-        if (State == ThingRunState.Paused) return;
+        if (State == ThingRunState.Paused || Asleep) return;
         if ((link.Target.ReadByte(DmCsr2) & Stall) != 0) Stopped();
     }
 
@@ -145,7 +144,7 @@ public sealed class ThingDebugger : IDisposable
     /// </summary>
     public void Refresh()
     {
-        if (State == ThingRunState.Paused) return;
+        if (State == ThingRunState.Paused || Asleep) return;
         if ((link.Target.ReadByte(DmCsr2) & Stall) != 0)
         {
             Stopped();
@@ -253,8 +252,8 @@ public sealed class ThingDebugger : IDisposable
         if (step != StepKind.None)
         {
             WriteAddress(DmBk1, vmNext);
-            WriteAddress(DmBk2, vmNext);
-            link.Target.WriteByte(DmCr1, InstructionFetchInRange);
+            WriteAddress(DmBk2, vmDone);                // the handler finishing
+            link.Target.WriteByte(DmCr1, InstructionFetchOnEither);
             return;
         }
         var lines = Lines(Breakpoints).ToList();
@@ -277,6 +276,21 @@ public sealed class ThingDebugger : IDisposable
         ReadRam();
         int vpc = Vpc;
         bool atStatement = statementStarts.Contains(vpc);
+        if (step != StepKind.None && (step == StepKind.Into || stepDepth > 0) && Pc() == vmDone)
+        {
+            link.Target.WriteByte(DmCsr2, 0x00);       // a handler finished: F11 waits for the next statement anywhere
+            return;
+        }
+        if (step != StepKind.None && Pc() == vmDone)
+        {
+            // Stepped over or out of the end of an event handler: there is no caller, so the
+            // program runs on, stopping only at breakpoints (as Visual Studio does).
+            step = StepKind.None;
+            Arm();
+            State = ThingRunState.Running;
+            link.Target.WriteByte(DmCsr2, 0x00);
+            return;
+        }
         bool stop;
         if (step != StepKind.None)
         {
@@ -286,7 +300,7 @@ public sealed class ThingDebugger : IDisposable
             stop = atStatement && (step switch
             {
                 StepKind.Over => depth <= stepDepth,
-                StepKind.Out => depth < stepDepth || (stepDepth == 0 && handlerStarts.Contains(vpc)),
+                StepKind.Out => depth < stepDepth,
                 _ => true,
             } || Breakpoints.Contains(line));
         }
@@ -314,9 +328,23 @@ public sealed class ThingDebugger : IDisposable
         link.Target.WriteByte(DmCsr2, 0x00);
     }
 
+    /// <summary>
+    /// The chip asleep in WFI (SWIM_CSR's NO_ACCESS): SWIM cannot reach its RAM or debug module
+    /// (UM0470 3.8). Wren's kernel never sleeps for this reason; an older one did. A sleeping
+    /// chip cannot have stopped at a breakpoint, so there is nothing to check.
+    /// </summary>
+    private bool Asleep => (link.Target.ReadByte(SwimTarget.SwimCsr) & 0x40) != 0;
+
     // ---- Where the program is ----
 
     private int Vpc => view.Vpc(Read);
+
+    /// <summary>Where the stalled CPU is (PCE, PCH, PCL at $7F01).</summary>
+    private int Pc()
+    {
+        byte[] pc = link.Target.Read(CpuPc, 3);
+        return (pc[0] << 16) | (pc[1] << 8) | pc[2];
+    }
 
     /// <summary>The line about to run, when paused at a statement; 0 otherwise.</summary>
     public int CurrentLine => State == ThingRunState.Paused && pausedAtStatement && program != null ? program.LineAt(Vpc) : 0;

@@ -742,7 +742,8 @@ public partial class MainWindow : Window
                     StepKind.ToCursor => session.RunTo(seconds, stepLine),
                     _ => session.Step(seconds),
                 };
-                if (stop != SessionStop.TimeUp) SetMode(Mode.Paused);
+                if (stop == SessionStop.HandlerEnded) SetMode(Mode.Debugging);   // off the end of a handler: run on
+                else if (stop != SessionStop.TimeUp) SetMode(Mode.Paused);
                 break;
         }
 

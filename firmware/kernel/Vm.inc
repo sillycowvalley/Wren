@@ -811,7 +811,7 @@ wait_loop:
         subw x,buf+4
         cpw x,tmp2
         jruge wait_done
-        wfi
+        nop                         ; not WFI, so the debugger can still reach the chip
         jra wait_loop
 wait_done:
         ret

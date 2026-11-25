@@ -92,6 +92,27 @@ public class SessionTests
     }
 
     [Fact]
+    public void SteppingOverOrOutOfTheEndOfAHandlerRunsOn()
+    {
+        const string events = "DIM n\nON CHANGE\n n = n + 1\n n = n + 1\nEND ON\n";
+        var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        s.Upload(events);
+        Assert.Equal(SessionStop.Statement, s.Step(0.5));           // 3, in the CHANGE at start
+        Assert.Equal(SessionStop.Statement, s.StepOver(0.5, s.CallDepth));
+        Assert.Equal(4, s.CurrentLine);
+        Assert.Equal(SessionStop.HandlerEnded, s.StepOver(0.5, s.CallDepth));
+        Assert.Equal(SessionStop.TimeUp, s.Run(0.01));              // the caller runs on
+        s.Board.SetInputs(0x0F);                                    // the next CHANGE: no stop
+        Assert.Equal(SessionStop.TimeUp, s.Run(0.05));
+        Assert.Equal("4", s.Globals().Single().Value);
+
+        var t = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);
+        t.Upload(events);
+        t.Step(0.5);
+        Assert.Equal(SessionStop.HandlerEnded, t.StepOut(0.5, t.CallDepth));
+    }
+
+    [Fact]
     public void RunToCursorStopsAtTheLine()
     {
         var s = new ThingSession(Run.Kernel, DeviceInfo.Stm8s003f3);

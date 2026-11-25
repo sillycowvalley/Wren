@@ -230,4 +230,41 @@ public class ThingDebuggerTests
         UntilPaused(thing, d);
         Assert.Equal(new[] { 3, 4 }, d.ArmedBreakpoints);   // 6 has no statement
     }
+
+    [Fact]
+    public void TheKernelNeverSleepsSoAnIdleProgramCanBeReadAndPaused()
+    {
+        // The program finishes ON START and waits for events; a kernel that slept in WFI
+        // would be out of SWIM's reach now (the simulated Pico refuses it, as the chip does).
+        var (thing, d) = Ready();
+        d.Start(Compile("DIM n, m\nON START\n n = 42\nEND ON\nON CHANGE\n m = VALUE\nEND ON\n"), debug: true);
+        RunPolling(thing, d, 0.05);
+        Assert.Equal(CpuState.Running, thing.Mcu.Cpu.State);
+        d.Refresh();
+        Assert.Equal(ThingRunState.Running, d.State);
+        Assert.Equal(42, Global(d, "n"));
+        d.Pause();                                  // idle: it stops at the next statement to come
+        thing.SetInputs(0x5A);
+        UntilPaused(thing, d);
+        Assert.Equal(6, d.CurrentLine);
+        Assert.Equal(0x5A, d.EventValue);
+    }
+
+    [Fact]
+    public void SteppingOverTheEndOfAHandlerRunsOn()
+    {
+        var (thing, d) = Ready();
+        d.Start(Compile("DIM n\nON CHANGE\n n = n + 1\n n = n + 1\nEND ON\n"), debug: true, stopAtFirst: true);
+        UntilPaused(thing, d);                       // 3, in the CHANGE at start
+        d.StepOver(); UntilPaused(thing, d);
+        Assert.Equal(4, d.CurrentLine);
+        d.StepOver();                                // off the end of the handler
+        RunPolling(thing, d, 0.02);
+        Assert.Equal(ThingRunState.Running, d.State);
+        thing.SetInputs(0x0F);                       // the next CHANGE: it runs, no stop
+        RunPolling(thing, d, 0.05);
+        d.Refresh();
+        Assert.Equal(ThingRunState.Running, d.State);
+        Assert.Equal(4, Global(d, "n"));
+    }
 }

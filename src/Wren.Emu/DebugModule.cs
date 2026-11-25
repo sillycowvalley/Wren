@@ -87,8 +87,8 @@ public sealed class DebugModule
     }
 
     /// <summary>
-    /// Before each instruction: an instruction-fetch breakpoint (BC = 001, BIR and BIW clear)
-    /// on its address stalls the CPU before it runs (UM0470 4.9). True when it stalled. The
+    /// Before each instruction: an instruction-fetch breakpoint (BIR and BIW clear; BC = 001
+    /// for BK1-BK2, 101 for BK1 or BK2) on its address stalls the CPU before it runs (UM0470 4.9). True when it stalled. The
     /// instruction the CPU resumes at is not stopped again.
     /// </summary>
     public bool BreakBefore(int pc)
@@ -98,8 +98,16 @@ public sealed class DebugModule
             served = false;
             return false;
         }
-        if (!SwimActive || (regs[Cr1] & 0x06) != 0 || ((regs[Cr1] >> 3) & 7) != 0b001 || pc < Bk1 || pc > Bk2) return false;
-        regs[Csr1] = (byte)((regs[Csr1] & 0x40) | Bk1Flag);
+        if (!SwimActive || (regs[Cr1] & 0x06) != 0) return false;
+        int bc = (regs[Cr1] >> 3) & 7;
+        byte flags = bc switch
+        {
+            0b001 when pc >= Bk1 && pc <= Bk2 => Bk1Flag,                       // in BK1-BK2
+            0b101 => (byte)((pc == Bk1 ? Bk1Flag : 0) | (pc == Bk2 ? Bk2Flag : 0)), // on BK1 or BK2
+            _ => 0,
+        };
+        if (flags == 0) return false;
+        regs[Csr1] = (byte)((regs[Csr1] & 0x40) | flags);
         regs[Csr2] |= Stall;
         return true;
     }

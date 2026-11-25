@@ -4,8 +4,8 @@
 ; and the dispatcher that runs event handlers on the VM. See docs/Design.md and
 ; docs/Bytecode.md.
 ;
-; Wren's debugger reads these symbols: vm_next, vpc, vsp, fp, csp, evt_id, evt_value,
-; vm_fault, VARS.
+; Wren's debugger reads these symbols: vm_next, vm_done, vpc, vsp, fp, csp, evt_id,
+; evt_value, vm_fault, VARS.
 
         include "stm8s003.inc"
 
@@ -255,7 +255,8 @@ main_loop:
         cp a,qtail
         jrne main_take
         rim
-        wfi
+        nop                         ; not WFI: SWIM cannot reach a chip in WFI (UM0470 3.8), so the
+                                    ; debugger could not read or pause an idle program
         jra main_loop
 main_take:
         clrw x
@@ -273,11 +274,12 @@ main_take:
         call find_handler           ; X = code address, carry clear when found
         jrc main_loop
         call vm_run
+vm_done:                            ; the handler has finished (Wren's debugger watches for this)
         jra main_loop
 
 idle:
         rim
-        wfi
+        nop                         ; not WFI, so the debugger can still reach the chip
         jra idle
 
 no_program:

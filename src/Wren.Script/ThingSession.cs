@@ -3,7 +3,7 @@ using Wren.Emu;
 namespace Wren.Script;
 
 /// <summary>Why running stopped.</summary>
-public enum SessionStop { TimeUp, Breakpoint, Statement, Fault }
+public enum SessionStop { TimeUp, Breakpoint, Statement, Fault, HandlerEnded }
 
 /// <summary>
 /// A BASIC program on an emulated Thing, with what a debugger needs: run, step one
@@ -13,16 +13,17 @@ public enum SessionStop { TimeUp, Breakpoint, Statement, Fault }
 public sealed class ThingSession
 {
     private readonly int vmNext;
+    private readonly int vmDone;
     private readonly ProgramView view;
     private HashSet<int> statementStarts = new();
     private HashSet<int> breakAddresses = new();
-    private HashSet<int> handlerStarts = new();
 
     public ThingSession(Kernel kernel, DeviceInfo chip)
     {
         Kernel = kernel;
         Board = new OledThing(chip);
         vmNext = kernel.Symbol("vm_next");
+        vmDone = kernel.Symbol("vm_done");
         view = new ProgramView(kernel);
         // The kernel as Wren installs it on this chip: the development board's 640 bytes of
         // EEPROM keep the program settings at $4080.
@@ -64,9 +65,6 @@ public sealed class ThingSession
         }
         Program = program;
         statementStarts = program.Lines.Select(l => l.Address).ToHashSet();
-        handlerStarts = program.Routines.Where(r => r.Name.StartsWith("ON "))
-            .Select(r => program.Lines.Where(l => l.Address >= r.Start && l.Address < r.End).Select(l => l.Address).DefaultIfEmpty(-1).Min())
-            .Where(a => a >= 0).ToHashSet();
         var upload = ProgramStore.Plan(ReadFat(), program.Image);
         Board.Mcu.Load(upload.Bytes());
         Board.PowerOn();
@@ -135,20 +133,22 @@ public sealed class ThingSession
 
     /// <summary>
     /// Step Over: runs until a statement starts no deeper in calls than depth (CallDepth when the
-    /// step began), or a breakpoint. A SUB's statements run without stopping.
+    /// step began), or a breakpoint. A SUB's statements run without stopping. Stepping over the
+    /// end of an event handler (depth 0) returns HandlerEnded: the caller then runs on, as
+    /// Visual Studio does stepping off the end of a function with no caller.
     /// </summary>
     public SessionStop StepOver(double seconds, int depth) =>
         RunUntil(seconds, address => breakAddresses.Contains(address) || (statementStarts.Contains(address) && CallDepth <= depth),
-            SessionStop.Statement);
+            SessionStop.Statement, endsHandler: depth == 0);
 
     /// <summary>
     /// Step Out: runs until a statement starts in the routine that called this one (fewer than
-    /// depth calls deep), or a breakpoint. In a handler (depth 0) there is no caller: it runs on
-    /// to the next statement of a later event.
+    /// depth calls deep), or a breakpoint. In an event handler (depth 0) there is no caller: it
+    /// returns HandlerEnded when the handler finishes, and the caller runs on.
     /// </summary>
     public SessionStop StepOut(double seconds, int depth) =>
-        RunUntil(seconds, address => breakAddresses.Contains(address) || (statementStarts.Contains(address) && (CallDepth < depth || depth == 0 && IsHandlerStart(address))),
-            SessionStop.Statement);
+        RunUntil(seconds, address => breakAddresses.Contains(address) || (statementStarts.Contains(address) && CallDepth < depth),
+            SessionStop.Statement, endsHandler: depth == 0);
 
     /// <summary>Run To Cursor: runs until line starts, or a breakpoint.</summary>
     public SessionStop RunTo(double seconds, int line)
@@ -158,23 +158,21 @@ public sealed class ThingSession
         return RunUntil(seconds, address => breakAddresses.Contains(address) || address == target, SessionStop.Statement);
     }
 
-    /// <summary>True for the first statement of an event handler.</summary>
-    private bool IsHandlerStart(int address) => handlerStarts.Contains(address);
-
     /// <summary>True when line has a statement a breakpoint or Run To Cursor can stop on.</summary>
     public bool HasStatement(int line) => Program?.Lines.Any(l => l.Line == line) ?? false;
 
-    private SessionStop RunUntil(double seconds, Func<int, bool> stopAt, SessionStop reason)
+    private SessionStop RunUntil(double seconds, Func<int, bool> stopAt, SessionStop reason, bool endsHandler = false)
     {
         var mcu = Board.Mcu;
         mcu.Breakpoints.Clear();
         mcu.Breakpoints.Add(vmNext);
-        mcu.BreakpointFilter = _ => Program != null && stopAt(Vpc);
+        if (endsHandler) mcu.Breakpoints.Add(vmDone);
+        mcu.BreakpointFilter = pc => Program != null && (pc == vmDone || stopAt(Vpc));
         try
         {
             var stop = mcu.Run(seconds);
             if (stop == StopReason.Fault) return SessionStop.Fault;
-            if (stop == StopReason.Breakpoint) return reason;
+            if (stop == StopReason.Breakpoint) return mcu.Cpu.PC == vmDone ? SessionStop.HandlerEnded : reason;
             return SessionStop.TimeUp;
         }
         finally
