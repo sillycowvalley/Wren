@@ -24,8 +24,7 @@ Every video is two things:
    `Videos/Infographics/<Series_NN>`, each PNG beside the one HTML file
    it is rendered from.
 
-Nothing else is made by hand. Michael films only what the script's shot
-list names.
+Nothing else is made by hand.
 
 ---
 
@@ -56,7 +55,7 @@ What that teaches:
   name, never as "how".
 - **A community that will pass it on carries a niche subject.** The
   Forth video had a Forth group; GalForge had the GAL and CUPL users.
-  Every script names where the video is to be posted.
+  Know where the video will be posted before making it.
 - **Retention is 18 to 31% everywhere.** A short video keeps a larger
   share, a long one more minutes. Nothing says to cut a deep dive short.
 
@@ -80,60 +79,35 @@ together run at about a third of a reading pace.
 | 15 minutes | about 600 |
 | 30 minutes | about 1,200 |
 
-A slide with its narration takes about two and a half minutes. A
-script's part timings are written from this budget; the published
-chapters are taken from the edit.
+A slide with its narration takes about two and a half minutes. The
+published chapters are taken from the edit.
 
 ---
 
 ## 4. The script
 
-A script has these sections, in this order.
+A script is short: only what Michael pastes into YouTube and what he
+says. Where each figure comes from lives in the slides' opening
+comments, not here.
 
-### The head
-
-A title line, a paragraph saying what the video is and who it is for,
-then:
-
-- **Length**: the minutes and the spoken word count.
-- **The viewer leaves knowing**: one sentence, the video's promise.
-- Where the slides are, and where every figure comes from (the
-  documents, the benchmark, the runs).
-
-### On YouTube
-
-Everything Michael pastes into YouTube, ready to paste:
+### YouTube
 
 - **Title.** On desktop the whole title shows on two lines of about 50
   characters; in the sidebar and on phones about 40. Put the name in
-  the first 40. Give two alternatives under it.
+  the first 40.
 - **Description**, in a code block: what the thing is, what's in the
   video, a link where a viewer can try it, then the hashtags.
-- **Chapters**, in a code block, from the script's timings, with the
-  note "take the times from the edit before posting".
-- **Where to post it**: the groups and forums that will pass it on.
 
-### Before recording
+### The slides
 
-A numbered list of everything that must be true before the camera
-rolls: the build the machine or web page must carry, the machine's
-state (booted to its prompt, which disk in it), the slides open and how
-to step them, the camera's view, the sound, where to park the mouse
-pointer, and the thumbnail's file name.
+One heading a slide, in playing order, **headed with the title Michael
+sees on the slide**, never its file name: `## Snake that plays itself`.
+Under it, only:
 
-### The script
-
-One numbered part a slide or a scene, each headed with its timing and
-its file: `### 3. The listing (1:40–3:00) — Forth_02_Listing.png`.
-Under the heading, in this order:
-
-- a line in plain text of what to do (open the slide, switch to the
-  cut-away scene, type this, cut the wait in the edit);
-- every console line to type or see, in a code block;
-- the narration.
-
-**The narration is one line a paragraph, beneath a `> `**, so it
-pastes whole into a prompter.
+- the narration, one paragraph a line, so it pastes whole into a
+  prompter;
+- where something must be done, a short hint in italics just before
+  the words it goes with: `*Breakpoint on line 83.*`, `*F10, F10.*`.
 
 **The narration never reads the slide.** The slide carries the list
 (names, figures, what each part does); the narration says what the
@@ -141,18 +115,8 @@ slide doesn't: why it matters, the story behind it, what to look at. No
 sentence of the narration repeats one on its slide, and a figure on the
 slide is said only where the point rests on it.
 
-**Every console line is from a run** of the exact keystrokes on the
-image the video is shot on, never written from memory. A figure only
-the real machine can give (a wall-clock time) is the bench's, and the
-script says so. Timings are at the clock the video is shot at, and the
-script names it.
-
-### Shot list
-
-A table of every live scene: when it plays, which backdrop, what the
-console and the camera show. Then "Nothing else is filmed." A video of
-slides alone says "The slides, live in Chrome, in order. Nothing is
-filmed."
+**Every console line and figure is from a run** of the exact keystrokes
+on the image the video is shot on, never written from memory.
 
 ---
 
@@ -330,9 +294,9 @@ HTML naming the one it follows.
   says where.
 - **The narration** is read from a prompter, one paragraph a line.
 
-After the edit, take the chapter times from it, paste the On YouTube
-section, set the thumbnail, add the end screen over the closing
-backdrop's right 40%, and post where the script says.
+After the edit, paste the script's title and description, take the
+chapter times from the edit, set the thumbnail, add the end screen over
+the closing backdrop's right 40%, and post it where it will be passed on.
 
 ---
 
@@ -343,11 +307,10 @@ backdrop's right 40%, and post where the script says.
 2. Set the length and the word budget (section 3).
 3. Harvest every console line and figure from real runs; record where
    each came from.
-4. Write the script in the order of section 4, the narration never
-   reading the slide.
+4. Write the script as section 4 says, the narration never reading
+   the slide.
 5. Build the slides, backdrops, closing backdrop and thumbnail in the
    house style, each HTML's opening comment naming its sources and its
    render steps; render every PNG.
 6. Check the folder steps through in playing order.
-7. Hand Michael the script's Before recording and Shot list: they are
-   the whole of what he does at the bench.
+7. Hand Michael the script and the slides.
