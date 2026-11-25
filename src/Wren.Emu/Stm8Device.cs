@@ -243,11 +243,9 @@ public sealed class Stm8Device : IBus
             Cpu.Step();
         }
         int master = cpuCycles * Clock.CpuDivider;
-        foreach (var p in peripherals)
-        {
-            if ((p == Tim4 && Debug.FreezesTim4) || (p == I2c && Debug.FreezesI2c)) continue;
-            p.Tick(master);
-        }
+        // Only TIM4 and the ADC count time; the others act when their registers are written.
+        if (!Debug.FreezesTim4) Tim4.Tick(master);
+        Adc.Tick(master);
         HsiTicks += (long)master * (ClockController.HsiFrequency / Clock.MasterFrequency);
     }
 
@@ -258,7 +256,7 @@ public sealed class Stm8Device : IBus
         bool first = true;
         while (HsiTicks < end)
         {
-            if (!first && Cpu.State == CpuState.Running && Breakpoints.Contains(Cpu.PC)
+            if (!first && Breakpoints.Count > 0 && Cpu.State == CpuState.Running && Breakpoints.Contains(Cpu.PC)
                 && (BreakpointFilter?.Invoke(Cpu.PC) ?? true)) return StopReason.Breakpoint;
             first = false;
             Step();

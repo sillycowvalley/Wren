@@ -12,7 +12,7 @@ SWIM are ST's names, used here to describe compatibility.
 
 Windows builds are on the [Releases](https://github.com/sillycowvalley/wren/releases) page: a
 zip to unzip and run, with nothing to install. A release is made when its notes,
-`docs/Releases/<version>.md` (such as `v0.1.0-beta.1.md`), reach main:
+`docs/ReleaseNotes/<version>.md` (such as `v0.1.0-beta.1.md`), reach main:
 `.github/workflows/release.yml` runs the tests, publishes Wren self-contained for 64-bit
 Windows, checks it starts, and creates the release and its tag with the zip. A version with
 a suffix makes a pre-release. Pushing a version tag by hand makes one too.
