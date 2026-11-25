@@ -37,7 +37,10 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink` (Wren's Pico
   programmer sketch and its .uf2) and `firmware/pico-swimlib` (pico-swimlib built
   unchanged); both use the same wiring, `docs/PicoLink.md`.
-- `programs/` holds Wren BASIC programs; `OledThing.bas` is the Thing's own behaviour.
+- `programs/` holds Wren BASIC programs; `OledThing.bas` and `LedThing.bas` are the two
+  Things' own behaviour. The kernel builds for either board (`BOARD` in `Kernel.asm`; the
+  LED Thing's parts are in `IF` blocks and `Leds.inc`); a change to it must leave the
+  other board's kernel bytes unchanged unless that is the point.
 - `art/` holds the SVG sources for the wren; `src/Wren/Assets` holds what the app uses
   (`wren.ico`, `wren.png`, `wren-oled.png`).
 - `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
@@ -69,7 +72,8 @@ Digicool Things "8-bit OLED Thing". See `docs/ProjectPlan.md`.
   must end below its info block at $9270, just under the program store at $9280; the
   assembler refuses an overlap and a test checks.
 - Wren.Asm directives beyond ST's syntax: `RELAX` (short JRA/CALLR where in reach),
-  and overlapping output is an error. Kernel opcodes $30 up are one contiguous table:
+  `IF expr` / `ELSE` / `ENDIF` (expr may be `a = b` or `a <> b`), predefined symbols
+  (`Assembler.Defines`), and overlapping output is an error. Kernel opcodes $30 up are one contiguous table:
   add new opcodes at the end and keep `Op.cs`, `Vm.inc` and `docs/Bytecode.md` in step.
 - A cloud session cannot reach USB. Michael tests Wren.Link on Windows.
 - The Pico sketch is compile-checked in a session with the Pico SDK and

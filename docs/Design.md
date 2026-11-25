@@ -91,7 +91,8 @@ Kernel updates go over SWIM and need the UBC lock cleared and set again. Each on
 costs a wear cycle on the kernel blocks, so the kernel is developed on the emulator and
 the development board and installed on a Thing only a handful of times. Before writing,
 Install kernel checks the board (Digicool's firmware, a Wren kernel's info block, or an
-OLED answering on I2C) and refuses anything but an OLED Thing; it checks the EEPROM's
+OLED answering on I2C) and installs that board's kernel, refusing a board it cannot tell;
+it checks the EEPROM's
 size and records it in the kernel's info block. A Thing whose FAT is version 1 (the
 47-block store at $9440) keeps its program: old block n is new block n + 7 at the same
 address, so the table is rewritten with the program and its write counts in place.
@@ -267,6 +268,11 @@ bytes (8 blocks). Its tests compare its pixels with Digicool's firmware run in t
 emulator, and its die with the faces in Digicool's image.
 
 ## How it is built and tested
+
+- **One kernel source, two boards**: `Kernel.asm` is assembled with `BOARD` set to 1 (the
+  OLED Thing and the development board) or 2 (the LED Thing, `docs/LedThing.md`), and
+  `IF BOARD = BOARD_OLED ... ELSE ... ENDIF` keeps each board's parts. Adding the LED
+  build left the OLED kernel's bytes unchanged, so it costs the OLED Things no flash writes.
 
 - **Kernel** in STM8 assembly under `firmware/kernel/`, assembled by Wren.Asm when Wren
   starts. It is about 4.6 KB and must end below its info block at $9270 (the assembler

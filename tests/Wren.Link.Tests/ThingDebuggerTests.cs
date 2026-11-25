@@ -302,4 +302,42 @@ public class ThingDebuggerTests
         Assert.Equal(ThingRunState.Running, d.State);
         Assert.Equal(5, Global(d, "n"));
     }
+
+    [Fact]
+    public void TheDebuggerWorksOnAnLedThing()
+    {
+        var ledKernel = Kernel.Assemble(Path.Combine(AppContext.BaseDirectory, "firmware"), Board.LedThing);
+        var thing = new LedThing();
+        thing.Mcu.Load(MemoryImageOf("8-bit_led_thing.s19").Bytes);
+        var link = new ThingLink(new PicoLink(new FakePico(thing.Mcu)), "COM9");
+        link.Link.Sleep = _ => { };
+        link.Target.Connect();
+        link.Programmer.InstallKernel(new[] { Kernel.Image, ledKernel.Image });
+        var d = ThingDebugger.Attach(link, ledKernel);
+        var program = Compiler.Compile("DIM n\nON START\n n = 7\n LEDS n\nEND ON\n", Board.LedThing);
+        Assert.True(program.Success, string.Join("\n", program.Errors));
+        d.Breakpoints.Add(4);
+        d.Start(program, debug: true);
+        for (int i = 0; i < 500 && d.State != ThingRunState.Paused; i++)
+        {
+            thing.Mcu.Run(0.002);
+            d.Poll();
+        }
+        Assert.Equal(ThingRunState.Paused, d.State);
+        Assert.Equal(4, d.CurrentLine);
+        Assert.Equal("7", d.Globals().Single(v => v.Name == "n").Value.ToString());
+        d.Continue();
+        for (int i = 0; i < 20; i++)
+        {
+            thing.Mcu.Run(0.002);
+            d.Poll();
+        }
+        thing.TakeBrightness();
+        thing.Mcu.Run(0.02);
+        var seen = thing.TakeBrightness();
+        Assert.True(seen[0] > 0.05 && seen[1] > 0.05 && seen[2] > 0.05 && seen[3] < 0.01);
+    }
+
+    private static Wren.Asm.MemoryImage MemoryImageOf(string file) => Wren.Asm.MemoryImage.Parse(
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", file)));
 }

@@ -116,7 +116,7 @@ public sealed class ThingDebugger : IDisposable
     }
 
     /// <summary>Connects to the Thing through an open programmer and checks its kernel; closes the programmer if that fails.</summary>
-    private static ThingDebugger Attach(ThingLink link, Kernel kernel)
+    public static ThingDebugger Attach(ThingLink link, Kernel kernel)
     {
         try
         {
@@ -126,8 +126,10 @@ public sealed class ThingDebugger : IDisposable
             var info = link.Programmer.ReadInfo();
             if (info == null || info.FatVersion != ProgramStore.FatVersion || info.StoreAddress != ProgramStore.StoreAddress)
                 throw new LinkException("The Thing does not run this Wren's kernel: install it with Tools → Firmware… first.");
-            if (info.Board != Board.OledThing)
-                throw new LinkException("The Thing's kernel is not the OLED Thing's.");
+            if (info.Board != kernel.Board)
+                throw new LinkException(info.Board == Board.LedThing
+                    ? "this is an LED Thing: choose Board → LED Thing, so the program is built for it."
+                    : "this is an OLED Thing: choose Board → OLED Thing, so the program is built for it.");
             return new ThingDebugger(link, kernel);
         }
         catch

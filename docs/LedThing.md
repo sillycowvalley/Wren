@@ -1,8 +1,8 @@
 # The 8-bit LED Thing v1.0
 
 Digicool Things' second board, from its schematic (Rev 1.0, 2019-12-12) and its factory
-firmware (`firmware/digicool/8-bit_led_thing.s19`). Wren does not support it yet: the plan
-is item 5 of `docs/ProjectPlan.md`'s open questions.
+firmware (`firmware/digicool/8-bit_led_thing.s19`). Wren's model is `Wren.Emu.LedThing`;
+**Board → LED Thing** builds and runs programs for it (below, "Wren on the LED Thing").
 
 ## Parts
 
@@ -89,3 +89,36 @@ and pulls M0-M2 up.
   frame.
 - **The b inputs** (mode 7): each LED shows the share of the last frame (about 3 ms) its
   input was high, in 33 steps: a steady high is fully lit, a fast PWM input dimmed.
+
+## Wren on the LED Thing
+
+- **The kernel** is `firmware/kernel/Kernel.asm` built with `BOARD` = 2 (Wren builds both
+  boards' kernels as it starts). It has no OLED driver, graphics or fonts: about 2.4 KB, so
+  it ends near $89CB. Its program store, program table and info block are the OLED Thing's
+  ($9280, 54 blocks), with board 2 in the info block.
+- **The LEDs**: the 1 ms tick lights one LED, b0 to b7 in turn, so a frame is 8 ms and a lit
+  LED is on one eighth of the time, as on Digicool's firmware (whose frame is 2.9 ms).
+  While the debugger has the program paused the tick stops, and the LED of that moment
+  stays lit.
+- **Wren BASIC** on this board: `LEDS v` lights bn's LED for each bit n of v. The mode pins
+  are `M0` (PA3), `M1` (PA2) and `M2` (PA1), for `PIN`, `ON PRESS`, `ON RELEASE`, `ON LATCH`
+  and `ON PINS`. The display statements, the fonts, `ANALOG` and the OLED Thing's pin
+  names are refused when building for this board. `PULLUPS` reaches b0-b5; b6 and b7 have
+  no pull-up. At start b0-b5 and M0-M2 are pulled up.
+- **A fault** lights b7 with the fault number in b0-b6; with no program, b0 and b7 are lit.
+- **Install kernel** installs this kernel on a Thing it recognises as an LED Thing: one
+  holding Digicool's LED firmware or Wren's LED kernel. A blank LED Thing cannot be told
+  from a blank OLED Thing whose display is not answering, so it is refused: write
+  Digicool's LED firmware with **Write image…** first.
+- **`programs/LedThing.bas`** recreates the eight modes. Its tests run it and Digicool's
+  firmware side by side in the emulator: modes 0-5 show the same patterns in the same
+  order, and the roll has the same shape. It differs from Digicool's in three ways:
+  mode 7 lights each LED fully while its input is high, rather than dimming it by the
+  input's duty cycle; a mode change waits for the 20 ms debounce; and the new pattern's
+  first step can be shorter than 91 ms, since `ON EVERY` keeps its own time.
+
+## Open issues
+
+- Not yet tried on a real LED Thing.
+- The store could be about 4.6 KB larger on this board (the kernel leaves $89CC-$926F
+  unused), which needs a second program table layout.

@@ -3,7 +3,7 @@
 <img src="src/Wren/Assets/wren.png" alt="Wren, a small brown bird with its tail cocked up" width="160" align="right" />
 
 A development environment for STM8S003F3-class microcontrollers, in C# / .NET 8.
-Its first target is the Digicool Things "8-bit OLED Thing".
+Its targets are the Digicool Things "8-bit OLED Thing" and "8-bit LED Thing".
 
 Wren is not affiliated with STMicroelectronics or Digicool Things. STM8, ST-LINK and
 SWIM are ST's names, used here to describe compatibility.
@@ -30,8 +30,10 @@ SWIM are ST's names, used here to describe compatibility.
 - **Wren.Script**: the BASIC compiler and the debugger's engine.
 - **Wren.Asm**: an STM8 assembler using ST's instruction syntax. It writes Intel HEX
   and S-records, which ST Visual Programmer can load.
-- **Wren.Emu**: an STM8 emulator with the SSD1315 OLED and the OLED Thing board.
-- **programs/**: Wren BASIC programs. `OledThing.bas` is the Thing's own behaviour.
+- **Wren.Emu**: an STM8 emulator with the SSD1315 OLED, the OLED Thing and the LED Thing.
+- **programs/**: Wren BASIC programs. `OledThing.bas` and `LedThing.bas` are the two
+  Things' own behaviour; **Board → LED Thing** builds for the LED Thing (`LEDS`, the mode
+  pins `M0`-`M2`).
 - **art/**: the wren, as hand-written SVG sources: `wren.svg` (the full drawing),
   `wren-icon.svg` (simplified for small icons), `wren-16.svg` (hand-placed 16 x 16 pixels)
   and `wren-oled.svg` (1-bit, as the 64 x 32 OLED would show it). The PNGs and the `.ico`

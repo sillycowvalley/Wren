@@ -580,7 +580,7 @@ public partial class MainWindow : Window
             linkWindow.Activate();
             return;
         }
-        linkWindow = new LinkWindow(kernel);
+        linkWindow = new LinkWindow(oledKernel, ledKernel);
         linkWindow.Closed += (_, _) => linkWindow = null;
         linkWindow.Show(this);
         TellProgrammerWindow();

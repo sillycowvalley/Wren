@@ -14,7 +14,10 @@ namespace Wren;
 /// <summary>Tools → Firmware: sets a real Thing up through an ST-LINK or a Pico, and checks it.</summary>
 public partial class LinkWindow : Window
 {
-    private readonly Kernel? kernel;
+    private readonly Kernel? oledKernel, ledKernel;
+
+    /// <summary>The kernel for the connected Thing's board (the OLED Thing's when the board is not known).</summary>
+    private Kernel? kernel;
     private IReadOnlyList<ProgrammerInfo> devices = Array.Empty<ProgrammerInfo>();
     private ThingLink? link;
     private bool kernelConfirmed;
@@ -30,17 +33,19 @@ public partial class LinkWindow : Window
     private HashSet<string> portNames = new();
     private readonly WindowLayout layout;
 
-    public LinkWindow() : this(null) { }
+    public LinkWindow() : this(null, null) { }
 
     /// <summary>
     /// For setting a Thing up and checking it: install the kernel, restore factory settings,
     /// write images, read the wear, run the checks. Programs are uploaded, run and debugged
     /// from the main window (Debug → Target → Thing on the programmer).
     /// </summary>
-    public LinkWindow(Kernel? kernel)
+    public LinkWindow(Kernel? oledKernel, Kernel? ledKernel)
     {
         InitializeComponent();
-        this.kernel = kernel;
+        this.oledKernel = oledKernel;
+        this.ledKernel = ledKernel;
+        kernel = oledKernel;
         layout = new WindowLayout(this, SavedSettings.Current.ProgrammerWindow);
         Closing += (_, _) =>
         {
@@ -182,6 +187,8 @@ public partial class LinkWindow : Window
     /// <summary>What the Thing holds, as a few short lines under the buttons.</summary>
     private void ShowStatus(ThingLink l)
     {
+        var found = l.Target.NoAccess ? Board.Unknown : l.Programmer.DetectBoard().Board;
+        kernel = found == Board.LedThing ? ledKernel : oledKernel;
         var s = l.Programmer.ReadStatus(kernel?.Image);
         hasWrenKernel = s.HasKernel;
         hasCurrentKernel = s.Info != null;
@@ -191,7 +198,7 @@ public partial class LinkWindow : Window
             text = "Read-out protection is on: the Thing cannot be read.\nWrite image… removes it (erasing the chip).";
         else
         {
-            string board = l.Programmer.DetectBoard().Board switch
+            string board = found switch
             {
                 Board.OledThing => "OLED Thing",
                 Board.LedThing => "LED Thing",
@@ -408,7 +415,7 @@ public partial class LinkWindow : Window
             l.Programmer.Progress += Log;
             try
             {
-                l.Programmer.InstallKernel(kernel.Image);
+                l.Programmer.InstallKernel(new[] { oledKernel, ledKernel }.OfType<Kernel>().Select(k => k.Image));
                 ShowStatus(l);
             }
             finally

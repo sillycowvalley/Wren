@@ -13,6 +13,13 @@ public class BoardAndLayoutTests
 
     private static Kernel Kernel => SharedKernel.Value;
 
+    private static readonly Lazy<Kernel> SharedLedKernel = new(() =>
+        Kernel.Assemble(Path.Combine(AppContext.BaseDirectory, "firmware"), Board.LedThing));
+
+    private static Kernel LedKernel => SharedLedKernel.Value;
+
+    private static readonly MemoryImage[] BothKernels = { SharedKernel.Value.Image, SharedLedKernel.Value.Image };
+
     private static MemoryImage Digicool(string file) =>
         MemoryImage.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "firmware", "digicool", file)));
 
@@ -56,14 +63,45 @@ public class BoardAndLayoutTests
     }
 
     [Fact]
-    public void InstallRefusesAnLedThing()
+    public void InstallPutsTheLedKernelOnAnLedThing()
     {
-        var led = LedThingChip();
-        led.Load(Digicool("8-bit_led_thing.s19").Bytes);
-        var link = Connect(led);
-        var ex = Assert.Throws<LinkException>(() => link.Programmer.InstallKernel(Kernel.Image));
-        Assert.Contains("LED Thing", ex.Message);
-        Assert.Equal(Digicool("8-bit_led_thing.s19")[0x8150], led.Read(0x8150));    // untouched
+        var led = new LedThing();
+        led.Mcu.Load(Digicool("8-bit_led_thing.s19").Bytes);
+        var link = Connect(led.Mcu);
+        link.Programmer.InstallKernel(BothKernels);
+        link.Target.Connect();
+        Assert.Equal(Board.LedThing, link.Programmer.ReadInfo()!.Board);
+        Assert.Equal(FlashContents.WrenKernel, link.Programmer.ReadStatus(LedKernel.Image).Flash);
+        Assert.Equal(FlashContents.OtherFirmware, link.Programmer.ReadStatus(Kernel.Image).Flash);
+
+        // The LED kernel runs with no program: the two end LEDs.
+        link.Programmer.Run();
+        led.Mcu.Run(0.05);
+        led.TakeBrightness();
+        led.Mcu.Run(0.02);
+        var seen = led.TakeBrightness();
+        Assert.True(seen[0] > 0.05 && seen[7] > 0.05 && seen[3] < 0.01, string.Join(" ", seen.Select(v => v.ToString("F2"))));
+    }
+
+    [Fact]
+    public void InstallRefusesABoardItCannotTell()
+    {
+        var blank = LedThingChip();                          // no firmware, no display
+        var link = Connect(blank);
+        var ex = Assert.Throws<LinkException>(() => link.Programmer.InstallKernel(BothKernels));
+        Assert.Contains("Write image", ex.Message);
+        Assert.Equal(0, blank.Read(0x8000));                 // nothing written
+    }
+
+    [Fact]
+    public void TheDebuggerAsksForTheThingsBoard()
+    {
+        var led = new LedThing();
+        led.Mcu.Load(Digicool("8-bit_led_thing.s19").Bytes);
+        var link = Connect(led.Mcu);
+        link.Programmer.InstallKernel(BothKernels);
+        var ex = Assert.Throws<LinkException>(() => ThingDebugger.Attach(Connect(led.Mcu), Kernel));
+        Assert.Contains("Board → LED Thing", ex.Message);
     }
 
     [Theory]

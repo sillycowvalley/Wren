@@ -1,6 +1,6 @@
 # Wren project plan
 
-**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer, and programs are debugged on it from the main window.**
+**Status: approved. Step 1 (assembler, emulator, app) and the firmware (kernel, Wren BASIC, debugger) are built and tested. Wren's kernel and `OledThing.bas` run on a real OLED Thing, installed through a Raspberry Pi Pico programmer, and programs are debugged on it from the main window. The LED Thing's kernel and `LedThing.bas` are built and tested in the emulator.**
 
 Wren is a C# / .NET 8 development environment for STM8S003F3-class microcontrollers.
 It is driven through an ST-LINK V2 over SWIM. The first target is the Digicool
@@ -36,7 +36,7 @@ A Thing's flash is rated for only ~100 writes, so firmware reaches it last:
 |---|---|---|
 | **Wren** | The Avalonia app (Windows, Mac, Linux). | Runs and debugs Wren BASIC on the emulated Thing. |
 | **Wren.Asm** | An STM8 assembler, ST's syntax (PM0044). | Done. Every instruction form checked against sdasstm8. |
-| **Wren.Emu** | An STM8 emulator, the SSD1315 model and the OLED Thing board. | Done for the Thing's needs. CPU checked against ucsim. |
+| **Wren.Emu** | An STM8 emulator, the SSD1315 model and the OLED Thing and LED Thing boards. | Done for the Thing's needs. CPU checked against ucsim. |
 | **Wren.Link** | SWIM through an ST-LINK V2 (USB) or a Pico (serial), replacing STVP. | With pico-swimlib's firmware on the Pico it has installed the kernel, uploaded a program and restored Digicool's firmware on a real Thing. Wren's own Pico sketch fails part way through long transfers; the ST-LINK is not yet tried. See [PicoLink.md](PicoLink.md). |
 | **Wren.Script** | The Wren BASIC compiler, the FAT planner and the debugging session. | Done. Tested against the kernel on the emulator. |
 
@@ -141,11 +141,8 @@ The detailed design, for approval, is in [Design.md](Design.md).
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not
    zero; ST's PM0044 says Z is set when it is zero. Wren follows PM0044. Confirm on the
    development board with a two-line test.
-5. **The LED Thing.** Digicool's second board (`docs/LedThing.md`) has the same chip, with
-   b0-b7 on other pins and eight charlieplexed LEDs on PD3-PD6 instead of the OLED. The
-   plan: kernel board profiles (a shared core with an OLED layer or an LED
-   layer; the LED kernel drops the graphics, OLED driver and fonts, about 1.8 KB, which
-   goes to its program store); `LEDS value` and `LED n, ON|OFF` in Wren BASIC, the
-   graphics statements refused on the LED board; a board byte in programs too (a kernel's
-   is in its info block), so neither lands on the wrong board; an emulated LED Thing in the app; and
-   `programs/LedThing.bas` recreating its eight modes. Michael has LED Things to test on.
+5. **The LED Thing.** Built and tested in the emulator (`docs/LedThing.md`): the kernel's
+   LED build, `LEDS` and the mode pins `M0`-`M2`, **Board → LED Thing**, Install kernel and
+   debugging through the programmer, and `programs/LedThing.bas` checked against
+   Digicool's firmware. Open: try it on Michael's LED Things; and a larger program store
+   on this board (its kernel leaves about 4.6 KB unused), which needs a second table layout.

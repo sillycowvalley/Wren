@@ -238,14 +238,22 @@ public sealed class ThingProgrammer
     /// differ, sets the option bytes the kernel image carries (UBC), and checks it all.
     /// Returns how many flash blocks were written.
     /// </summary>
-    public int InstallKernel(MemoryImage kernel)
+    public int InstallKernel(MemoryImage kernel) => InstallKernel(new[] { kernel });
+
+    /// <summary>
+    /// Installs the kernel for this Thing's board, chosen from kernels by the board byte in each
+    /// one's info block. A board Wren cannot tell gets nothing: a blank LED Thing is told
+    /// from a blank OLED Thing only by its missing display, so it is refused rather than guessed.
+    /// </summary>
+    public int InstallKernel(IEnumerable<MemoryImage> kernels)
     {
         var found = DetectBoard();
         Say($"The board: {found.How}.");
-        if (found.Board == Board.LedThing)
-            throw new LinkException("This is an LED Thing. Wren's kernel for it is not ready yet; this kernel is the OLED Thing's.");
-        if (found.Board != Board.OledThing)
-            throw new LinkException("Wren could not tell this is an OLED Thing, so it installs nothing: " + found.How + ".");
+        if (found.Board == Board.Unknown)
+            throw new LinkException("Wren could not tell which Thing this is, so it installs nothing: " + found.How +
+                ". On an LED Thing, write Digicool's LED Thing firmware first (Write image…), then Install kernel.");
+        var kernel = kernels.FirstOrDefault(k => KernelInfo.Of(k)?.Board == found.Board)
+            ?? throw new LinkException($"This Wren has no kernel for the {(found.Board == Board.LedThing ? "LED Thing" : "OLED Thing")}.");
         bool large = EepromSizeCheck.HasExtraEeprom(target);
         Say(large ? "EEPROM: 640 bytes, so the program settings get 512 bytes at $4080." : $"EEPROM: 128 bytes, so the program settings get {ProgramStore.SettingsSize}.");
         int written = WriteImage(KernelInfo.ForEeprom(kernel, large ? 640 : 128), "kernel");
