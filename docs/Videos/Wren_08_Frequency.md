@@ -65,4 +65,4 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 > A clock, one pin, a timestamp on every edge, and long division done by hand. The OLED Thing as a frequency counter, in three hundred and seventy-six bytes.
 
-> Thanks for watching.
+> Next time: eight channels at once, a logic analyzer. Thanks for watching.

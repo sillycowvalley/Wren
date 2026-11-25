@@ -5,11 +5,12 @@ microcontrollers, driven through an ST-LINK V2 or a Pico over SWIM. Its targets 
 Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.md`.
 
 ## Working with the maintainer
-- Everything that lands in the repository is C#, plus STM8 assembly for firmware, and two
+- Everything that lands in the repository is C#, plus STM8 assembly for firmware, and
   Arduino sketches: the Pico programmer (`firmware/PicoLink`, using pico-swimlib's BSD
-  SWIM code; also shipped as a .uf2) and `firmware/LatchFeeder`, an Arduino Mega that feeds
-  `programs/OledThing/Latch.bas` a byte bus for the LATCH video. No Python, no JavaScript,
-  no leading underscore in names.
+  SWIM code; also shipped as a .uf2), and Arduino Mega signal sources for the videos'
+  instrument programs (`firmware/LatchFeeder`, `firmware/LogicSource` and the like; the
+  maintainer compiles them in the Arduino IDE). No Python, no JavaScript, no leading
+  underscore in names.
 - The maintainer works on Windows: Visual Studio, Test Explorer, GitHub Desktop. Steps
   written for him are GUI steps, never command lines.
 - He reviews and merges everything into main. Never push to main.
@@ -34,8 +35,9 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
   them for the protocol, never copy their code into this MIT repository.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
   `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink` (Wren's Pico
-  programmer sketch and its .uf2; its wiring is in `docs/PicoLink.md`), `firmware/LatchFeeder`
-  (an Arduino Mega sketch for the LATCH video; its wiring is in its opening comment).
+  programmer sketch and its .uf2; its wiring is in `docs/PicoLink.md`), and the Arduino Mega
+  sketches for the videos (`firmware/LatchFeeder`, `firmware/LogicSource`, ...; each one's wiring
+  is in its opening comment).
 - `programs/` holds Wren BASIC programs in a folder for each board (`programs/OledThing`,
   `programs/LedThing`); `OledThing.bas` and `LedThing.bas` in them are the two
   Things' own behaviour. The kernel builds for either board (`BOARD` in `Kernel.asm`; the

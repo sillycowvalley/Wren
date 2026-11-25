@@ -15,6 +15,7 @@ script and slides are left as they were recorded.
 | 6. A voltmeter in BASIC | [Wren_06_Voltmeter.md](Wren_06_Voltmeter.md) | `Infographics/Wren_06` | Script and slides ready, built round `programs/OledThing/Voltmeter.bas`; not yet recorded |
 | 7. Catch a byte on an edge (LATCH) | [Wren_07_Latch.md](Wren_07_Latch.md) | `Infographics/Wren_07` | Script and slides ready, built round `programs/OledThing/Latch.bas` and `LatchTest.bas`; not yet recorded |
 | 8. A frequency counter in BASIC | [Wren_08_Frequency.md](Wren_08_Frequency.md) | `Infographics/Wren_08` | Script and slides ready, built round `programs/OledThing/Frequency.bas`; not yet recorded |
+| 9. An 8-channel logic analyzer | [Wren_09_Logic.md](Wren_09_Logic.md) | `Infographics/Wren_09` | Script and slides ready, built round `programs/OledThing/LogicAnalyzer.bas` and `firmware/LogicSource`; not yet recorded |
 
 ## The playlist, planned
 
@@ -32,6 +33,9 @@ dives after, for those who stay. Each headline leads with a name or a claim, nev
 | 6 | A voltmeter on the OLED Thing | Ready: above. The analog-to-digital converter on PD2: a variable resistor as a voltage divider, `ANALOG` giving 0 to 1023, turned into volts (0 to 3.3 V) with 16-bit integers, both shown; averaging to steady the last digit; a scrolling graph of the last 64 readings. Straight to the real knob, no emulator. |
 | 7 | Catch a byte on an edge | Ready: above. An Arduino Mega (`firmware/LatchFeeder`) plays a byte bus: noise on b0-b7 through a straight 8-wire ribbon, then a byte and a rising strobe on PD3; `ON LATCH PD3 RISING` catches each byte and never the noise; ON CHANGE, ON PRESS and ON LATCH compared; setup and hold; rising, falling, both and WHILE. Then how fast: the Mega counts 00-FF at a rising rate (its `w` sweep) and `LatchTest.bas` stops at the first byte wrong or missed; in the emulator it is right to 550 a second and fails at 600, when more than the event queue's 7 arrive while the screen is drawn. |
 | 8 | A frequency counter | Ready: above. A slow 555 clock (about 3 to 50 Hz) on PD3, the Thing powered from the clock board's 5 V; a reciprocal counter (timestamped edges over 2 seconds, not a 1-second count); long division in 16-bit integers. |
+| 9 | A logic analyzer | Ready: above. b0-b7 sampled as one byte every ms into 64 bytes, triggered by the first change, drawn as eight traces of four pixels, held 3 s; an Arduino Mega (`firmware/LogicSource`) plays a counter, a walking one and eight PWM lines, changing on its own. |
+| 10 | A bus sniffer | `ON LATCH PD3 RISING WHILE PD2 LOW`: an Arduino Mega plays a CPU reading and writing memory; the Thing logs only the writes. |
+| 11 | A serial decoder | Clock on PD3, data on b0, select on PD2: bytes assembled a bit at a time from an Arduino Mega. |
 
 Open: whether to make a video on how the project was built with Claude.
 

@@ -264,4 +264,23 @@ public class DemoTests
         Assert.Equal(0, run.Global("failed"));
         Assert.Equal(0, run.VmFault);
     }
+
+    [Fact]
+    public void TheLogicAnalyzerCapturesACounterOnAChange()
+    {
+        var run = Run.Start(Program("OledThing", "LogicAnalyzer.bas"), t => t.SetInputs(0), seconds: 0.3);
+        Assert.Equal(0, run.Global("taken"));                     // the start-up call is not a trigger
+        for (int c = 1; c <= 60; c++)                              // a binary count, a step every 2 ms
+        {
+            run.Thing.SetInputs((byte)c);
+            run.For(0.002);
+        }
+        Assert.Equal(0, run.VmFault);
+        Assert.Equal(64, run.Global("taken"));
+        for (int i = 2; i < 64; i++)
+        {
+            int now = run.Element("samples", i), earlier = run.Element("samples", i - 2);
+            Assert.Equal((earlier + 1) & 255, now);                // one count every two samples
+        }
+    }
 }
