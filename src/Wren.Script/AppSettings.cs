@@ -71,6 +71,9 @@ public sealed class AppSettings
     /// <summary>View → Dark Mode: the dark version of the Windows 7 look.</summary>
     public bool DarkMode { get; set; }
 
+    /// <summary>View → Large Emulator: the emulated board at its large size (the OLED 7 screen pixels to a pixel); otherwise compact (5).</summary>
+    public bool LargeBoard { get; set; }
+
     /// <summary>Tools → Diagnostic log: each run writes its session to a file in DiagnosticLog.DefaultFolder.</summary>
     public bool DiagnosticLog { get; set; }
 

@@ -161,6 +161,8 @@ public partial class MainWindow : Window
         DevBoardMenu.IsChecked = boardChoice == BoardChoice.DevelopmentBoard;
         LedThingMenu.IsChecked = boardChoice == BoardChoice.LedThing;
         DarkModeMenu.IsChecked = settings.DarkMode;
+        LargeBoardMenu.IsChecked = settings.LargeBoard;
+        ApplyBoardSize();
         ApplyHighlighting();
 
         Pd2Button.PropertyChanged += (_, e) =>
@@ -553,6 +555,36 @@ public partial class MainWindow : Window
         SavedSettings.Save();
         ApplyHighlighting();
         breakpointMargin.InvalidateVisual();
+    }
+
+    /// <summary>View → Large Emulator: the board's panel at its large or compact size, remembered.</summary>
+    private void OnLargeBoard(object? sender, RoutedEventArgs e)
+    {
+        SavedSettings.Current.LargeBoard = LargeBoardMenu.IsChecked;
+        SavedSettings.Save();
+        ApplyBoardSize();
+    }
+
+    /// <summary>
+    /// Sizes the emulated board: large, the OLED at 7 screen pixels to a pixel; compact, at 5,
+    /// with the LEDs, the bit buttons and the groups below narrowed to match. Text keeps its size.
+    /// </summary>
+    private void ApplyBoardSize()
+    {
+        bool large = SavedSettings.Current.LargeBoard;
+        int scale = large ? 7 : 5;
+        Oled.Width = 64 * scale;
+        Oled.Height = 32 * scale;
+        ModeNote.MaxWidth = 64 * scale;                    // the notes wrap to the OLED's width, so the panel is as wide as its frame
+        SpareNote.MaxWidth = 64 * scale;
+        foreach (var bit in bits) bit.Width = large ? 42 : 28;
+        double led = large ? 30 : 21;
+        foreach (var ellipse in LedRow.Children.OfType<Avalonia.Controls.Shapes.Ellipse>())
+        {
+            ellipse.Width = led;
+            ellipse.Height = led;
+        }
+        LedRow.Spacing = large ? 14 : 10;
     }
 
     private void OnDiagnosticLog(object? sender, RoutedEventArgs e)
