@@ -79,9 +79,8 @@
         <MenuItem Name="DevBoardMenu" Header="_Development board (STM8S103F3)" ToggleType="Radio" GroupName="board" Click="OnBoardChanged" />
       </MenuItem>
       <MenuItem Header="_Tools">
-        <MenuItem Header="_Programmer…" Click="OnOpenLink" />
-        <MenuItem Header="_Debug module checks…" Click="OnDebugChecks"
-                  ToolTip.Tip="Bench checks of the chip's debug module, for debugging on a real Thing: opens the programmer" />
+        <MenuItem Header="_Firmware…" Click="OnOpenLink"
+                  ToolTip.Tip="Sets a real Thing up: installs Wren's kernel, restores the factory firmware, and checks the Thing" />
       </MenuItem>
       <MenuItem Header="_Help">
         <MenuItem Header="Wren BASIC _quick reference" Click="OnQuickReference" />

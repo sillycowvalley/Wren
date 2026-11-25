@@ -64,7 +64,7 @@ public sealed class AppSettings
     /// <summary>Where Start runs the program: the emulator, or a real Thing through the programmer.</summary>
     public RunTarget Target { get; set; } = RunTarget.Emulator;
 
-    /// <summary>The programmer last connected to, as the Programmer window names it.</summary>
+    /// <summary>The programmer last connected to, as the Firmware window names it.</summary>
     public string? LastProgrammer { get; set; }
 
     /// <summary>The program file last opened.</summary>

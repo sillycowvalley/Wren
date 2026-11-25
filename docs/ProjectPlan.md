@@ -123,7 +123,7 @@ The detailed design, for approval, is in [Design.md](Design.md).
 1. **The USB driver (first).** Wren.Link opens the ST-LINK through WinUSB, which ST's
    own ST-LINK driver (STSW-LINK009) uses, so it should work beside STVP without Zadig.
    To check, with the ST-LINK plugged in and nothing else using it:
-   1. In Visual Studio, run **Wren** and choose **Tools → Programmer…**.
+   1. In Visual Studio, run **Wren** and choose **Tools → Firmware…**.
    2. The log should list the ST-LINK. If it says "No ST-LINK found", open Device
       Manager and note where the ST-LINK appears and what driver it shows.
    3. Wire the ST-LINK to the S103 board (RST, SWIM, GND, and 3.3 V to the board), click
@@ -137,7 +137,7 @@ The detailed design, for approval, is in [Design.md](Design.md).
    checked does, and keeps it through a power cycle. Install kernel writes and reads
    back one block at $4080 and, if it holds, gives the program 512 setting bytes there
    instead of 12 (the kernel's info block records which). That quick check does not prove
-   the extra EEPROM keeps its contents: the Programmer window's **EEPROM size check** does,
+   the extra EEPROM keeps its contents: the Firmware window's **EEPROM size check** does,
    with a power cycle between writing a pattern to $4080-$427F and reading it back, and
    puts the original bytes back. Run it on the other Things and copy the logs back.
 4. **DIV and the Z flag.** ucsim 0.6.4 sets Z after DIV/DIVW when the quotient is not

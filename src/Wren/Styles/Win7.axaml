@@ -117,6 +117,26 @@
     <Setter Property="Foreground" Value="#8494A8" />
   </Style>
 
+  <!-- A link: blue underlined text that opens something, as in a Windows 7 dialog -->
+  <Style Selector="Button.link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Foreground" Value="#0066CC" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.link /template/ ContentPresenter#PART_ContentPresenter, Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.link TextBlock">
+    <Setter Property="TextDecorations" Value="Underline" />
+  </Style>
+  <Style Selector="Button.link:pointerover TextBlock">
+    <Setter Property="Foreground" Value="#3399FF" />
+  </Style>
+
   <!-- Text boxes, lists and combo boxes: white with the sunken grey border -->
   <Style Selector="TextBox">
     <Setter Property="Background" Value="#FFFFFF" />

@@ -493,7 +493,7 @@ public partial class MainWindow : Window
     private void OnAbout(object? sender, RoutedEventArgs e) => new SplashWindow { IsAbout = true, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(this);
 
     /// <summary>A file in the repository (looking upward from Wren) or beside Wren.</summary>
-    private static string? FindBeside(string relative)
+    internal static string? FindBeside(string relative)
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir != null)
@@ -522,11 +522,6 @@ public partial class MainWindow : Window
         TellProgrammerWindow();
     }
 
-    private void OnDebugChecks(object? sender, RoutedEventArgs e)
-    {
-        OnOpenLink(sender, e);
-        linkWindow?.ExplainDebugChecks();
-    }
 
     // ---- Starting, stopping and stepping (Visual Studio's keys) ----
 
@@ -923,7 +918,7 @@ public partial class MainWindow : Window
         if (session == null) return "";
         if (OnThingTarget)
             return (built == null ? "" : $"Program: {built.Image.Length} bytes in {built.Blocks} of {ProgramStore.Blocks} blocks.\n") +
-                "The Thing's own wear: Tools → Programmer…, Wear report.";
+                "The Thing's own wear: Tools → Firmware…, Wear report.";
         var fat = session.ReadFat();
         var counts = ProgramStore.WriteCounts(fat);
         int uploads = ProgramStore.IsFormatted(fat) ? (fat[6] << 8) | fat[7] : 0;

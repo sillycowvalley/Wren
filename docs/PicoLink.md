@@ -1,7 +1,7 @@
 # The Pico programmer
 
 A Raspberry Pi Pico, or a Pico-compatible board such as the Waveshare RP2040 Plus, stands in
-for an ST-LINK V2. Wren finds it as a serial port. **Tools → Programmer…** sets a Thing up
+for an ST-LINK V2. Wren finds it as a serial port. **Tools → Firmware…** sets a Thing up
 through it (install the kernel, write images, restore factory settings, read the wear
 history, the checks), and on **Debug → Target → Thing on the programmer** the main window
 uploads, runs and debugs programs through it. Two firmwares are available. Both use the same wiring, and
@@ -60,7 +60,7 @@ must not be powered from anything else while the board is connected. The OLED is
 ## Using it in Wren
 
 1. Wire the board to the Thing as above, and plug it in.
-2. In Wren, choose **Tools → Programmer…** and click **Find**. The list shows
+2. In Wren, choose **Tools → Firmware…**. The list shows
    **Pico on COMn**.
 3. Choose it and click **Connect**.
    - The log names the firmware and the sync pulse (16 µs is right).

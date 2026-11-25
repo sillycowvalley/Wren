@@ -116,10 +116,10 @@ public sealed class ThingDebugger : IDisposable
         {
             link.Target.Connect();
             if (link.Target.NoAccess)
-                throw new LinkException("The Thing refuses memory access (read-out protection?): see Tools → Programmer….");
+                throw new LinkException("The Thing refuses memory access (read-out protection?): see Tools → Firmware….");
             var info = link.Programmer.ReadInfo();
             if (info == null || info.FatVersion != ProgramStore.FatVersion || info.StoreAddress != ProgramStore.StoreAddress)
-                throw new LinkException("The Thing does not run this Wren's kernel: install it with Tools → Programmer… first.");
+                throw new LinkException("The Thing does not run this Wren's kernel: install it with Tools → Firmware… first.");
             if (info.Board != Board.OledThing)
                 throw new LinkException("The Thing's kernel is not the OLED Thing's.");
             return new ThingDebugger(link, kernel);

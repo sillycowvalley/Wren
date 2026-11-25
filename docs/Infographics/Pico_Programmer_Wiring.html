@@ -66,7 +66,7 @@
 <body>
 <header>
   <h1>Wren <span>·</span> Pico programmer wiring</h1>
-  <p>A Waveshare RP2040 Plus running pico-swimlib as a SWIM programmer for the OLED Thing. Seen from above, USB at the top.</p>
+  <p>A Waveshare RP2040 Plus (or any Pico) as the OLED Thing's programmer. Seen from above, USB at the top.</p>
 </header>
 <main>
   <div class="drawing">
@@ -646,8 +646,8 @@
       <h2>The firmware</h2>
       <ol>
         <li>Hold <b>BOOTSEL</b>, plug in USB, let go: a drive called <b>RPI-RP2</b> appears.</li>
-        <li>Drag <code>firmware/pico-swimlib/pico-espstlink.uf2</code> onto it. The board restarts as the USB serial port "Pico ESPSTLink".</li>
-        <li>It is Richard Hulme's pico-swimlib (BSD 3-Clause), built unchanged: SWIM timed in hardware by the RP2040's PIO.</li>
+        <li>Drag <code>firmware/PicoLink/PicoLink.uf2</code> onto it (Wren's own), or <code>firmware/pico-swimlib/pico-espstlink.uf2</code>. The board restarts as a USB serial port; Wren finds either.</li>
+        <li>Both time SWIM in hardware with the RP2040's PIO, using Richard Hulme's pico-swimlib (BSD 3-Clause).</li>
       </ol>
     </div>
   </div>

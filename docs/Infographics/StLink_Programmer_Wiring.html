@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!--
+  ST-LINK programmer wiring: the source of StLink_Programmer_Wiring.png beside it.
+
+  To render the PNG in Edge or Chrome:
+    1. Open this file in the browser.
+    2. Press F12 for DevTools, then Ctrl+Shift+M for the device toolbar.
+    3. Choose Responsive and set the size to 1920 x 1080.
+    4. In the toolbar's menu (the three dots) add "device pixel ratio" if it is hidden,
+       and set it to 2.
+    5. In the same menu choose "Capture screenshot".
+    6. The result is 3840 x 2160. Save it over StLink_Programmer_Wiring.png.
+
+  Fonts: "Liberation Sans" and "DejaVu Sans Mono", falling back to Arial and Consolas.
+  Facts: the Thing's J2 header and VCC from docs/OledThing.md and docs/LedThing.md; the
+  ST-LINK's pins are named as printed on the common ST-LINK V2 dongle's label, and on ST's
+  own ST-LINK/V2 SWIM connector (UM1075).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ST-LINK Programmer Wiring</title>
+<style>
+  :root {
+    --navy: #14213d; --accent: #e07a1f; --accent-soft: #fbe8d4;
+    --ink: #1b1f2a; --muted: #5a6275; --line: #d9dee8; --panel: #ffffff; --page: #eef1f6;
+    --code-ink: #0d3b66;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body { background: var(--page); color: var(--ink); font-family: "Liberation Sans", Arial, sans-serif;
+         font-size: 17px; line-height: 1.32; display: flex; flex-direction: column; }
+  code { font-family: "DejaVu Sans Mono", Consolas, monospace; font-size: 15px; color: var(--code-ink); }
+  header { background: var(--navy); color: #fff; padding: 16px 28px 14px 28px; display: flex;
+           align-items: baseline; justify-content: space-between; border-bottom: 5px solid var(--accent); }
+  header h1 { font-size: 32px; letter-spacing: 0.3px; }
+  header h1 span { color: var(--accent); }
+  header p { color: #c9d2e6; font-size: 17px; }
+  main { flex: 1; display: flex; gap: 20px; padding: 18px 24px 20px 24px; }
+  .drawing { width: 1080px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+  .side { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+  .card h2 { font-size: 19px; color: var(--navy); border-bottom: 2px solid var(--accent-soft); padding-bottom: 4px; margin-bottom: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th { text-align: left; color: var(--muted); font-weight: normal; font-size: 14px; padding: 2px 6px; }
+  td { padding: 5px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+  .sw { display: inline-block; width: 30px; height: 10px; border-radius: 5px; border: 1.5px solid #111; vertical-align: middle; }
+  ol, ul { padding-left: 22px; } li { margin: 3px 0; }
+  .note { background: #f1f6ff; border-color: #b9cdee; }
+  b.k { color: var(--navy); }
+  svg text { font-family: "Liberation Sans", Arial, sans-serif; }
+  .dongle { font-size: 22px; fill: #fff; font-weight: bold; }
+  .dongle2 { font-size: 14px; fill: #c8ccd4; }
+  .hdr { font-size: 15px; fill: #fff; font-weight: bold; }
+  .hdrdim { font-size: 14px; fill: #8d93a0; }
+  .thing { font-size: 22px; fill: #fff; font-weight: bold; }
+  .thing2 { font-size: 13px; fill: #c9d8f2; }
+  .thpin { font-size: 16px; fill: #fff; font-weight: bold; }
+  .callout { font-size: 17px; fill: #1b1f2a; font-weight: bold; }
+  .small { font-size: 14px; fill: #5a6275; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Wren <span>·</span> ST-LINK programmer wiring</h1>
+  <p>An ST-LINK V2 (or a compatible dongle) as the Thing's programmer: four wires to the Thing.</p>
+</header>
+<main>
+  <div class="drawing">
+    <svg width="1080" height="935" viewBox="0 0 1080 935">
+      <!-- The ST-LINK dongle, its header as its label shows it -->
+      <rect x="70" y="160" width="380" height="560" rx="22" fill="#3a3f4b" stroke="#22252c" stroke-width="3"/>
+      <rect x="185" y="105" width="150" height="70" rx="8" fill="#b9bec8" stroke="#7d828c" stroke-width="2"/>
+      <text x="260" y="148" text-anchor="middle" font-size="16" fill="#3a3f4b" font-weight="bold">USB</text>
+      <text x="260" y="225" text-anchor="middle" class="dongle">ST-LINK V2</text>
+      <text x="260" y="250" text-anchor="middle" class="dongle2">the label on the case names each pin</text>
+      <rect x="150" y="295" width="260" height="350" rx="8" fill="#1e2128" stroke="#555b66" stroke-width="2"/>
+      <circle cx="185" cy="330" r="9" fill="#5b616d"/><text x="205" y="335" class="hdrdim">SWDIO</text>
+      <text x="362" y="335" class="hdr" text-anchor="end">RST</text><circle cx="385" cy="330" r="11" fill="#e8c34a"/>
+      <circle cx="185" cy="400" r="9" fill="#5b616d"/><text x="205" y="405" class="hdrdim">GND</text>
+      <text x="362" y="405" class="hdr" text-anchor="end">GND</text><circle cx="385" cy="400" r="11" fill="#e8c34a"/>
+      <circle cx="185" cy="470" r="9" fill="#5b616d"/><text x="205" y="475" class="hdrdim">SWCLK</text>
+      <text x="362" y="475" class="hdr" text-anchor="end">SWIM</text><circle cx="385" cy="470" r="11" fill="#e8c34a"/>
+      <circle cx="185" cy="540" r="9" fill="#5b616d"/><text x="205" y="545" class="hdrdim">3.3V</text>
+      <text x="362" y="545" class="hdr" text-anchor="end">3.3V</text><circle cx="385" cy="540" r="11" fill="#e8c34a"/>
+      <circle cx="185" cy="610" r="9" fill="#5b616d"/><text x="205" y="615" class="hdrdim">5.0V</text>
+      <text x="362" y="615" class="hdrdim" text-anchor="end">5.0V</text><circle cx="385" cy="610" r="9" fill="#5b616d"/>
+      <text x="260" y="690" text-anchor="middle" class="dongle2">the common dongle's header; check your label</text>
+
+      <!-- The Thing, as on the Pico sheet: J2 down its left edge, VCC top right -->
+      <rect x="640" y="280" width="340" height="380" rx="12" fill="#1d4f9c" stroke="#123a75" stroke-width="3"/>
+      <rect x="790" y="330" width="160" height="80" rx="4" fill="#0b0f18" stroke="#555"/>
+      <text x="870" y="377" text-anchor="middle" font-size="18" fill="#6aa0ff" letter-spacing="3">OLED</text>
+      <text x="660" y="315" class="thing">The Thing</text>
+      <text x="660" y="640" class="thing2">J2 order from docs/OledThing.md, checked on the silk</text>
+      <circle cx="958" cy="305" r="11" fill="#d8b65a" stroke="#7a5d10" stroke-width="2"/>
+      <text x="940" y="311" class="thpin" text-anchor="end">VCC</text>
+      <rect x="652" y="440" width="34" height="140" fill="#111" rx="3"/>
+      <text x="698" y="432" class="thing2">J2 (SWIM header)</text>
+      <rect x="663" y="454" width="12" height="12" fill="#d8b65a" stroke="#7a5d10"/><text x="698" y="466" class="thpin">1  GND</text>
+      <rect x="663" y="504" width="12" height="12" fill="#d8b65a" stroke="#7a5d10"/><text x="698" y="516" class="thpin">2  SWIM</text>
+      <rect x="663" y="554" width="12" height="12" fill="#d8b65a" stroke="#7a5d10"/><text x="698" y="566" class="thpin">3  NRST</text>
+
+      <!-- Wires -->
+      <path d="M385,400 C520,400 540,460 669,460" fill="none" stroke="#111" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M385,400 C520,400 540,460 669,460" fill="none" stroke="#2b2b2b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M385,470 C520,470 540,510 669,510" fill="none" stroke="#111" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M385,470 C520,470 540,510 669,510" fill="none" stroke="#f2c218" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M385,330 C560,330 500,560 669,560" fill="none" stroke="#111" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M385,330 C560,330 500,560 669,560" fill="none" stroke="#2f7be0" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M385,540 C470,540 470,760 580,760 L1030,760 L1030,305 L958,305" fill="none" stroke="#111" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M385,540 C470,540 470,760 580,760 L1030,760 L1030,305 L958,305" fill="none" stroke="#e23a2e" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="385" cy="400" r="6" fill="#2b2b2b" stroke="#111" stroke-width="1.5"/>
+      <circle cx="669" cy="460" r="6" fill="#2b2b2b" stroke="#111" stroke-width="1.5"/>
+      <circle cx="385" cy="470" r="6" fill="#f2c218" stroke="#111" stroke-width="1.5"/>
+      <circle cx="669" cy="510" r="6" fill="#f2c218" stroke="#111" stroke-width="1.5"/>
+      <circle cx="385" cy="330" r="6" fill="#2f7be0" stroke="#111" stroke-width="1.5"/>
+      <circle cx="669" cy="560" r="6" fill="#2f7be0" stroke="#111" stroke-width="1.5"/>
+      <circle cx="385" cy="540" r="6" fill="#e23a2e" stroke="#111" stroke-width="1.5"/>
+      <circle cx="958" cy="305" r="6" fill="#e23a2e" stroke="#111" stroke-width="1.5"/>
+      <text x="700" y="795" class="callout">3.3V (or 5.0V) → VCC</text>
+      <text x="540" y="880" class="small" text-anchor="middle">RST → NRST,  SWIM → SWIM,  GND → GND,  3.3V → VCC</text>
+    </svg>
+  </div>
+  <div class="side">
+    <div class="card">
+      <h2>Connections</h2>
+      <table>
+        <tr><th>Wire</th><th>ST-LINK pin</th><th>To the Thing</th></tr>
+        <tr><td><span class="sw" style="background:#2f7be0"></span></td><td><b class="k">RST</b></td><td>J2 pin 3 <b>NRST</b></td></tr>
+        <tr><td><span class="sw" style="background:#f2c218"></span></td><td><b class="k">SWIM</b></td><td>J2 pin 2 <b>SWIM</b></td></tr>
+        <tr><td><span class="sw" style="background:#2b2b2b"></span></td><td><b class="k">GND</b></td><td>J2 pin 1 <b>GND</b></td></tr>
+        <tr><td><span class="sw" style="background:#e23a2e"></span></td><td><b class="k">3.3V</b> or <b class="k">5.0V</b></td><td><b>VCC</b> (top-right corner)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Power</h2>
+      <ul>
+        <li>The Thing runs at <b>3.3 V or 5 V</b> (2.95–5.5 V). The dongle's 3.3V or 5.0V pin powers it; use one, not both.</li>
+        <li>ST's own ST-LINK/V2 does <b>not</b> power the Thing: its SWIM connector's VDD pin only senses the voltage. Power the Thing separately and join the grounds.</li>
+        <li>No pull-up resistor is needed: the ST-LINK drives SWIM properly.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>ST's own ST-LINK/V2</h2>
+      <p>Its separate 4-pin SWIM connector: <b>1</b> VDD (sense), <b>2</b> SWIM, <b>3</b> GND, <b>4</b> RESET. Wire SWIM, GND and RESET as above, and VDD to the Thing's VCC.</p>
+    </div>
+    <div class="card note">
+      <h2>In Wren</h2>
+      <ol>
+        <li>Plug the ST-LINK in. Wren uses it through Windows' own driver (WinUSB).</li>
+        <li><b>Tools → Firmware…</b> sets the Thing up: Install kernel once.</li>
+        <li>Then <b>Debug → Target → Thing on the programmer</b>: F5, Ctrl+F5 and the stepping keys work on the Thing.</li>
+      </ol>
+    </div>
+  </div>
+</main>
+</body>
+</html>

@@ -30,7 +30,7 @@ Facts from RM0016 for the STM8S003 (low density):
 - The UBC option byte locks blocks 0 to N-1 against all writes from firmware.
 - The 128-byte data EEPROM is 2 blocks of 64 bytes, rated ~100k writes. Some STM8S003s
   have the S103's 640 bytes ($4000-$427F); Wren checks each Thing as it installs the
-  kernel (the Programmer window's EEPROM size check proves it with a power cycle).
+  kernel (the Firmware window's EEPROM size check proves it with a power cycle).
 
 | Blocks | Address | Size | Use |
 |---|---|---|---|

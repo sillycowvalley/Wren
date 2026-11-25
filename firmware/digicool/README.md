@@ -16,7 +16,7 @@ compiled C (Cosmic, with ST's Standard Peripheral Library).
 Neither file carries option bytes, so a Thing written with one runs its factory behaviour
 without read-out protection.
 
-- **Putting it back on an OLED Thing:** in Wren's **Tools → Programmer…**, use **Restore
+- **Putting it back on an OLED Thing:** in Wren's **Tools → Firmware…**, use **Restore
   factory settings** (or **Write image…**).
 - **Putting it back on an LED Thing:** **Write image…** with `8-bit_led_thing.s19`.
 

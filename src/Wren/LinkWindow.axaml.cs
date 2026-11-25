@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -8,7 +9,7 @@ using Wren.Script;
 
 namespace Wren;
 
-/// <summary>Programs a real Thing through an ST-LINK or a Pico: find, connect, install the kernel, upload, run.</summary>
+/// <summary>Tools → Firmware: sets a real Thing up through an ST-LINK or a Pico, and checks it.</summary>
 public partial class LinkWindow : Window
 {
     private readonly Kernel? kernel;
@@ -372,10 +373,23 @@ public partial class LinkWindow : Window
         UpdateButtons();
     }
 
-    /// <summary>Says how to run the debug module checks (from Tools → Debug module checks).</summary>
-    public void ExplainDebugChecks() =>
-        Log("Debug module checks: connect to a Thing running Wren's kernel with a program on it, then click Debug module checks. " +
-            "They write no flash or EEPROM. When they finish, copy the whole log back.");
+    private void OnPicoWiring(object? sender, RoutedEventArgs e) => OpenSheet("Pico_Programmer_Wiring.png");
+
+    private void OnStLinkWiring(object? sender, RoutedEventArgs e) => OpenSheet("StLink_Programmer_Wiring.png");
+
+    private void OpenSheet(string name)
+    {
+        string? found = MainWindow.FindBeside($"docs/Infographics/{name}");
+        if (found == null) Log($"The wiring sheet {name} was not found beside Wren.");
+        else Process.Start(new ProcessStartInfo(found) { UseShellExecute = true });
+    }
+
+    private void OnClearLog(object? sender, RoutedEventArgs e) => LogBox.Text = "";
+
+    private async void OnCopyLog(object? sender, RoutedEventArgs e)
+    {
+        if (Clipboard is { } clipboard) await clipboard.SetTextAsync(LogBox.Text ?? "");
+    }
 
     private async void OnDebugChecks(object? sender, RoutedEventArgs e)
     {

@@ -109,7 +109,7 @@ public partial class MainWindow
         SetMode(Mode.Design);
     }
 
-    /// <summary>Tells the Programmer window whether this window holds the Thing.</summary>
+    /// <summary>Tells the Firmware window whether this window holds the Thing.</summary>
     private void TellProgrammerWindow() => linkWindow?.HeldByMainWindow(thing != null, () =>
     {
         ThingStop();
@@ -127,7 +127,7 @@ public partial class MainWindow
 
     /// <summary>
     /// F5 or Ctrl+F5 from a stopped program: builds if needed, takes the
-    /// programmer (from the Programmer window too), uploads the program only if the Thing holds
+    /// programmer (from the Firmware window too), uploads the program only if the Thing holds
     /// something else, and starts it, under the debugger or on its own.
     /// </summary>
     private void ThingStart(bool debug)

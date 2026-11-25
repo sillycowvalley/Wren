@@ -1,15 +1,22 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Wren.LinkWindow"
-        Title="Wren — Programmer"
+        Title="Wren — Firmware"
         Width="720" Height="560" MinWidth="560" MinHeight="420">
   <DockPanel Margin="12">
     <StackPanel DockPanel.Dock="Top" Spacing="8">
-      <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                 Text="Programs a Thing (or the development board) on its SWIM header. ST-LINK V2: RST to NRST, SWIM to SWIM, GND to GND, 3.3 V or 5 V to VCC. Pico or RP2040 Plus with pico-swimlib: GP16 to SWIM (470 Ω pull-up to 3V3), GP17 to NRST, GND to GND, 3V3(OUT) to VCC; the Thing at 3.3 V only." />
+      <StackPanel Orientation="Horizontal" Spacing="14">
+        <TextBlock Text="Wiring:" VerticalAlignment="Center" />
+        <Button Classes="link" Click="OnPicoWiring" ToolTip.Tip="How to wire a Pico (or RP2040 Plus) to the Thing, and which firmware to put on it">
+          <TextBlock Text="Pico programmer" />
+        </Button>
+        <Button Classes="link" Click="OnStLinkWiring" ToolTip.Tip="How to wire an ST-LINK V2 to the Thing">
+          <TextBlock Text="ST-LINK V2 programmer" />
+        </Button>
+      </StackPanel>
       <StackPanel Orientation="Horizontal" Spacing="6">
-        <Button Name="FindButton" Content="Find" Click="OnFind" ToolTip.Tip="Look for ST-LINKs on USB and Picos on serial ports" />
         <ComboBox Name="DeviceBox" MinWidth="260" />
+        <Button Name="FindButton" Content="↻" Click="OnFind" Padding="6,3" ToolTip.Tip="Refresh the list: look again for ST-LINKs on USB and Picos on serial ports" />
         <Button Name="ConnectButton" Content="Connect" Click="OnConnect" ToolTip.Tip="Open the programmer, enter SWIM and read the Thing" />
         <Button Name="DisconnectButton" Content="Disconnect" Click="OnDisconnect"
                 ToolTip.Tip="Lets go of the Thing, which then runs (connected, its program is stopped)" />
@@ -35,8 +42,14 @@
       <TextBlock Name="StatusText" TextWrapping="Wrap" FontWeight="SemiBold" />
     </StackPanel>
     <HeaderedContentControl Classes="group" Header="Log" Margin="0,8,0,0">
-      <TextBox Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
-               FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="12" />
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" Margin="0,6,0,0">
+          <Button Content="Copy" Click="OnCopyLog" ToolTip.Tip="Copies the whole log to the clipboard" />
+          <Button Content="Clear" Click="OnClearLog" ToolTip.Tip="Empties the log" />
+        </StackPanel>
+        <TextBox Name="LogBox" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                 FontFamily="Consolas, Cascadia Mono, Menlo, monospace" FontSize="12" />
+      </DockPanel>
     </HeaderedContentControl>
   </DockPanel>
 </Window>

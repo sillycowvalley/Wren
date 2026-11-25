@@ -18,7 +18,7 @@ SWIM are ST's names, used here to describe compatibility.
   emulated OLED Thing (the OLED, the inputs and pins, the current line, variables and the
   flash write counts), or a real Thing on the programmer, where the same keys upload the
   program only if it changed, run it and debug it on the chip (two breakpoints at a time).
-  **Tools → Programmer…** sets a Thing up. A program saved from another editor reloads
+  **Tools → Firmware…** sets a Thing up. A program saved from another editor reloads
   by itself.
 - **Wren BASIC**: the Thing's language. Programs react to events (`ON CHANGE`,
   `ON LATCH PD3 RISING WHILE PD2 LOW`, `ON EVERY 100` ...) and draw with statements
@@ -40,7 +40,7 @@ SWIM are ST's names, used here to describe compatibility.
 - **Wren.Link**: programming a real Thing through an ST-LINK V2 (Windows, WinUSB) or a
   Raspberry Pi Pico or RP2040 Plus running pico-swimlib ([docs/PicoLink.md](docs/PicoLink.md)): install
   the kernel, upload programs through the FAT, read the wear history. Only blocks that
-  change are written. In Wren: **Tools → Programmer…**.
+  change are written. In Wren: **Tools → Firmware…**.
 
 See [docs/ProjectPlan.md](docs/ProjectPlan.md).
 

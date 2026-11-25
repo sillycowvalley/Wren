@@ -109,7 +109,7 @@ public sealed class ThingLink : IDisposable
                 lock (Held)
                 {
                     if (Held.Contains(serial.Port))
-                        throw new LinkException($"{serial.Port} is already open in Wren: stop debugging in the main window (Shift+F5), or click Disconnect in the Programmer window.");
+                        throw new LinkException($"{serial.Port} is already open in Wren: stop debugging in the main window (Shift+F5), or click Disconnect in the Firmware window.");
                     Held.Add(serial.Port);
                 }
                 try
