@@ -88,4 +88,42 @@ public class DemoTests
         }
         Assert.True(balls.Min() < 16 && balls.Max() > 48, "the ball did not cross the court");
     }
+
+    /// <summary>The seven-segment readout at a quarter-turn angle set by PA1 and PA2 (both open: 90 degrees).</summary>
+    private static Run SevenSegment(byte inputs, bool pa1Low, bool pa2Low) =>
+        Run.Start(Program("OledThing", "SevenSegment.bas"), t =>
+        {
+            t.SetInputs(inputs);
+            t.HexLow = pa1Low;
+            t.BarLow = pa2Low;
+        }, seconds: 0.15);
+
+    private static bool[,] Pixels(Run run)
+    {
+        var p = new bool[64, 32];
+        for (int x = 0; x < 64; x++)
+            for (int y = 0; y < 32; y++) p[x, y] = run.Thing.Oled.Pixel(x, y);
+        return p;
+    }
+
+    [Fact]
+    public void TheSevenSegmentReadoutTurnsAndFollowsTheInputs()
+    {
+        var at0 = Pixels(SevenSegment(0x5A, true, true));
+        var at90 = Pixels(SevenSegment(0x5A, false, false));
+        var at180 = Pixels(SevenSegment(0x5A, true, false));
+        var at270 = Pixels(SevenSegment(0x5A, false, true));
+        for (int x = 0; x < 64; x++)
+            for (int y = 0; y < 32; y++)
+            {
+                Assert.Equal(at0[x, y], at180[63 - x, 31 - y]);         // half a turn apart
+                Assert.Equal(at90[x, y], at270[63 - x, 31 - y]);
+            }
+        var run = SevenSegment(0x5A, true, true);
+        run.Thing.SetInputs(0xC3);
+        run.For(0.05);
+        Assert.Equal(0, run.VmFault);
+        var now = Pixels(run);
+        Assert.Contains(Enumerable.Range(0, 64 * 32), i => now[i % 64, i / 64] != at0[i % 64, i / 64]);
+    }
 }
