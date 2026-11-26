@@ -7,7 +7,7 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
 ## Working with the maintainer
 - Everything that lands in the repository is C#, plus STM8 assembly for firmware, and
   Arduino sketches: the Pico programmer (`firmware/PicoLink`, using pico-swimlib's BSD
-  SWIM code; also shipped as a .uf2), and Arduino Mega signal sources for the videos'
+  SWIM code; also shipped as a .uf2), and Arduino Mega signal sources for the
   instrument programs (`firmware/LatchFeeder`, `firmware/LogicSource` and the like; the
   maintainer compiles them in the Arduino IDE). No Python, no JavaScript, no leading
   underscore in names.
@@ -37,7 +37,7 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
 - `firmware/kernel/` (the kernel, STM8 assembly), `firmware/include/stm8s003.inc`,
   `firmware/demo/HexDemo.asm` (an early test program), `firmware/PicoLink` (Wren's Pico
   programmer sketch and its .uf2; its wiring is in `docs/PicoLink.md`), and the Arduino Mega
-  sketches for the videos (`firmware/LatchFeeder`, `firmware/LogicSource`, ...; each one's wiring
+  signal sources for the instrument programs (`firmware/LatchFeeder`, `firmware/LogicSource`, ...; each one's wiring
   is in its opening comment).
 - `programs/` holds Wren BASIC programs in a folder for each board (`programs/OledThing`,
   `programs/LedThing`); `OledThing.bas` and `LedThing.bas` in them are the two
@@ -50,10 +50,6 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
   `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` and `docs/LedThing.md`
   (the two Digicool boards' pins), `docs/Touchstone.md` (the Touchstone-86 chip tester's
   display code and `Touchstone.bas`).
-- Everything about the YouTube videos is in `docs/Videos`, so the folder can move as one:
-  `How_We_Make_Videos.md` (how they're made: read it before writing a video's script, slides
-  or thumbnail), `README.md` (the Wren BASIC series' colours, mark, motif and playlist), a
-  script for each video, and its slides in `docs/Videos/Infographics`.
 - Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
   rendered from, and the render steps are in that file's opening comment.
 - The maintainer works in Wren BASIC; the app never shows assembly or CPU registers.
