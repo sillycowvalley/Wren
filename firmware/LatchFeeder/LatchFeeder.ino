@@ -8,6 +8,7 @@
 //            programs/OledThing/Latch.bas.
 //   c        count mode: 00, 01, 02 ... FF, 00 ... at the rate set, for
 //            programs/OledThing/LatchTest.bas, which stops at the first byte wrong or missed.
+//            A line once a second shows the rate and how many it has strobed.
 //   r 500    count mode at 500 strobes a second.
 //   w        sweep: count mode from 100 strobes a second, 50 more every 3 seconds, to find
 //            where the Thing starts to miss.
@@ -37,6 +38,8 @@ unsigned int holdUs = 100;              // ...and this long after it
 uint8_t nextByte = 0;                   // the next byte to strobe
 unsigned long lastStrobe = 0;           // micros() at the last strobe
 unsigned long lastStep = 0;             // millis() at the last sweep step
+unsigned long sent = 0;                 // strobes in count mode since it started
+unsigned long lastReport = 0;           // millis() at the last once-a-second line
 uint16_t noise = 1;                     // a fast pseudo-random source for the noise
 
 // Bit 0 to bit 7 and back, for a ribbon the other way up.
@@ -90,7 +93,9 @@ void StartCounting(long perSecond) {
   counting = true;
   rate = perSecond;
   nextByte = 0;
+  sent = 0;
   lastStrobe = micros();
+  lastReport = millis();
   Report();
 }
 
@@ -148,4 +153,15 @@ void loop() {
   while (micros() - lastStrobe < interval) Put(Noise());
   lastStrobe += interval;
   Strobe(nextByte++);
+  sent++;
+
+  // Once a second, a line to show it's running: the rate, and strobes so far.
+  if (millis() - lastReport >= 1000) {
+    lastReport = millis();
+    Serial.print(sweeping ? "Sweep: " : "Count: ");
+    Serial.print(rate);
+    Serial.print(" a second, ");
+    Serial.print(sent);
+    Serial.println(" strobed");
+  }
 }
