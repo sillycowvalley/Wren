@@ -75,16 +75,24 @@ void setup() {
   digitalWrite(ClockPin, LOW);
   digitalWrite(SelectPin, HIGH);        // not selected
   Serial.begin(115200);
-  Serial.println("SerialSource: one bit at a time, 20 bits a second");
+  Serial.println();
+  Serial.println("=== SerialSource ===");
+  Serial.print("Sends \"");
+  Serial.print(Message);
+  Serial.println("\" one bit at a time, 20 bits a second, for SerialDecoder.bas.");
+  Serial.println("Wiring: A0-A7 to b0-b7 (ribbon; A0 is the data), D2 to PD3 (clock), D3 to PD2 (select), 5V to VCC, GND to GND.");
+  Serial.println("The Thing should show the bits as they arrive, then each byte in hex, matching below.");
+  Serial.println();
 }
 
 void loop() {
   uint8_t b = (uint8_t)Message[letter];
+  Serial.print("Sending '");
   Serial.print((char)b);
-  Serial.print("  ");
+  Serial.print("'  hex ");
   if (b < 16) Serial.print('0');
   Serial.print(b, HEX);
-  Serial.print("  ");
+  Serial.print("  bits ");
   for (int8_t i = 7; i >= 0; i--) Serial.print((b >> i) & 1);
   Serial.println();
   SendByte(b);

@@ -68,12 +68,20 @@ void Strobe(uint8_t b) {
   digitalWrite(StrobePin, LOW);
 }
 
+void Banner() {
+  Serial.println();
+  Serial.println("=== LatchFeeder ===");
+  Serial.println("Feeds the OLED Thing a byte bus, for Latch.bas and LatchTest.bas.");
+  Serial.println("Wiring: A0-A7 to b0-b7 (ribbon), D2 to PD3, 5V to VCC, GND to GND.");
+}
+
 void Menu() {
   Serial.println();
-  Serial.println("LatchFeeder. Type a number and press Enter:");
+  Serial.println("Type a number and press Enter:");
   Serial.println("  1  The message, one letter a second (for Latch.bas)");
   Serial.println("  2  The speed test, faster every 3 seconds (for LatchTest.bas)");
   Serial.println("  3  A steady count at one speed, e.g. 3 400");
+  Serial.println("Press Enter on its own to see this menu again.");
   Serial.println();
 }
 
@@ -85,12 +93,20 @@ void Start(Mode m, long perSecond) {
   lastStrobe = micros();
   lastFaster = millis();
   lastStatus = millis();
-  if (m == MessageMode) Serial.println("Now: the message, one letter a second.");
-  if (m == SpeedTest) Serial.println("Now: the speed test, from 100 bytes a second, 50 faster every 3 seconds.");
+  if (m == MessageMode) {
+    Serial.println("Now: the message, one letter a second.");
+    Serial.println("The Thing (Latch.bas) should show each letter's hex, as below, and count up by one.");
+  }
+  if (m == SpeedTest) {
+    Serial.println("Now: the speed test, from 100 bytes a second, 50 faster every 3 seconds.");
+    Serial.println("The Thing (LatchTest.bas) should show the speed and ALL GOOD, until it shows FAILED.");
+    Serial.println("Press the Thing's PD2 button to start its check again.");
+  }
   if (m == SteadyCount) {
     Serial.print("Now: counting at ");
     Serial.print(rate);
     Serial.println(" bytes a second.");
+    Serial.println("The Thing (LatchTest.bas) should show that speed and ALL GOOD.");
   }
 }
 
@@ -114,6 +130,7 @@ void setup() {
   digitalWrite(StrobePin, LOW);         // the strobe rests low; its rising edge latches
   Serial.begin(115200);
   Serial.setTimeout(50);
+  Banner();
   Menu();
   Start(MessageMode, 1);
 }
