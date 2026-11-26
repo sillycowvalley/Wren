@@ -240,6 +240,7 @@ public partial class MainWindow : Window
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Open a Wren BASIC program",
+            SuggestedStartLocation = await ProgramFolder(),
             AllowMultiple = false,
             FileTypeFilter = new[]
             {
@@ -249,6 +250,18 @@ public partial class MainWindow : Window
         });
         string? chosen = files.Count > 0 ? files[0].TryGetLocalPath() : null;
         if (chosen != null) Open(chosen);
+    }
+
+    /// <summary>
+    /// Where Open and Save As start: the open program's folder, else the last program's. Given
+    /// no start, Windows reuses the folder of the last file dialog, which may be the Firmware
+    /// window's.
+    /// </summary>
+    private async Task<IStorageFolder?> ProgramFolder()
+    {
+        string? file = path ?? SavedSettings.Current.LastFile;
+        string? folder = file != null ? Path.GetDirectoryName(Path.GetFullPath(file)) : null;
+        return folder != null && Directory.Exists(folder) ? await StorageProvider.TryGetFolderFromPathAsync(folder) : null;
     }
 
     private async void OnReload(object? sender, RoutedEventArgs e)
@@ -309,6 +322,7 @@ public partial class MainWindow : Window
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = "Save the Wren BASIC program",
+            SuggestedStartLocation = await ProgramFolder(),
             SuggestedFileName = path != null ? Path.GetFileName(path) : "Program.bas",
             DefaultExtension = "bas",
             FileTypeChoices = new[] { new FilePickerFileType("Wren BASIC") { Patterns = new[] { "*.bas" } } },
