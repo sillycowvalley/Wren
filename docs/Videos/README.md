@@ -1,7 +1,7 @@
 # Wren BASIC videos
 
 The Wren BASIC series and its YouTube playlist: videos about Wren, made as
-[How_We_Make_Videos.md](../How_We_Make_Videos.md) says. Each video is a script here,
+[How_We_Make_Videos.md](How_We_Make_Videos.md) says. Each video is a script here,
 `Wren_NN_Name.md`, and a folder of slides, `Infographics/Wren_NN`. A recorded video's
 script and slides are left as they were recorded.
 

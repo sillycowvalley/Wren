@@ -50,10 +50,10 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
   `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` and `docs/LedThing.md`
   (the two Digicool boards' pins), `docs/Touchstone.md` (the Touchstone-86 chip tester's
   display code and `Touchstone.bas`).
-- `docs/How_We_Make_Videos.md` is how the project's YouTube videos are made: read it before
-  writing a video's script, slides or thumbnail. The Wren BASIC series is in `docs/Videos`:
-  its `README.md` sets the series' colours, mark and motif; each video is a script there and
-  a folder of slides in `docs/Videos/Infographics`.
+- Everything about the YouTube videos is in `docs/Videos`, so the folder can move as one:
+  `How_We_Make_Videos.md` (how they're made: read it before writing a video's script, slides
+  or thumbnail), `README.md` (the Wren BASIC series' colours, mark, motif and playlist), a
+  script for each video, and its slides in `docs/Videos/Infographics`.
 - Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
   rendered from, and the render steps are in that file's opening comment.
 - The maintainer works in Wren BASIC; the app never shows assembly or CPU registers.
