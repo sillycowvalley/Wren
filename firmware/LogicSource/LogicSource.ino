@@ -37,14 +37,24 @@ void Put(uint8_t v) {
 }
 
 void Announce() {
-  const char *names[] = { "Counter", "Walking", "PWM" };
-  Serial.print("Pattern: ");
+  const char *names[] = {
+    "a counter: the top line toggles every 2 ms, each line below at half the speed",
+    "a walking one: a single high line, moving down one place every 4 ms",
+    "PWM: all lines on a 16 ms period, each high a little longer than the one above"
+  };
+  Serial.print("Now: ");
   Serial.println(names[pattern]);
 }
 
 void setup() {
   DDRF = 0xFF;                          // A0-A7: outputs
   Serial.begin(115200);
+  Serial.println();
+  Serial.println("=== LogicSource ===");
+  Serial.println("Plays three patterns on b0-b7 for LogicAnalyzer.bas, 6 seconds each, round and round.");
+  Serial.println("Wiring: A0-A7 to b0-b7 (ribbon), 5V to VCC, GND to GND.");
+  Serial.println("The Thing should draw each new pattern, hold it 3 seconds, then catch the next change.");
+  Serial.println();
   patternStart = millis();
   Announce();
 }
@@ -52,9 +62,11 @@ void setup() {
 void loop() {
   unsigned long now = millis();
   if (now - patternStart >= PatternMs) {
-    patternStart = now;
     pattern = (pattern + 1) % 3;
     Announce();
+    Serial.flush();                     // the old pattern holds while this prints...
+    now = millis();
+    patternStart = now;                 // ...so the new one starts clean, after it
   }
   unsigned long t = now - patternStart;
   switch (pattern) {

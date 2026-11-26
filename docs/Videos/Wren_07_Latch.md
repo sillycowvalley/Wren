@@ -85,7 +85,7 @@ Wren (MIT licence, C#, Windows): https://github.com/sillycowvalley/Wren
 
 ## The sweep, live
 
-*Swap the Thing back onto the Pico, upload LatchTest.bas in Wren, then back onto the Mega's 5 V. The console moves to the Arduino IDE (LatchFeeder): in the Serial Monitor type w and press Enter: the Mega starts at 100 strobes a second and adds 50 every 3 seconds. Wait for FAILED; cut the wait in the edit. Press the PD2 button to start the check again.*
+*Swap the Thing back onto the Pico, upload LatchTest.bas in Wren, then back onto the Mega's 5 V. The console moves to the Arduino IDE (LatchFeeder): in the Serial Monitor type 2 and press Enter for the speed test: the Mega starts at 100 strobes a second and adds 50 every 3 seconds. Wait for FAILED; cut the wait in the edit. Press the PD2 button to start the check again.*
 
 > Every strobe checked, and the rate climbing. All good.
 

@@ -67,6 +67,13 @@ Wren remembers its window positions and sizes, the width of the column beside th
 the Board choice, the last programmer connected to and the last program opened in
 `%AppData%\Wren\Settings.json`. Delete that file to go back to the defaults.
 
+## Wren BASIC at a glance
+
+The whole language on one page: the events, statements, drawing and fonts, numbers, pins
+and limits, for both Things. In Wren it is **Help → Wren BASIC quick reference**.
+
+[![The Wren BASIC quick reference](docs/Infographics/Wren_BASIC_Quick_Reference.png)](docs/Infographics/Wren_BASIC_Quick_Reference.png)
+
 ## A taste of Wren BASIC
 
 ```

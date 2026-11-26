@@ -63,7 +63,15 @@ void setup() {
   digitalWrite(ClockPin, LOW);
   digitalWrite(WritePin, HIGH);         // not writing
   Serial.begin(115200);
-  Serial.println("BusSource: 200 bus cycles a second, one write in eight");
+  Serial.println();
+  Serial.println("=== BusSource ===");
+  Serial.println("Plays a CPU on a memory bus for BusSniffer.bas: 200 bus cycles a second, one write in eight.");
+  Serial.print("The writes spell \"");
+  Serial.print(Message);
+  Serial.println("\" over and over; the reads are random.");
+  Serial.println("Wiring: A0-A7 to b0-b7 (ribbon), D2 to PD3 (clock), D3 to PD2 (write enable), 5V to VCC, GND to GND.");
+  Serial.println("The Thing should count the writes (matching the count below) and show them in hex.");
+  Serial.println();
   lastCycle = micros();
 }
 
@@ -82,11 +90,11 @@ void loop() {
   }
   if (millis() - lastReport >= 1000) {
     lastReport = millis();
-    Serial.print("Cycles ");
     Serial.print(reads + writes);
-    Serial.print(": reads ");
+    Serial.print(" bus cycles so far: ");
     Serial.print(reads);
-    Serial.print(", writes ");
-    Serial.println(writes);
+    Serial.print(" reads, ");
+    Serial.print(writes);
+    Serial.println(" writes.");
   }
 }
