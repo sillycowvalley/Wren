@@ -335,4 +335,33 @@ public class DemoTests
         Assert.Equal((byte)'R', run.Element("heard", 1));
         Assert.Equal((byte)'N', run.Element("heard", 3));
     }
+
+    [Fact]
+    public void TheFaultDemoCountsDownThenStopsOnADivisionByZero()
+    {
+        var run = Run.Start(Program("OledThing", "FaultDemo.bas"), seconds: 3);
+        Assert.Equal(0, run.VmFault);
+        run.For(4);
+        Assert.Equal(5, run.VmFault);                           // ERR 5: division by zero
+    }
+
+    [Fact]
+    public void TheQueueDemoLosesEventsOnlyWhileItsHandlerIsHeavy()
+    {
+        var run = Run.Start(Program("OledThing", "QueueDemo.bas"), seconds: 4.5);
+        Assert.Equal(0, run.Global("heavy"));
+        Assert.Equal(0, run.Global("lostRate"));                // light: keeps up
+        Assert.InRange(run.Global("rate"), 495, 505);
+        run.For(4);
+        Assert.Equal(1, run.Global("heavy"));
+        Assert.True(run.Global("lostRate") > 100);              // heavy: the queue overflows
+        Assert.Equal(0, run.VmFault);
+    }
+
+    [Fact]
+    public void TheLibraryTourStepsThroughEveryPageWithoutAFault()
+    {
+        var run = Run.Start(Program("OledThing", "LibraryTour.bas"), seconds: 25);
+        Assert.Equal(0, run.VmFault);
+    }
 }
