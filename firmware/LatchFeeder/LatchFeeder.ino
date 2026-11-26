@@ -3,18 +3,12 @@
 // goes on the eight data lines, then a rising edge on the strobe says "now". Between strobes
 // the lines are noise.
 //
-// Two modes, chosen by typing in the Serial Monitor (115200 baud, "Newline"):
-//   m        message mode (the default): "WREN BASIC " one byte a second, for
-//            programs/OledThing/Latch.bas.
-//   c        count mode: 00, 01, 02 ... FF, 00 ... at the rate set, for
-//            programs/OledThing/LatchTest.bas, which stops at the first byte wrong or missed.
-//            A line once a second shows the rate and how many it has strobed.
-//   r 500    count mode at 500 strobes a second.
-//   w        sweep: count mode from 100 strobes a second, 50 more every 3 seconds, to find
-//            where the Thing starts to miss.
-//   s 10     setup: the byte steady this many microseconds before the edge.
-//   h 10     hold: and this many after it.
-//   ?        what it is doing now.
+// Open the Serial Monitor at 115200 baud. It shows a menu: type a number and press Enter.
+//   1  The message: "WREN BASIC ", one letter a second. For Latch.bas. (It starts in this.)
+//   2  The speed test: 00, 01, 02 ... FF and round, from 100 a second, 50 a second faster
+//      every 3 seconds. For LatchTest.bas, which stops at the first byte wrong or missed.
+//   3  A steady count at one speed: type 3, a space and the speed, e.g. "3 400".
+// Every second it prints what it's doing, so it's plain that it's running.
 //
 // Wiring (the Thing runs from the Mega's 5 V: upload the Thing's program first, then unplug
 // the Pico):
@@ -29,17 +23,17 @@
 const uint8_t StrobePin = 2;
 const char Message[] = "WREN BASIC ";
 const bool Reversed = false;            // true if the ribbon puts A0 on b7
+const unsigned int SetupUs = 100;       // the byte steady this long before the edge...
+const unsigned int HoldUs = 100;        // ...and this long after it
 
-bool counting = false;                  // count mode, else message mode
-bool sweeping = false;
-long rate = 100;                        // strobes a second in count mode
-unsigned int setupUs = 100;             // the byte steady this long before the edge...
-unsigned int holdUs = 100;              // ...and this long after it
+enum Mode { MessageMode, SpeedTest, SteadyCount };
+Mode mode = MessageMode;
+long rate = 100;                        // bytes a second when counting
 uint8_t nextByte = 0;                   // the next byte to strobe
+unsigned long sent = 0;                 // bytes strobed since the mode started
 unsigned long lastStrobe = 0;           // micros() at the last strobe
-unsigned long lastStep = 0;             // millis() at the last sweep step
-unsigned long sent = 0;                 // strobes in count mode since it started
-unsigned long lastReport = 0;           // millis() at the last once-a-second line
+unsigned long lastFaster = 0;           // millis() when the speed test last sped up
+unsigned long lastStatus = 0;           // millis() at the last status line
 uint16_t noise = 1;                     // a fast pseudo-random source for the noise
 
 // Bit 0 to bit 7 and back, for a ribbon the other way up.
@@ -68,49 +62,50 @@ uint8_t Noise() {
 // The byte, steady before and after the rising edge.
 void Strobe(uint8_t b) {
   Put(b);
-  delayMicroseconds(setupUs);
+  delayMicroseconds(SetupUs);
   digitalWrite(StrobePin, HIGH);        // the Thing latches b0-b7 now
-  delayMicroseconds(holdUs);
+  delayMicroseconds(HoldUs);
   digitalWrite(StrobePin, LOW);
 }
 
-void Report() {
-  if (counting) {
-    Serial.print(sweeping ? "Sweep: " : "Count: ");
-    Serial.print(rate);
-    Serial.print(" strobes a second");
-  } else {
-    Serial.print("Message: one byte a second");
-  }
-  Serial.print(", setup ");
-  Serial.print(setupUs);
-  Serial.print(" us, hold ");
-  Serial.print(holdUs);
-  Serial.println(" us");
+void Menu() {
+  Serial.println();
+  Serial.println("LatchFeeder. Type a number and press Enter:");
+  Serial.println("  1  The message, one letter a second (for Latch.bas)");
+  Serial.println("  2  The speed test, faster every 3 seconds (for LatchTest.bas)");
+  Serial.println("  3  A steady count at one speed, e.g. 3 400");
+  Serial.println();
 }
 
-void StartCounting(long perSecond) {
-  counting = true;
+void Start(Mode m, long perSecond) {
+  mode = m;
   rate = perSecond;
   nextByte = 0;
   sent = 0;
   lastStrobe = micros();
-  lastReport = millis();
-  Report();
+  lastFaster = millis();
+  lastStatus = millis();
+  if (m == MessageMode) Serial.println("Now: the message, one letter a second.");
+  if (m == SpeedTest) Serial.println("Now: the speed test, from 100 bytes a second, 50 faster every 3 seconds.");
+  if (m == SteadyCount) {
+    Serial.print("Now: counting at ");
+    Serial.print(rate);
+    Serial.println(" bytes a second.");
+  }
 }
 
-// One command from the Serial Monitor.
+// A line typed in the Serial Monitor.
 void Command() {
-  char c = Serial.read();
-  switch (c) {
-    case 'm': counting = false; sweeping = false; nextByte = 0; Report(); break;
-    case 'c': sweeping = false; StartCounting(rate); break;
-    case 'r': sweeping = false; StartCounting(max(1L, Serial.parseInt())); break;
-    case 'w': sweeping = true; lastStep = millis(); StartCounting(100); break;
-    case 's': setupUs = Serial.parseInt(); Report(); break;
-    case 'h': holdUs = Serial.parseInt(); Report(); break;
-    case '?': Report(); break;
+  long choice = Serial.parseInt();
+  if (choice == 1) Start(MessageMode, 1);
+  else if (choice == 2) Start(SpeedTest, 100);
+  else if (choice == 3) {
+    long speed = Serial.parseInt();
+    if (speed < 1 || speed > 4000) Serial.println("Give a speed from 1 to 4000, e.g. 3 400");
+    else Start(SteadyCount, speed);
   }
+  else Menu();
+  while (Serial.available()) Serial.read();   // the rest of the line
 }
 
 void setup() {
@@ -118,36 +113,35 @@ void setup() {
   pinMode(StrobePin, OUTPUT);
   digitalWrite(StrobePin, LOW);         // the strobe rests low; its rising edge latches
   Serial.begin(115200);
-  Serial.println("LatchFeeder: m message, c count, r <rate>, w sweep, s <us>, h <us>, ?");
-  Report();
+  Serial.setTimeout(50);
+  Menu();
+  Start(MessageMode, 1);
 }
 
 void loop() {
   if (Serial.available()) Command();
 
-  if (!counting) {
-    // Message mode: noise for a second, then the next byte of the message.
+  if (mode == MessageMode) {
+    // Noise for a second, then the next letter of the message.
     unsigned long start = millis();
     while (millis() - start < 1000 && !Serial.available()) Put(Noise());
     if (Serial.available()) return;
     uint8_t b = (uint8_t)Message[nextByte];
     Strobe(b);
-    Serial.print("Strobed $");
-    if (b < 0x10) Serial.print('0');
-    Serial.print(b, HEX);
-    Serial.print("  '");
+    Serial.print("Sent '");
     Serial.print((char)b);
-    Serial.println("'");
+    Serial.print("'  hex ");
+    if (b < 0x10) Serial.print('0');
+    Serial.println(b, HEX);
     nextByte++;
     if (Message[nextByte] == 0) nextByte = 0;
     return;
   }
 
-  // Count mode: noise until the next strobe is due, then the next byte.
-  if (sweeping && millis() - lastStep >= 3000) {
-    lastStep = millis();
+  // Counting: noise until the next byte is due, then the next byte.
+  if (mode == SpeedTest && millis() - lastFaster >= 3000) {
+    lastFaster = millis();
     rate += 50;
-    Report();
   }
   unsigned long interval = 1000000UL / rate;
   while (micros() - lastStrobe < interval) Put(Noise());
@@ -155,13 +149,12 @@ void loop() {
   Strobe(nextByte++);
   sent++;
 
-  // Once a second, a line to show it's running: the rate, and strobes so far.
-  if (millis() - lastReport >= 1000) {
-    lastReport = millis();
-    Serial.print(sweeping ? "Sweep: " : "Count: ");
+  if (millis() - lastStatus >= 1000) {
+    lastStatus = millis();
+    Serial.print(mode == SpeedTest ? "Speed test: " : "Steady count: ");
     Serial.print(rate);
-    Serial.print(" a second, ");
+    Serial.print(" bytes a second, ");
     Serial.print(sent);
-    Serial.println(" strobed");
+    Serial.println(" sent so far.");
   }
 }
