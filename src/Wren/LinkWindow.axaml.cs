@@ -327,8 +327,10 @@ public partial class LinkWindow : Window
         if (link == null) return;
         if (imageToWrite == null)
         {
-            string digicool = DigicoolFirmware.DefaultFolder;
-            var start = Directory.Exists(digicool) ? await StorageProvider.TryGetFolderFromPathAsync(digicool) : null;
+            // The folder an image was last chosen from, else Digicool's firmware fetched from GitHub.
+            string? last = SavedSettings.Current.LastFirmwareFolder;
+            string folder = last != null && Directory.Exists(last) ? last : DigicoolFirmware.DefaultFolder;
+            var start = Directory.Exists(folder) ? await StorageProvider.TryGetFolderFromPathAsync(folder) : null;
             var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
                 Title = "Choose a firmware image to write to the Thing",
@@ -342,6 +344,8 @@ public partial class LinkWindow : Window
             });
             string? chosen = files.Count > 0 ? files[0].TryGetLocalPath() : null;
             if (chosen == null) return;
+            SavedSettings.Current.LastFirmwareFolder = Path.GetDirectoryName(Path.GetFullPath(chosen));
+            SavedSettings.Save();
             imageToWrite = chosen;
             Log(link.Target.NoAccess
                 ? $"Writing {Path.GetFileName(chosen)} first removes read-out protection, which erases all the chip's flash and EEPROM, then writes the image, unprotected. Click again to go ahead."

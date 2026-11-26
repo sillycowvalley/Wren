@@ -80,6 +80,9 @@ public sealed class AppSettings
     /// <summary>The program file last opened.</summary>
     public string? LastFile { get; set; }
 
+    /// <summary>The folder Write image… last wrote an image from (the Firmware window starts there).</summary>
+    public string? LastFirmwareFolder { get; set; }
+
     /// <summary>%AppData%\Wren\Settings.json (beside Wren if there is no app-data folder).</summary>
     public static string DefaultPath
     {
