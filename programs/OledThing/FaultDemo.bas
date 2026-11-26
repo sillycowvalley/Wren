@@ -11,8 +11,8 @@ END ON
 ON EVERY 1000 MS
   CLS
   IF n > 0 THEN
-    TEXT 0, 0, "FAULT IN", SMALL
-    DEC 26, 8, n, BIG
+    TEXT 0, 12, "FAULT IN", SMALL
+    DEC 44, 0, n, BIG
     n = n - 1
   ELSE
     n = 10 / zero               ' ERR 5
