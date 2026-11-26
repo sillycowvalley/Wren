@@ -285,7 +285,8 @@ API and fetches every `.s19` file that is missing from `%LocalAppData%\Wren\firm
 or differs from Digicool's, compared by git's blob hash, which the listing gives. A file is
 kept only if its hash matches the listing, it came from `raw.githubusercontent.com/DigicoolThings`,
 and its S-records lie wholly in the S003's flash. Offline, the check says so in the log and
-what was fetched before stays. **Write image…** opens that folder.
+what was fetched before stays. **Write image…** opens that folder, or the folder an image
+was last chosen from.
 
 The board detection knows Digicool's images by their first 8 bytes (the reset and TRAP
 vectors): the three published (OLED Thing v1.0 and v1.1, LED Thing) are built in, and each

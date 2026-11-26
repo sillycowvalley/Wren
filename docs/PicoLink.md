@@ -64,7 +64,7 @@ at 3.3 V.
    that differ, keeping the program.
 5. **Write image…** opens `%LocalAppData%\Wren\firmware\digicool`, where the window keeps
    Digicool's firmware fetched from Digicool's GitHub, so putting it back is a choice of
-   file and two clicks. If read-out protection is on, it is removed first, which
+   file and two clicks. Once an image has been chosen from another folder, it opens there. If read-out protection is on, it is removed first, which
    erases the chip. The EEPROM is cleared, and the Thing is left unprotected.
 6. **Wear report…**, under Wren's kernel, shows the 54 program-store blocks. It reads the
    writes the Thing itself has recorded for each block and marks the current program's
