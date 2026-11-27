@@ -1,0 +1,10 @@
+# Touchstone-86, case_fault: CS compared with F100h: test 01 fails at case 08, a frame with no detail.
+# For DS2 (HI on the silk): set CONST ROLE = 2 in Touchstone.bas.
+# Written by TTLSim's TouchstoneRomTests from tstrom.asm on Ida's 8086 core at 4 MHz; not edited by hand.
+# Power-on at 0; the CPU leaves reset at 250 ms.
+THING OledThing
+0.000 B=C3
+250.024 B=01
+346.221 B=A1
+346.448 B=F1
+END 874.000

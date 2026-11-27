@@ -1,0 +1,26 @@
+# Touchstone-86, alu_fault: a CPU that decodes ADC AX,BX as ADD: test 04 fails at row 0C, AX wrong.
+# For DS1 (LO on the silk): set CONST ROLE = 1 in Touchstone.bas.
+# Written by TTLSim's TouchstoneRomTests from tstrom.asm on Ida's 8086 core at 4 MHz; not edited by hand.
+# Power-on at 0; the CPU leaves reset at 250 ms.
+THING OledThing
+0.000 B=5A
+250.024 B=00
+647.346 B=FF
+652.648 B=04
+657.967 B=10
+663.285 B=2C
+668.604 B=33
+673.925 B=41
+679.243 B=52
+684.562 B=63
+689.880 B=74
+695.203 B=80
+700.521 B=90
+705.840 B=A0
+711.158 B=B1
+716.481 B=C0
+721.799 B=D0
+727.118 B=E0
+732.436 B=F0
+737.743 B=0C
+END 1238.000

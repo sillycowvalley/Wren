@@ -79,6 +79,11 @@
         <Separator />
         <MenuItem Name="ResetMenu" Header="Reset the emulated Thing" Click="OnReset" />
         <MenuItem Name="PowerMenu" Header="_Power cycle the emulated Thing" Click="OnPowerCycle" />
+        <Separator />
+        <MenuItem Header="Open Test_bench…" Click="OnOpenTestbench"
+                  ToolTip.Tip="Plays a testbench file into the emulated Thing's pins as the program runs: another circuit's signals, from power-on" />
+        <MenuItem Name="CloseTestbenchMenu" Header="Close Testbench" Click="OnCloseTestbench" IsEnabled="False"
+                  ToolTip.Tip="Stops playing the testbench; the pins stay as it left them" />
       </MenuItem>
       <MenuItem Header="_Board">
         <MenuItem Name="ThingMenu" Header="_OLED Thing (STM8S003F3)" ToggleType="Radio" GroupName="board" IsChecked="True" Click="OnBoardChanged" />

@@ -1,0 +1,26 @@
+# Touchstone-86, ram_fault: D5 of the odd RAM bank stuck low: test 02 fails at case 02, a RAM word, the frame first.
+# For DS1 (LO on the silk): set CONST ROLE = 1 in Touchstone.bas.
+# Written by TTLSim's TouchstoneRomTests from tstrom.asm on Ida's 8086 core at 4 MHz; not edited by hand.
+# Power-on at 0; the CPU leaves reset at 250 ms.
+THING OledThing
+0.000 B=5A
+250.024 B=00
+1257.406 B=FF
+1262.708 B=02
+1268.027 B=10
+1273.345 B=22
+1278.664 B=31
+1283.985 B=40
+1289.303 B=50
+1294.622 B=60
+1299.940 B=70
+1305.263 B=8F
+1310.581 B=9F
+1315.900 B=AF
+1321.218 B=BF
+1326.541 B=CD
+1331.859 B=DF
+1337.178 B=EF
+1342.496 B=FF
+1347.803 B=02
+END 1848.000

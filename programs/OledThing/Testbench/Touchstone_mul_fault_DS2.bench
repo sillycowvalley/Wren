@@ -1,0 +1,15 @@
+# Touchstone-86, mul_fault: a CPU that decodes MUL BX as IMUL BX: test 06 fails at row 07, DX wrong.
+# For DS2 (HI on the silk): set CONST ROLE = 2 in Touchstone.bas.
+# Written by TTLSim's TouchstoneRomTests from tstrom.asm on Ida's 8086 core at 4 MHz; not edited by hand.
+# Power-on at 0; the CPU leaves reset at 250 ms.
+THING OledThing
+0.000 B=C3
+250.024 B=01
+346.229 B=02
+446.234 B=03
+546.239 B=04
+646.244 B=05
+746.249 B=06
+846.246 B=A6
+846.874 B=F6
+END 1438.000

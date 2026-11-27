@@ -1,0 +1,29 @@
+# Touchstone-86, tour: the menu, test 01 passing, identity (BB 86), the static test counting for a second, the core's questions (BE 07).
+# For DS2 (HI on the silk): set CONST ROLE = 2 in Touchstone.bas.
+# Written by TTLSim's TouchstoneRomTests from tstrom.asm on Ida's 8086 core at 4 MHz; not edited by hand.
+# Power-on at 0; the CPU leaves reset at 250 ms.
+THING OledThing
+0.000 B=C3
+250.024 B=01
+346.221 B=A1
+346.510 B=C1
+446.230 B=02
+546.235 B=03
+646.240 B=04
+746.245 B=05
+846.250 B=06
+946.255 B=07
+1046.260 B=08
+1146.265 B=09
+1246.270 B=0A
+1346.275 B=0B
+1446.272 B=AB
+1446.406 B=BB
+1546.288 B=0C
+1646.285 B=AC
+2746.322 B=CC
+2846.298 B=0D
+2946.303 B=0E
+3046.300 B=AE
+3046.777 B=BE
+END 3547.000

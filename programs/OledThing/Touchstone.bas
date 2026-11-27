@@ -5,37 +5,151 @@
 '   DS2  the state and the test as words, e.g. RAM over FAIL; a byte outside the
 '        tester's code as its two hex digits. Until the byte first changes after
 '        power-up it shows ?xx: the latch powers up holding a random byte.
-'   DS1  its byte as two big hex digits, nothing else (a case number, a count or a
-'        result code: only DS2's state says which).
+'   DS1  its byte as two big hex digits (a case number, a count or a result code:
+'        only DS2's state says which), drawn once the byte has held for 20 ms.
+'        Before a failure's case the tester sends a frame, a byte every 5 ms, its
+'        high digit the byte's place and its low digit the frame's: DS1 then shows
+'        the failure itself, the case, and for a RAM or table failure the address
+'        or input, the value wanted and the value got.
 '
 ' BAR, HEX, INV and PD2/PD3 float on the tester and are never read.
 
 CONST ROLE = 2
 
-DIM shown       ' the settled byte on screen
-DIM written     ' TRUE once the byte has changed since power-up
+DIM shown       ' the settled byte
+DIM written     ' TRUE once the byte has changed since power-up (DS2)
 DIM started     ' TRUE after the first ON CHANGE (once after ON START)
+DIM changed     ' MILLIS when DS1's byte last changed
+DIM pending     ' DS1: a byte not yet drawn
+DIM place       ' DS1: the frame's next place, 0-15; 99 between frames
+DIM last        ' DS1: MILLIS of the frame's last byte
+DIM framed      ' DS1: 1 a frame read, 2 and its case after it; 0 none
+DIM digit(16) AS BYTE
 
 ON CHANGE
   IF INPUTS = VALUE THEN                     ' settled: two reads agree
-    IF started AND VALUE <> shown THEN written = TRUE
-    started = TRUE
-    shown = VALUE
-    CLS
     IF ROLE = 1 THEN
-      Digits
-    ELSEIF NOT written THEN
-      TEXT 6, 2, "?", BIG
-      HEX 24, 2, shown, 2, BIG
-    ELSEIF InCode THEN
-      Test shown AND 15
-      State shown SHR 4
+      Take VALUE
+    ELSE
+      IF started AND VALUE <> shown THEN written = TRUE
+      started = TRUE
+      shown = VALUE
+      CLS
+      IF NOT written THEN
+        TEXT 6, 2, "?", BIG
+        HEX 24, 2, shown, 2, BIG
+      ELSEIF InCode THEN
+        Test shown AND 15
+        State shown SHR 4
+      ELSE
+        Digits
+      END IF
+      SHOW
+    END IF
+  END IF
+END ON
+
+' DS1 draws once its byte has held for 20 ms: never in the middle of a frame.
+ON EVERY 5
+  IF pending AND MILLIS - changed >= 20 THEN
+    pending = FALSE
+    CLS
+    IF framed THEN
+      Detail
     ELSE
       Digits
     END IF
     SHOW
   END IF
 END ON
+
+' DS1: a new byte, the next of a frame or not.
+SUB Take(v)
+  DIM p
+  p = v SHR 4
+  IF framed = 1 AND v = Case THEN            ' Ft nn after its frame
+    framed = 2
+  ELSE
+    framed = 0
+    IF p = 0 THEN place = 0
+    IF p = place AND (p = 0 OR MILLIS - last < 20) THEN
+      digit(p) = v AND 15
+      place = place + 1
+      last = MILLIS
+      IF place = 16 OR (place = 4 AND digit(3) = 0) THEN
+        framed = 1
+        place = 99
+      END IF
+    ELSE
+      place = 99
+    END IF
+  END IF
+  shown = v
+  changed = MILLIS
+  pending = TRUE
+END SUB
+
+' The frame's case, its places 1 and 2.
+FUNCTION Case
+  RETURN (digit(1) SHL 4) OR digit(2)
+END FUNCTION
+
+' A word of the frame, four places from at, high digit first.
+FUNCTION Word(at)
+  RETURN (digit(at) SHL 12) OR (digit(at + 1) SHL 8) OR (digit(at + 2) SHL 4) OR digit(at + 3)
+END FUNCTION
+
+' The failure, by the frame's kind (place 3): 0 the case alone; 1 a RAM word and 2 a
+' RAM byte, at an address; 3, 4 and 5 a table row whose AX, DX or flags were wrong.
+SUB Detail
+  DIM kind, want, got, wrong, digits
+  kind = digit(3)
+  IF kind = 0 THEN
+    TEXT 0, 12, "CASE"
+    HEX 28, 0, Case, 2, BIG
+    EXIT SUB
+  END IF
+  want = Word(8)
+  got = Word(12)
+  wrong = want XOR got
+  IF kind <= 2 THEN
+    digits = 4
+    IF kind = 2 THEN digits = 2
+    TEXT 0, 0, "@"
+    HEX 12, 0, Word(4), 4
+    IF kind = 2 THEN
+      IF Word(4) AND 1 THEN
+        TEXT 42, 0, "ODD"
+      ELSE
+        TEXT 42, 0, "EVN"
+      END IF
+    ELSEIF (wrong AND &HFF00) = 0 THEN
+      TEXT 42, 0, "EVN"
+    ELSEIF (wrong AND &HFF) = 0 THEN
+      TEXT 42, 0, "ODD"
+    ELSE
+      TEXT 42, 0, "BTH"
+    END IF
+    TEXT 0, 8, "WANT"
+    HEX 30, 8, want, digits
+    TEXT 0, 16, "READ"
+    HEX 30, 16, got, digits
+    TEXT 0, 24, "XOR"
+    HEX 30, 24, wrong, digits
+  ELSE
+    TEXT 0, 0, "ROW"
+    HEX 24, 0, Case, 2
+    IF kind = 3 THEN TEXT 48, 0, "AX"
+    IF kind = 4 THEN TEXT 48, 0, "DX"
+    IF kind = 5 THEN TEXT 48, 0, "FL"
+    TEXT 0, 8, "IN"
+    HEX 30, 8, Word(4), 4
+    TEXT 0, 16, "WANT"
+    HEX 30, 16, want, 4
+    TEXT 0, 24, "GOT"
+    HEX 30, 24, got, 4
+  END IF
+END SUB
 
 ' The byte is in the tester's code: a test 1 to E, a state 0, A, B, C or F.
 FUNCTION InCode
