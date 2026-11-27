@@ -1,0 +1,27 @@
+# Touchstone-86, soak_fault: run until failure: a pass of the soak (AD 01), then D5 of the odd bank stuck low stops it at F2 02.
+# For DS1 (LO on the silk): set CONST ROLE = 1 in Touchstone.bas.
+# Written by TTLSim's TouchstoneRomTests from tstrom.asm on Ida's 8086 core at 4 MHz; not edited by hand.
+# Power-on at 0; the CPU leaves reset at 250 ms.
+THING OledThing
+0.000 B=5A
+250.042 B=00
+9193.713 B=01
+10005.159 B=FF
+10010.461 B=02
+10015.780 B=10
+10021.098 B=22
+10026.417 B=31
+10031.738 B=40
+10037.056 B=50
+10042.375 B=60
+10047.693 B=70
+10053.016 B=8F
+10058.334 B=9F
+10063.653 B=AF
+10068.971 B=BF
+10074.294 B=CD
+10079.612 B=DF
+10084.931 B=EF
+10090.249 B=FF
+10095.556 B=02
+END 10596.000

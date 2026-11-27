@@ -38,6 +38,11 @@ public partial class MainWindow : Window
     /// <summary>LED brightness from the emulator's last run, b0 first.</summary>
     private double[] ledLevels = new double[8];
     private ThingSession? session;
+
+    /// <summary>The testbench playing into the emulated Thing's pins, if one is open.</summary>
+    private TestbenchPlayer? bench;
+    private string benchName = "";
+    private bool benchEnded;
     private DeviceInfo chip = DeviceInfo.Stm8s003f3;
     private string? path;
     private string[] sourceLines = Array.Empty<string>();
@@ -854,22 +859,23 @@ public partial class MainWindow : Window
         double seconds = Math.Min(clock.Elapsed.TotalSeconds, 0.05);
         clock.Restart();
 
+        var s = session;
         switch (mode)
         {
             case Mode.Debugging:
-                if (session.Run(seconds) == SessionStop.Breakpoint) SetMode(Mode.Paused);
+                if (Play(seconds, s.Run) == SessionStop.Breakpoint) SetMode(Mode.Paused);
                 break;
             case Mode.RunningFree:
-                session.RunFree(seconds);
+                Play(seconds, s.RunFree);
                 break;
             case Mode.Stepping:
                 // A step can wait: the next statement may only come with an event.
                 var stop = stepKind switch
                 {
-                    StepKind.Over => session.StepOver(seconds, stepDepth),
-                    StepKind.Out => session.StepOut(seconds, stepDepth),
-                    StepKind.ToCursor => session.RunTo(seconds, stepLine),
-                    _ => session.Step(seconds),
+                    StepKind.Over => Play(seconds, t => s.StepOver(t, stepDepth)),
+                    StepKind.Out => Play(seconds, t => s.StepOut(t, stepDepth)),
+                    StepKind.ToCursor => Play(seconds, t => s.RunTo(t, stepLine)),
+                    _ => Play(seconds, s.Step),
                 };
                 if (stop == SessionStop.HandlerEnded) SetMode(Mode.Debugging);   // off the end of a handler: run on
                 else if (stop != SessionStop.TimeUp) SetMode(Mode.Paused);
@@ -881,6 +887,83 @@ public partial class MainWindow : Window
         UpdateView();
     }
 
+    // ---- Testbench ----
+
+    /// <summary>Runs the emulator with run, the open testbench (if any) making its changes on time.</summary>
+    private SessionStop Play(double seconds, Func<double, SessionStop> run)
+    {
+        if (bench == null || session == null) return run(seconds);
+        var stop = bench.Run(session, seconds, run);
+        bool ended = bench.Finished(session);
+        if (ended && !benchEnded) messages.Add($"Testbench {benchName}: ended at {bench.Bench.EndMs:0.###} ms. The pins stay as it left them; Restart or Power cycle plays it again.");
+        benchEnded = ended;
+        return stop;
+    }
+
+    private async void OnOpenTestbench(object? sender, RoutedEventArgs e)
+    {
+        if (OnThingTarget)
+        {
+            messages.Add("A testbench plays into the emulator: choose Debug, Target, Emulator first.");
+            UpdateView();
+            return;
+        }
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Open a testbench",
+            SuggestedStartLocation = await ProgramFolder(),
+            AllowMultiple = false,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("Testbench") { Patterns = new[] { "*.bench" } },
+                new FilePickerFileType("All files") { Patterns = new[] { "*" } },
+            },
+        });
+        string? chosen = files.Count > 0 ? files[0].TryGetLocalPath() : null;
+        if (chosen == null || session == null) return;
+        Testbench loaded;
+        try
+        {
+            loaded = Testbench.Load(chosen);
+        }
+        catch (FormatException ex)
+        {
+            messages.Add($"Testbench {Path.GetFileName(chosen)}: {ex.Message}");
+            UpdateView();
+            return;
+        }
+        if (loaded.Board != session.Board)
+        {
+            messages.Add($"Testbench {Path.GetFileName(chosen)} is for the {(loaded.Board == Board.LedThing ? "LED" : "OLED")} Thing: choose it in the Board menu first.");
+            UpdateView();
+            return;
+        }
+        bench = new TestbenchPlayer(loaded);
+        benchName = Path.GetFileName(chosen);
+        benchEnded = false;
+        CloseTestbenchMenu.IsEnabled = true;
+        DiagnosticLog.Write($"Testbench opened: {chosen}");
+        messages.Add($"Testbench {benchName}: {loaded.Steps.Count} changes over {loaded.EndMs:0.###} ms from power-on. " +
+            (mode == Mode.Design ? "F5 runs the program with it." : "The Thing is powered on again to play it from the start."));
+        if (mode != Mode.Design && session.Program != null)
+        {
+            session.PowerOn();
+            ApplyPins();
+        }
+        UpdateView();
+    }
+
+    private void OnCloseTestbench(object? sender, RoutedEventArgs e) => CloseTestbench();
+
+    private void CloseTestbench()
+    {
+        if (bench == null) return;
+        messages.Add($"Testbench {benchName} closed; the pins stay as it left them.");
+        bench = null;
+        CloseTestbenchMenu.IsEnabled = false;
+        UpdateView();
+    }
+
     // ---- Board ----
 
     private void OnBoardChanged(object? sender, RoutedEventArgs e)
@@ -889,6 +972,7 @@ public partial class MainWindow : Window
         if (chosen == boardChoice) return;
         if (thing != null) ThingStop();
         boardChoice = chosen;
+        CloseTestbench();                              // a testbench is for one board
         chip = chosen == BoardChoice.DevelopmentBoard ? DeviceInfo.Stm8s103f3 : DeviceInfo.Stm8s003f3;
         SavedSettings.Current.Board = chosen;
         NewSession();

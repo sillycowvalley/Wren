@@ -49,7 +49,10 @@ Digicool Things "8-bit OLED Thing" and "8-bit LED Thing". See `docs/ProjectPlan.
 - `docs/ProjectPlan.md` (plan, state), `docs/Design.md` (firmware design),
   `docs/Bytecode.md` (VM and FAT formats), `docs/OledThing.md` and `docs/LedThing.md`
   (the two Digicool boards' pins), `docs/Touchstone.md` (the Touchstone-86 chip tester's
-  display code and `Touchstone.bas`).
+  display code, `Touchstone.bas` and its testbenches), `docs/Testbench.md` (testbench
+  files, played into the emulator's pins).
+- `programs/OledThing/Testbench` holds the Touchstone-86's testbenches. TTLSim writes them
+  from its test ROM and holds them to it: copy them in unchanged, never edit them here.
 - Infographics live in `docs/Infographics`: each PNG sits beside the one HTML file it is
   rendered from, and the render steps are in that file's opening comment.
 - The maintainer works in Wren BASIC; the app never shows assembly or CPU registers.
